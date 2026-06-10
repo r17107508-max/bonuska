@@ -73,7 +73,7 @@ export async function loginSuperadmin(formData: FormData) {
   const user = await authenticate(normalizePhone(formData.get("phone")), text(formData, "password"));
 
   if (!user || user.globalRole !== "SUPERADMIN") {
-    errorRedirect("/superadmin/login", "Неверный телефон или пароль");
+    errorRedirect("/company/login", "Неверный телефон или пароль");
   }
 
   await createSession(user);
@@ -85,6 +85,11 @@ export async function loginCompany(formData: FormData) {
 
   if (!user) {
     errorRedirect("/company/login", "Неверный телефон или пароль");
+  }
+
+  if (user.globalRole === "SUPERADMIN") {
+    await createSession(user);
+    redirect("/superadmin");
   }
 
   const companyUser = await getDb().companyUser.findFirst({

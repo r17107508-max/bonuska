@@ -12,7 +12,7 @@ export default async function CompanyLoginPage({
   const params = await searchParams;
 
   return (
-    <AuthShell title="Вход компании" subtitle="Для владельца, управляющего и кассира.">
+    <AuthShell title="Вход" subtitle="Введите телефон и пароль для доступа к кабинету.">
       {params.error && <p className="mt-5 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">{params.error}</p>}
       <form action={loginCompany} className="mt-6 space-y-4">
         <FormField label="Телефон" name="phone" autoComplete="tel" />

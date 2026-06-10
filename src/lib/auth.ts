@@ -83,7 +83,7 @@ export async function requireUser(redirectTo = "/") {
 }
 
 export async function requireSuperadmin() {
-  const user = await requireUser("/superadmin/login");
+  const user = await requireUser("/company/login");
 
   if (user.globalRole !== GlobalRole.SUPERADMIN) {
     redirect("/");

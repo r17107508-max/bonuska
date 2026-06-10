@@ -22,8 +22,7 @@ export default function Home() {
       <header className="page-shell flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
         <BrandMark compact />
         <nav className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-          <ButtonLink href="/company/login" variant="ghost">Вход компании</ButtonLink>
-          <ButtonLink href="/superadmin/login" variant="ghost">Суперадмин</ButtonLink>
+          <ButtonLink href="/company/login" variant="ghost">Вход</ButtonLink>
         </nav>
       </header>
 
