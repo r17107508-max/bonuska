@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum GlobalRole {
+  SUPERADMIN
+  USER
+}
+
+enum CompanyStatus {
+  PENDING
+  ACTIVE_TRIAL
+  ACTIVE_PAID
+  PAYMENT_REQUIRED
+  BLOCKED
+  REJECTED
+}
+
+enum CompanyUserRole {
+  COMPANY_ADMIN
+  CASHIER
+}
+
+enum LoyaltyProgramType {
+  CLASSIC_REWARD
+  COLLECT_AND_REWARD
+  GIFT_BOX
+  DISCOUNT_AFTER_N
+  CUSTOMER_LEVELS
+}
+
+enum LoyaltyTransactionType {
+  PURCHASE
+  REWARD_GRANTED
+  MANUAL_ADJUSTMENT
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  phone        String
+  email        String?
+  passwordHash String
+  globalRole   GlobalRole @default(USER)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  companyUsers         CompanyUser[]
+  memberships          CustomerMembership[]
+  acceptedOffers       OfferAcceptance[]
+  personalDataConsents PersonalDataConsent[]
+  confirmedPayments    SubscriptionPayment[] @relation("ConfirmedPayments")
+  cashierTransactions  LoyaltyTransaction[]  @relation("CashierTransactions")
+  auditLogs            AuditLog[]
+
+  @@unique([phone])
+  @@index([email])
+}
+
+model Company {
+  id             String        @id @default(cuid())
+  name           String
+  slug           String        @unique
+  description    String?
+  businessType   String
+  icon           String        @default("☕")
+  themeColor     String        @default("#0f766e")
+  city           String
+  address        String
+  ownerName      String
+  ownerPhone     String
+  ownerEmail     String
+  inn            String?
+  comment        String?
+  status         CompanyStatus @default(PENDING)
+  trialStartedAt DateTime?
+  trialEndsAt    DateTime?
+  paidUntil      DateTime?
+  lastPaidAt     DateTime?
+  isBlocked      Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  users                CompanyUser[]
+  loyaltyProgram       LoyaltyProgram?
+  memberships          CustomerMembership[]
+  transactions         LoyaltyTransaction[]
+  giftOptions          GiftOption[]
+  payments             SubscriptionPayment[]
+  offerAcceptances     OfferAcceptance[]
+  personalDataConsents PersonalDataConsent[]
+  auditLogs            AuditLog[]
+
+  @@index([status])
+  @@index([city])
+}
+
+model CompanyUser {
+  id        String          @id @default(cuid())
+  companyId String
+  userId    String
+  role      CompanyUserRole
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@index([userId])
+}
+
+model LoyaltyProgram {
+  id                String             @id @default(cuid())
+  companyId         String             @unique
+  programType       LoyaltyProgramType @default(CLASSIC_REWARD)
+  icon              String             @default("☕")
+  goalCount         Int                @default(6)
+  rewardTitle       String             @default("Подарок")
+  rewardDescription String             @default("Следующая покупка или подарок по правилам компании")
+  themeColor        String             @default("#0f766e")
+  isGiftBoxEnabled  Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model CustomerMembership {
+  id              String    @id @default(cuid())
+  companyId       String
+  userId          String
+  qrToken         String    @unique
+  currentCount    Int       @default(0)
+  totalPurchases  Int       @default(0)
+  totalRewards    Int       @default(0)
+  rewardAvailable Boolean   @default(false)
+  pendingReward   String?
+  lastActionAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions LoyaltyTransaction[]
+
+  @@unique([companyId, userId])
+  @@index([companyId, qrToken])
+}
+
+model LoyaltyTransaction {
+  id           String                 @id @default(cuid())
+  companyId    String
+  membershipId String
+  cashierId    String
+  type         LoyaltyTransactionType
+  countBefore  Int
+  countAfter   Int
+  rewardTitle  String?
+  createdAt    DateTime               @default(now())
+
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  membership CustomerMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  cashier    User               @relation("CashierTransactions", fields: [cashierId], references: [id], onDelete: Restrict)
+
+  @@index([companyId, createdAt])
+  @@index([membershipId, createdAt])
+  @@index([cashierId, createdAt])
+}
+
+model GiftOption {
+  id                String   @id @default(cuid())
+  companyId         String
+  title             String
+  description       String?
+  probabilityWeight Int      @default(1)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, isActive])
+}
+
+model SubscriptionPayment {
+  id            String   @id @default(cuid())
+  companyId     String
+  amount        Int
+  paidAt        DateTime
+  periodStart   DateTime
+  periodEnd     DateTime
+  method        String   @default("manual")
+  comment       String?
+  confirmedById String
+  createdAt     DateTime @default(now())
+
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  confirmedBy User    @relation("ConfirmedPayments", fields: [confirmedById], references: [id], onDelete: Restrict)
+
+  @@index([companyId, paidAt])
+}
+
+model OfferAcceptance {
+  id           String   @id @default(cuid())
+  companyId    String
+  userId       String
+  offerVersion String
+  acceptedAt   DateTime @default(now())
+  ip           String?
+  userAgent    String?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, acceptedAt])
+}
+
+model PersonalDataConsent {
+  id             String   @id @default(cuid())
+  userId         String
+  companyId      String?
+  consentVersion String
+  acceptedAt     DateTime @default(now())
+  ip             String?
+  userAgent      String?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([userId, acceptedAt])
+  @@index([companyId, acceptedAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String?
+  companyId    String?
+  action       String
+  entityType   String
+  entityId     String?
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  actor   User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+}
+
+model ServiceSettings {
+  id                     String   @id @default("default")
+  subscriptionPrice      Int      @default(499)
+  trialDays              Int      @default(14)
+  offerVersion           String   @default("1.0")
+  offerText              String
+  privacyVersion         String   @default("1.0")
+  privacyText            String
+  paymentRequisites      String   @default("")
+  supportEmail           String   @default("rf173@bk.ru")
+  updatedAt              DateTime @updatedAt
+}

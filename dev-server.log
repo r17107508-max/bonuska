@@ -1,0 +1,168 @@
+
+> tega-coffee@0.1.0 dev
+> next dev -H 0.0.0.0
+
+▲ Next.js 16.2.7 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+- Environments: .env
+✓ Ready in 578ms
+
+ GET / 200 in 569ms (next.js: 245ms, application-code: 325ms)
+ GET / 200 in 140ms (next.js: 4ms, application-code: 136ms)
+ GET /company/login 200 in 1053ms (next.js: 614ms, application-code: 439ms)
+ GET / 200 in 172ms (next.js: 86ms, application-code: 85ms)
+ GET /c/tega 200 in 1312ms (next.js: 1066ms, application-code: 245ms)
+ GET /superadmin/login 200 in 491ms (next.js: 408ms, application-code: 83ms)
+ GET / 200 in 110ms (next.js: 4ms, application-code: 107ms)
+ GET /company/login 200 in 72ms (next.js: 18ms, application-code: 54ms)
+ GET /company 200 in 681ms (next.js: 548ms, application-code: 133ms)
+ POST /company/login 303 in 833ms (next.js: 6ms, application-code: 827ms)
+  └─ ƒ loginCompany({}) in 120ms src/app/actions.ts
+ GET /company 200 in 319ms (next.js: 154ms, application-code: 165ms)
+ GET /company 200 in 461ms (next.js: 59ms, application-code: 402ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 200 in 1420ms (next.js: 835ms, application-code: 585ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 200 in 176ms (next.js: 12ms, application-code: 164ms)
+⨯ TypeError: Invalid character in header content ["x-action-redirect"]
+    at ignore-listed frames {
+  code: 'ERR_INVALID_CHAR'
+}
+⨯ TypeError: Invalid character in header content ["x-action-redirect"]
+    at ignore-listed frames {
+  code: 'ERR_INVALID_CHAR',
+  page: '/company/scan'
+}
+ POST /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 500 in 2.4s (next.js: 2.2s, application-code: 170ms)
+  └─ ƒ confirmPurchase({}) in 55ms src/app/actions.ts
+[browser] Uncaught Error: An unexpected response was received from the server.
+    at fetchServerAction (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:11280:37)
+    at form (<anonymous>)
+    at CompanyScanPage (src\app\company\scan\page.tsx:49:17)
+  47 |               />
+  48 |               {active && (
+> 49 |                 <form action={membership.rewardAvailable ? giveReward : confirmPurchase} c...
+     |                 ^
+  50 |                   <input type="hidden" name="membershipId" value={membership.id} />
+  51 |                   <input type="hidden" name="token" value={token} />
+  52 |                   {membership.rewardAvailable ? (
+[browser] Uncaught Error: Cannot stop, scanner is not running or paused.
+    at coerceError (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_1ybzpk2._.js:2321:73)
+    at Object.decorateDevError (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_1ybzpk2._.js:2340:19)
+    at onUncaughtError (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:2008:39)
+    at onCaughtError (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_client_0r5nbpw._.js:1981:16)
+    at logCaughtError (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:5784:13)
+    at runWithFiberInDEV (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:965:74)
+    at inst.componentDidCatch.update.callback (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:5825:13)
+    at callCallback (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:4491:18)
+    at commitCallbacks (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:4499:130)
+    at runWithFiberInDEV (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:965:74)
+    at commitClassCallbacks (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7301:17)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7862:31)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7850:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7850:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7854:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7850:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7850:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7850:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7850:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7850:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7948:17)
+    at recursivelyTraverseLayoutEffects (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:8530:105)
+    at commitLayoutEffectOnFiber (file://C:/Users/user/Desktop/Тега/tega-coffee/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_096_9a-._.js:7867:17)
+    at QrScanner (<anonymous>)
+✓ Compiled in 63ms
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 200 in 565ms (next.js: 135ms, application-code: 429ms)
+✓ Compiled in 59ms
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 200 in 161ms (next.js: 68ms, application-code: 93ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 200 in 177ms (next.js: 4ms, application-code: 173ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 200 in 107ms (next.js: 4ms, application-code: 103ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed&success=%D0%9D%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%BE 200 in 68ms (next.js: 6ms, application-code: 61ms)
+ POST /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 303 in 119ms (next.js: 5ms, application-code: 114ms)
+  └─ ƒ confirmPurchase({}) in 21ms src/app/actions.ts
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 200 in 125ms (next.js: 6ms, application-code: 119ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 59ms (next.js: 3ms, application-code: 57ms)
+ POST /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 303 in 107ms (next.js: 5ms, application-code: 102ms)
+  └─ ƒ confirmPurchase({}) in 26ms src/app/actions.ts
+✓ Compiled in 67ms
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 488ms (next.js: 80ms, application-code: 407ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 332ms (next.js: 9ms, application-code: 323ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 285ms (next.js: 8ms, application-code: 277ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 286ms (next.js: 36ms, application-code: 250ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 286ms (next.js: 96ms, application-code: 190ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 288ms (next.js: 65ms, application-code: 224ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 232ms (next.js: 6ms, application-code: 226ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 188ms (next.js: 12ms, application-code: 175ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 142ms (next.js: 7ms, application-code: 135ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed%3Ferror%3D%D0%9F%D0%BE%D0%B2%D1%82%D0%BE%D1%80%D0%BD%D0%BE%D0%B5+%D0%BD%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5+%D1%8D%D1%82%D0%BE%D0%BC%D1%83+%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D1%83+%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF%D0%BD%D0%BE+%D1%87%D0%B5%D1%80%D0%B5%D0%B7+30+%D1%81%D0%B5%D0%BA%D1%83%D0%BD%D0%B4 200 in 142ms (next.js: 39ms, application-code: 104ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 200 in 178ms (next.js: 4ms, application-code: 174ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed&success=%D0%9D%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%BE 200 in 71ms (next.js: 3ms, application-code: 68ms)
+ POST /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 303 in 125ms (next.js: 3ms, application-code: 122ms)
+  └─ ƒ confirmPurchase({}) in 30ms src/app/actions.ts
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed&success=%D0%9F%D0%BE%D0%B4%D0%B0%D1%80%D0%BE%D0%BA+%D0%B2%D1%8B%D0%B4%D0%B0%D0%BD 200 in 69ms (next.js: 2ms, application-code: 66ms)
+ POST /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed&success=%D0%9D%D0%B0%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%BE 303 in 113ms (next.js: 4ms, application-code: 108ms)
+  └─ ƒ giveReward({}) in 26ms src/app/actions.ts
+ GET / 200 in 159ms (next.js: 36ms, application-code: 123ms)
+ GET / 200 in 129ms (next.js: 5ms, application-code: 124ms)
+ GET /company/scan?token=e02f7e55-451b-469f-b1df-86e0f51164ed 200 in 115ms (next.js: 3ms, application-code: 112ms)
+ GET / 200 in 192ms (next.js: 7ms, application-code: 186ms)
+ GET / 200 in 163ms (next.js: 4ms, application-code: 159ms)
+ GET /c/tega 200 in 179ms (next.js: 130ms, application-code: 49ms)
+ GET / 200 in 90ms (next.js: 3ms, application-code: 87ms)
+ GET /admin 307 in 255ms (next.js: 162ms, application-code: 93ms)
+ GET /company 307 in 194ms (next.js: 50ms, application-code: 145ms)
+ GET /company/login 200 in 210ms (next.js: 107ms, application-code: 103ms)
+ GET / 200 in 52ms (next.js: 2ms, application-code: 49ms)
+ GET /admin 307 in 56ms (next.js: 1713µs, application-code: 55ms)
+ GET /company 307 in 52ms (next.js: 2ms, application-code: 50ms)
+ GET /company/login 200 in 66ms (next.js: 5ms, application-code: 61ms)
+ GET / 200 in 89ms (next.js: 10ms, application-code: 79ms)
+ GET / 200 in 345ms (next.js: 36ms, application-code: 309ms)
+ GET /admin 307 in 53ms (next.js: 6ms, application-code: 47ms)
+ GET /company 307 in 70ms (next.js: 10ms, application-code: 60ms)
+ GET /company/login 200 in 73ms (next.js: 7ms, application-code: 66ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "127.0.0.1".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['127.0.0.1'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET / 200 in 111ms (next.js: 4ms, application-code: 107ms)
+ GET /admin 307 in 54ms (next.js: 3ms, application-code: 51ms)
+ GET /company 307 in 69ms (next.js: 4ms, application-code: 65ms)
+ GET /company/login 200 in 91ms (next.js: 5ms, application-code: 86ms)
+ GET / 200 in 140ms (next.js: 6ms, application-code: 134ms)
+ GET /admin 307 in 51ms (next.js: 4ms, application-code: 48ms)
+ GET /company 307 in 58ms (next.js: 1819µs, application-code: 56ms)
+ GET /company/login 200 in 57ms (next.js: 3ms, application-code: 54ms)
