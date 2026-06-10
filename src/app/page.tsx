@@ -18,9 +18,9 @@ const features = ["цифровые бонусные карты", "личные 
 export default function Home() {
   return (
     <main className="bg-slate-50">
-      <header className="page-shell flex items-center justify-between py-5">
+      <header className="page-shell flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
         <BrandMark compact />
-        <nav className="hidden items-center gap-2 md:flex">
+        <nav className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
           <ButtonLink href="/company/login" variant="ghost">Вход компании</ButtonLink>
           <ButtonLink href="/superadmin/login" variant="ghost">Суперадмин</ButtonLink>
         </nav>
