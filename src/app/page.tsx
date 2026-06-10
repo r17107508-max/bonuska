@@ -1,6 +1,7 @@
 import { ArrowRight, Check, QrCode, ShieldCheck, Smartphone } from "lucide-react";
 import { ButtonLink } from "@/components/buttons";
 import { BrandMark } from "@/components/brand";
+import { InstallPwaButton } from "@/components/install-pwa-button";
 
 const audiences = ["☕ Кофейни", "🌯 Шаурмичные", "🥐 Пекарни", "🧋 Напитки", "🍔 Фастфуд", "💈 Услуги", "🍕 Пиццерии", "🎁 Любой бизнес с повторными покупками"];
 const steps = [
@@ -17,7 +18,7 @@ const features = ["цифровые бонусные карты", "личные 
 
 export default function Home() {
   return (
-    <main className="bg-slate-50">
+    <main className="bg-slate-50 pb-24 md:pb-0">
       <header className="page-shell flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
         <BrandMark compact />
         <nav className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
@@ -126,6 +127,7 @@ export default function Home() {
           <p className="flex items-center gap-2"><Smartphone aria-hidden className="size-4" />PWA для установки на главный экран</p>
         </div>
       </footer>
+      <InstallPwaButton placement="floating" />
     </main>
   );
 }
