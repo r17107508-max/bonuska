@@ -1,4 +1,4 @@
-const CACHE_NAME = "bonuska-v1";
+const CACHE_NAME = "proplushka-v2";
 const APP_SHELL = ["/", "/manifest.json", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
