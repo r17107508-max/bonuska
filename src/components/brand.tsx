@@ -7,7 +7,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
         <Gift aria-hidden className="size-5" />
       </div>
       <div>
-        <p className="text-xl font-semibold text-slate-950">Бонуска</p>
+        <p className="text-xl font-semibold text-slate-950">ПроПлюшка</p>
         {!compact && <p className="text-sm font-medium text-slate-500">QR-лояльность для малого бизнеса</p>}
       </div>
     </div>

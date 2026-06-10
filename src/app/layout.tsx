@@ -14,13 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Бонуска - QR-программы лояльности",
+  title: "ПроПлюшка - QR-программы лояльности",
   description: "PWA/SaaS для цифровых бонусных карт малых бизнесов.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Бонуска",
+    title: "ПроПлюшка",
   },
   icons: {
     icon: "/icon.svg",

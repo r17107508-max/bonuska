@@ -3,7 +3,6 @@ import { ButtonLink } from "@/components/buttons";
 import { BrandMark } from "@/components/brand";
 
 const audiences = ["☕ Кофейни", "🌯 Шаурмичные", "🥐 Пекарни", "🧋 Напитки", "🍔 Фастфуд", "💈 Услуги", "🍕 Пиццерии", "🎁 Любой бизнес с повторными покупками"];
-const names = ["bonka.ru", "bonusqr.ru", "qrbonus.ru", "podarki.app", "plushka.ru", "otmetka.app", "kopilka.app", "darqr.ru", "stampi.ru", "boncard.ru"];
 const steps = [
   "Компания регистрируется.",
   "Глобальный админ подтверждает заявку.",
@@ -113,18 +112,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-white py-14">
-        <div className="page-shell">
-          <h2 className="text-3xl font-semibold text-slate-950">10 коротких названий для домена</h2>
-          <p className="mt-2 text-slate-600">Доступность доменов `.ru`, `.рф` и `.app` нужно проверять отдельно у регистратора.</p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {names.map((name) => (
-              <div key={name} className="rounded-lg border border-slate-200 bg-slate-50 p-4 font-mono font-semibold text-slate-800">{name}</div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="page-shell flex flex-col items-start justify-between gap-5 py-14 sm:flex-row sm:items-center">
         <div>
           <h2 className="text-3xl font-semibold text-slate-950">Готовы запустить свою бонусную карту?</h2>
@@ -135,7 +122,7 @@ export default function Home() {
 
       <footer className="border-t border-slate-200 bg-white py-6">
         <div className="page-shell flex flex-col gap-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>Бонуска. MVP программы лояльности.</p>
+          <p>ПроПлюшка. MVP программы лояльности.</p>
           <p className="flex items-center gap-2"><Smartphone aria-hidden className="size-4" />PWA для установки на главный экран</p>
         </div>
       </footer>
