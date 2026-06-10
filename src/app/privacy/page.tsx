@@ -2,6 +2,8 @@ import Link from "next/link";
 import { BrandMark } from "@/components/brand";
 import { getSettings } from "@/lib/settings";
 
+export const dynamic = "force-dynamic";
+
 export default async function PrivacyPage() {
   const settings = await getSettings();
 
@@ -14,9 +16,6 @@ export default async function PrivacyPage() {
         <section className="panel mt-8 p-6">
           <p className="badge bg-amber-100 text-amber-900">Версия {settings.privacyVersion}</p>
           <h1 className="mt-4 text-4xl font-semibold text-slate-950">Политика обработки персональных данных</h1>
-          <p className="mt-3 rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-800">
-            Перед реальным запуском нужно проверить текст с юристом и отдельно оценить необходимость уведомления Роскомнадзора как оператора персональных данных.
-          </p>
           <div className="prose prose-slate mt-6 max-w-none whitespace-pre-wrap leading-7 text-slate-700">
             {settings.privacyText}
           </div>
