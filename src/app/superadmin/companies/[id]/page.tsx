@@ -23,6 +23,11 @@ export default async function SuperadminCompanyPage({
         transactions: { take: 20, orderBy: { createdAt: "desc" } },
         payments: { include: { confirmedBy: true }, orderBy: { paidAt: "desc" } },
         offerAcceptances: { include: { user: true }, orderBy: { acceptedAt: "desc" } },
+        auditLogs: {
+          where: { entityType: "EmailNotification" },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
       },
     }),
     getSettings(),
@@ -73,7 +78,7 @@ export default async function SuperadminCompanyPage({
               {company.payments.map((payment) => (
                 <div key={payment.id} className="grid gap-2 p-3 text-sm sm:grid-cols-4">
                   <span className="font-semibold">{money(payment.amount)}</span>
-                  <span>{formatDate(payment.periodStart)} — {formatDate(payment.periodEnd)}</span>
+                  <span>{formatDate(payment.periodStart)} - {formatDate(payment.periodEnd)}</span>
                   <span>{formatDateTime(payment.paidAt)}</span>
                   <span>{payment.confirmedBy.name}</span>
                 </div>
@@ -97,6 +102,20 @@ export default async function SuperadminCompanyPage({
           </section>
 
           <section className="panel p-5">
+            <h2 className="text-xl font-semibold text-slate-950">Email-уведомления</h2>
+            <div className="mt-3 space-y-3 text-sm">
+              {company.auditLogs.map((log) => (
+                <div key={log.id} className="rounded-lg bg-slate-50 p-3">
+                  <p className="font-semibold text-slate-950">{emailAuditLabel(log.action)}</p>
+                  <p className="text-slate-500">{formatDateTime(log.createdAt)}</p>
+                  {log.metadataJson && <p className="mt-1 break-all text-slate-600">{emailAuditSummary(log.metadataJson)}</p>}
+                </div>
+              ))}
+              {company.auditLogs.length === 0 && <p className="text-sm text-slate-500">Email-уведомлений пока нет.</p>}
+            </div>
+          </section>
+
+          <section className="panel p-5">
             <h2 className="text-xl font-semibold text-slate-950">Принятие оферты</h2>
             <div className="mt-3 space-y-3 text-sm">
               {company.offerAcceptances.map((acceptance) => (
@@ -106,6 +125,7 @@ export default async function SuperadminCompanyPage({
                   <p className="text-slate-500">{acceptance.ip}</p>
                 </div>
               ))}
+              {company.offerAcceptances.length === 0 && <p className="text-sm text-slate-500">Принятий оферты пока нет.</p>}
             </div>
           </section>
         </aside>
@@ -121,4 +141,28 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="mt-1 font-medium text-slate-950">{value}</p>
     </div>
   );
+}
+
+function emailAuditLabel(action: string) {
+  const labels: Record<string, string> = {
+    EMAIL_SUPERADMIN_APPLICATION_SENT: "Суперадмину отправлено письмо о новой заявке",
+    EMAIL_SUPERADMIN_APPLICATION_SKIPPED: "Письмо суперадмину не отправлено",
+    EMAIL_SUPERADMIN_APPLICATION_FAILED: "Ошибка письма суперадмину",
+    EMAIL_COMPANY_APPROVED_SENT: "Компании отправлено письмо об одобрении",
+    EMAIL_COMPANY_APPROVED_SKIPPED: "Письмо компании не отправлено",
+    EMAIL_COMPANY_APPROVED_FAILED: "Ошибка письма компании",
+  };
+
+  return labels[action] ?? action;
+}
+
+function emailAuditSummary(metadataJson: string) {
+  try {
+    const data = JSON.parse(metadataJson) as { recipients?: string[]; reason?: string };
+    const recipients = data.recipients?.length ? `Получатели: ${data.recipients.join(", ")}.` : "";
+    const reason = data.reason ? ` Причина: ${data.reason}.` : "";
+    return `${recipients}${reason}`.trim() || metadataJson;
+  } catch {
+    return metadataJson;
+  }
 }

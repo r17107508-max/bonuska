@@ -9,14 +9,31 @@ type MailPayload = {
   text: string;
 };
 
+type MailResult =
+  | { status: "sent"; recipients: string[] }
+  | { status: "skipped"; recipients: string[]; reason: string }
+  | { status: "failed"; recipients: string[]; reason: string };
+
 function uniqueEmails(emails: Array<string | null | undefined>) {
   return Array.from(new Set(emails.map((email) => email?.trim()).filter((email): email is string => Boolean(email))));
 }
 
-async function sendMail({ to, subject, text }: MailPayload) {
+export function getMailConfigStatus() {
+  const missing = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"].filter((key) => !process.env[key]);
+  return {
+    ready: missing.length === 0,
+    missing,
+    host: process.env.SMTP_HOST ?? null,
+    port: process.env.SMTP_PORT ?? null,
+    user: process.env.SMTP_USER ?? null,
+    from: process.env.SMTP_FROM ?? process.env.SMTP_USER ?? null,
+  };
+}
+
+async function sendMail({ to, subject, text }: MailPayload): Promise<MailResult> {
   if (to.length === 0) {
-    console.log(`[notification stub] ${subject}\n${text}`);
-    return;
+    console.log(`[notification skipped] ${subject}\n${text}`);
+    return { status: "skipped", recipients: [], reason: "Нет получателей" };
   }
 
   const host = process.env.SMTP_HOST;
@@ -24,8 +41,9 @@ async function sendMail({ to, subject, text }: MailPayload) {
   const pass = process.env.SMTP_PASS;
 
   if (!host || !user || !pass) {
-    console.log(`[email stub] SMTP не настроен. Получатели: ${to.join(", ")}. Тема: ${subject}\n${text}`);
-    return;
+    const reason = `SMTP не настроен. Не хватает: ${getMailConfigStatus().missing.join(", ")}`;
+    console.log(`[email skipped] ${reason}. Получатели: ${to.join(", ")}. Тема: ${subject}\n${text}`);
+    return { status: "skipped", recipients: to, reason };
   }
 
   const port = Number(process.env.SMTP_PORT ?? 587);
@@ -36,15 +54,36 @@ async function sendMail({ to, subject, text }: MailPayload) {
     auth: { user, pass },
   });
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM ?? user,
-    to,
-    subject,
-    text,
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM ?? user,
+      to,
+      subject,
+      text,
+    });
+    return { status: "sent", recipients: to };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Неизвестная ошибка SMTP";
+    console.error(`[email failed] Получатели: ${to.join(", ")}. Тема: ${subject}. Ошибка: ${reason}`);
+    return { status: "failed", recipients: to, reason };
+  }
+}
+
+async function writeEmailAudit(companyId: string, action: string, result: MailResult) {
+  await getDb().auditLog.create({
+    data: {
+      companyId,
+      action,
+      entityType: "EmailNotification",
+      metadataJson: JSON.stringify(result),
+    },
   });
 }
 
-export async function notifySuperadminsAboutCompanyApplication(company: Pick<Company, "name" | "city" | "ownerName" | "ownerPhone" | "ownerEmail" | "createdAt">) {
+export async function notifySuperadminsAboutCompanyApplication(
+  company: Pick<Company, "id" | "name" | "city" | "ownerName" | "ownerPhone" | "ownerEmail" | "createdAt">,
+  origin: string,
+) {
   const db = getDb();
   const [settings, admins] = await Promise.all([
     getSettings(),
@@ -54,11 +93,11 @@ export async function notifySuperadminsAboutCompanyApplication(company: Pick<Com
     }),
   ]);
 
-  await sendMail({
+  const result = await sendMail({
     to: uniqueEmails([settings.supportEmail, ...admins.map((admin) => admin.email)]),
     subject: `Новая заявка компании в ПроПлюшке: ${company.name}`,
     text: [
-      `В ПроПлюшке зарегистрировалась новая компания и ждет подтверждения.`,
+      `В ПроПлюшке зарегистрировалась новая компания и ждёт подтверждения.`,
       ``,
       `Компания: ${company.name}`,
       `Город: ${company.city || "не указан"}`,
@@ -67,15 +106,17 @@ export async function notifySuperadminsAboutCompanyApplication(company: Pick<Com
       `Email: ${company.ownerEmail}`,
       `Дата заявки: ${company.createdAt.toLocaleString("ru-RU")}`,
       ``,
-      `Откройте суперадминку: /superadmin/companies`,
+      `Откройте заявку: ${origin}/superadmin/companies/${company.id}`,
     ].join("\n"),
   });
+
+  await writeEmailAudit(company.id, `EMAIL_SUPERADMIN_APPLICATION_${result.status.toUpperCase()}`, result);
 }
 
-export async function notifyCompanyApproved(company: Pick<Company, "name" | "ownerEmail" | "trialEndsAt">) {
+export async function notifyCompanyApproved(company: Pick<Company, "id" | "name" | "ownerEmail" | "trialEndsAt">, origin: string) {
   const trialText = company.trialEndsAt ? company.trialEndsAt.toLocaleDateString("ru-RU") : "14 дней с момента подтверждения";
 
-  await sendMail({
+  const result = await sendMail({
     to: uniqueEmails([company.ownerEmail]),
     subject: `Компания ${company.name} одобрена в ПроПлюшке`,
     text: [
@@ -84,7 +125,9 @@ export async function notifyCompanyApproved(company: Pick<Company, "name" | "own
       `Пробный период активен до: ${trialText}.`,
       `Теперь можно войти в кабинет компании, настроить программу лояльности и распечатать QR для регистрации клиентов.`,
       ``,
-      `Вход: /company/login`,
+      `Вход: ${origin}/company/login`,
     ].join("\n"),
   });
+
+  await writeEmailAudit(company.id, `EMAIL_COMPANY_APPROVED_${result.status.toUpperCase()}`, result);
 }

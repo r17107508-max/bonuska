@@ -43,7 +43,7 @@ export default async function CustomerAppPage({
           </div>
         )}
 
-        <QrCard token={membership.qrToken} color={program.themeColor} />
+        <QrCard token={membership.qrToken} color={program.themeColor} companyName={membership.company.name} />
         <InstallPwaButton />
         <ProgressIcons icon={program.icon} current={membership.currentCount} goal={program.goalCount} rewardAvailable={membership.rewardAvailable} rewardTitle={membership.pendingReward ?? program.rewardTitle} />
 

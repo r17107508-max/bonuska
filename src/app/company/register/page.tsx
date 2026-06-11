@@ -22,17 +22,29 @@ export default async function CompanyRegisterPage({
 
         <section className="panel mt-8 p-6">
           {params.success ? (
-            <div className="rounded-lg bg-emerald-50 p-5 text-emerald-900">
-              <h1 className="text-2xl font-semibold">Заявка отправлена</h1>
-              <p className="mt-2">После проверки администратор подтвердит регистрацию, и вы получите уведомление.</p>
-              <Link href="/company/login" className="mt-5 inline-flex min-h-11 items-center rounded-lg bg-teal-700 px-4 font-semibold text-white">
+            <div className="mx-auto max-w-xl py-8 text-center">
+              <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-emerald-100 text-3xl font-semibold text-emerald-700">
+                ✓
+              </div>
+              <p className="mt-6 text-sm font-semibold uppercase text-emerald-700">Заявка отправлена</p>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-950">Спасибо за регистрацию</h1>
+              <p className="mt-4 text-lg leading-8 text-slate-600">
+                После подтверждения вам придёт уведомление на email, и вы сможете воспользоваться сервисом.
+              </p>
+              <div className="mt-6 rounded-xl bg-slate-50 p-4 text-left text-sm text-slate-700">
+                <p className="font-semibold text-slate-950">Что дальше</p>
+                <p className="mt-2">
+                  Суперадмин проверит заявку компании. После одобрения откроется кабинет, пробный период и QR для регистрации клиентов.
+                </p>
+              </div>
+              <Link href="/company/login" className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-5 font-semibold text-white">
                 Перейти ко входу
               </Link>
             </div>
           ) : (
             <>
               <h1 className="text-3xl font-semibold text-slate-950">Регистрация компании</h1>
-              <p className="mt-2 text-slate-600">Заявка попадет в кабинет глобального админа. После подтверждения начнется trial на 14 дней.</p>
+              <p className="mt-2 text-slate-600">Заявка попадёт в кабинет глобального админа. После подтверждения начнётся trial на 14 дней.</p>
               {params.error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">{params.error}</p>}
 
               <form action={registerCompany} className="mt-6 grid gap-4 sm:grid-cols-2">

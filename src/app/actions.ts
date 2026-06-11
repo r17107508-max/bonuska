@@ -39,9 +39,13 @@ function errorRedirect(path: string, message: string): never {
 
 async function requestMeta() {
   const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+
   return {
     ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "local",
     userAgent: h.get("user-agent") ?? "unknown",
+    origin: `${proto}://${host}`,
   };
 }
 
@@ -215,7 +219,7 @@ export async function registerCompany(formData: FormData) {
     },
   });
 
-  await notifySuperadminsAboutCompanyApplication(company);
+  await notifySuperadminsAboutCompanyApplication(company, meta.origin);
   redirect("/company/register?success=1");
 }
 
@@ -223,6 +227,7 @@ export async function approveCompany(formData: FormData) {
   const admin = await requireSuperadmin();
   const settings = await getSettings();
   const companyId = text(formData, "companyId");
+  const meta = await requestMeta();
   const now = new Date();
   const trialEndsAt = new Date(now);
   trialEndsAt.setDate(trialEndsAt.getDate() + settings.trialDays);
@@ -245,7 +250,7 @@ export async function approveCompany(formData: FormData) {
     },
   });
 
-  await notifyCompanyApproved(company);
+  await notifyCompanyApproved(company, meta.origin);
   revalidatePath("/superadmin");
   revalidatePath("/superadmin/companies");
   redirect(`/superadmin/companies/${companyId}`);
