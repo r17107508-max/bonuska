@@ -20,6 +20,7 @@ import {
 import { getDb } from "@/lib/db";
 import { normalizePhone, slugify } from "@/lib/format";
 import { addPurchase, grantReward, newQrToken } from "@/lib/loyalty";
+import { notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
 
 function text(formData: FormData, name: string) {
@@ -214,7 +215,7 @@ export async function registerCompany(formData: FormData) {
     },
   });
 
-  console.log(`[email stub] Заявка компании отправлена: ${company.name} (${company.ownerEmail})`);
+  await notifySuperadminsAboutCompanyApplication(company);
   redirect("/company/register?success=1");
 }
 
@@ -244,7 +245,7 @@ export async function approveCompany(formData: FormData) {
     },
   });
 
-  console.log(`[email stub] Компания подтверждена: ${company.ownerEmail}`);
+  await notifyCompanyApproved(company);
   revalidatePath("/superadmin");
   revalidatePath("/superadmin/companies");
   redirect(`/superadmin/companies/${companyId}`);

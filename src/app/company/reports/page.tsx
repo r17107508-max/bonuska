@@ -1,9 +1,9 @@
 import { AdminShell, companyNav } from "@/components/admin-shell";
-import { requireCompanyUser } from "@/lib/auth";
+import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
 export default async function CompanyReportsPage() {
-  const access = await requireCompanyUser();
+  const access = await requireCompanyAdmin();
   const now = new Date();
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);

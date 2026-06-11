@@ -1,5 +1,5 @@
 import { confirmPurchase, giveReward } from "@/app/actions";
-import { AdminShell, companyNav } from "@/components/admin-shell";
+import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { QrScanner } from "@/components/scanner";
 import { HistoryList } from "@/components/history-list";
@@ -20,7 +20,7 @@ export default async function CompanyScanPage({
   const active = company ? hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil) : false;
 
   return (
-    <AdminShell title="Сканер QR" subtitle="Сканируйте QR клиента, подтверждайте покупку или выдачу подарка." nav={companyNav}>
+    <AdminShell title="Сканер QR" subtitle="Сканируйте QR клиента, подтверждайте покупку или выдачу подарка." nav={companyNavForRole(access.role)}>
       {!active && <p className="mb-5 rounded-lg bg-red-50 p-4 font-semibold text-red-800">Сервис временно недоступен из-за отсутствия оплаты или блокировки.</p>}
       {params.error && <p className="mb-5 rounded-lg bg-red-50 p-4 font-semibold text-red-800">{params.error}</p>}
       {params.success && <p className="mb-5 rounded-lg bg-emerald-50 p-4 font-semibold text-emerald-800">{params.success}</p>}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CompanyUserRole } from "@prisma/client";
 import { BrandMark } from "@/components/brand";
 import { LogoutButton } from "@/components/logout-button";
 
@@ -54,3 +55,12 @@ export const companyNav = [
   { href: "/company/staff", label: "Сотрудники" },
   { href: "/company/reports", label: "Отчеты" },
 ];
+
+export const cashierCompanyNav = [
+  { href: "/company", label: "Панель" },
+  { href: "/company/scan", label: "Сканер" },
+];
+
+export function companyNavForRole(role: CompanyUserRole) {
+  return role === CompanyUserRole.CASHIER ? cashierCompanyNav : companyNav;
+}

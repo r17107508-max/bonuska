@@ -1,8 +1,11 @@
 import { saveCompanySettings } from "@/app/actions";
+import QRCode from "qrcode";
 import { AdminShell, companyNav } from "@/components/admin-shell";
+import { RegistrationQrPoster } from "@/components/registration-qr-poster";
 import { SubmitButton } from "@/components/buttons";
 import { FormField, SelectField, TextAreaField } from "@/components/form-field";
 import { requireCompanyAdmin } from "@/lib/auth";
+import { getCompanyRegistrationUrl } from "@/lib/request-url";
 
 const businessTypes = ["Кофейня", "Шаурмичная", "Пекарня", "Напитки", "Фастфуд", "Пиццерия", "Кондитерская", "Барбершоп", "Другое"];
 const icons = ["☕ кофе", "🌯 шаурма", "🥐 круассан", "🧋 напиток", "🍔 бургер", "🍕 пицца", "🍩 пончик", "🍦 мороженое", "⭐ звезда", "🎁 подарок"];
@@ -22,10 +25,24 @@ export default async function CompanySettingsPage({
   const access = await requireCompanyAdmin();
   const params = await searchParams;
   const program = access.company.loyaltyProgram;
+  const clientUrl = await getCompanyRegistrationUrl(access.company.slug);
+  const qrDataUrl = await QRCode.toDataURL(clientUrl, {
+    width: 420,
+    margin: 1,
+    color: { dark: "#0f172a", light: "#ffffff" },
+  });
 
   return (
     <AdminShell title="Настройки акции" subtitle="Компания, ссылка для клиентов, программа лояльности и подарки." nav={companyNav}>
       {params.success && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">Настройки сохранены.</p>}
+      <div id="registration-qr" className="mb-6 scroll-mt-6">
+        <RegistrationQrPoster
+          companyName={access.company.name}
+          clientUrl={clientUrl}
+          qrDataUrl={qrDataUrl}
+          rewardTitle={program?.rewardTitle}
+        />
+      </div>
       <form action={saveCompanySettings} className="panel grid gap-4 p-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Название компании" name="name" defaultValue={access.company.name} />
@@ -48,8 +65,8 @@ export default async function CompanySettingsPage({
           defaultValue={"кофе\nдесерт\nскидка 10%\nскидка 20%\nсироп бесплатно\nапгрейд размера"}
         />
         <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-          <p className="font-semibold">Ссылка для клиентов: /c/{access.company.slug}</p>
-          <p className="mt-1">QR-плакат для печати можно сделать из этой ссылки. В MVP ссылка отображается текстом.</p>
+          <p className="font-semibold">Ссылка для клиентов: {clientUrl}</p>
+          <p className="mt-1">После изменения slug сохраните настройки, чтобы QR обновился под новую ссылку.</p>
         </div>
         <SubmitButton>Сохранить настройки</SubmitButton>
       </form>

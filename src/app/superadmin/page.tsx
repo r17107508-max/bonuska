@@ -18,12 +18,13 @@ export default async function SuperadminPage() {
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
   const monthlyIncome = payments.filter((payment) => payment.paidAt >= monthStart).reduce((sum, payment) => sum + payment.amount, 0);
+  const pendingCompanies = companies.filter((company) => company.status === CompanyStatus.PENDING);
   const cards = [
     ["Компании всего", companies.length],
     ["Активные trial", companies.filter((company) => company.status === CompanyStatus.ACTIVE_TRIAL).length],
     ["Активные платные", companies.filter((company) => company.status === CompanyStatus.ACTIVE_PAID).length],
     ["Просроченные", companies.filter((company) => company.status === CompanyStatus.PAYMENT_REQUIRED).length],
-    ["Заявки", companies.filter((company) => company.status === CompanyStatus.PENDING).length],
+    ["Заявки", pendingCompanies.length],
     ["Доход за месяц", money(monthlyIncome)],
     ["Операций всего", operations],
     ["Ожидаемые оплаты", companies.filter((company) => company.status === CompanyStatus.PAYMENT_REQUIRED).length],
@@ -31,6 +32,11 @@ export default async function SuperadminPage() {
 
   return (
     <AdminShell title="Глобальная панель" subtitle="Состояние SaaS-платформы и быстрый контроль компаний." nav={superadminNav}>
+      {pendingCompanies.length > 0 && (
+        <Link href="/superadmin/companies" className="mb-5 block rounded-lg bg-amber-50 p-4 font-semibold text-amber-900">
+          Новые заявки на подтверждение: {pendingCompanies.length}. Откройте список компаний, чтобы проверить и подтвердить регистрацию.
+        </Link>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(([label, value]) => (
           <div key={label} className="panel p-5">
@@ -46,7 +52,7 @@ export default async function SuperadminPage() {
           <Link href="/superadmin/companies" className="text-sm font-semibold text-teal-700">Все компании</Link>
         </div>
         <div className="mt-4 divide-y divide-slate-200">
-          {companies.filter((company) => company.status === CompanyStatus.PENDING).slice(0, 6).map((company) => (
+          {pendingCompanies.slice(0, 6).map((company) => (
             <Link key={company.id} href={`/superadmin/companies/${company.id}`} className="flex items-center justify-between gap-4 py-3">
               <span>
                 <span className="font-semibold text-slate-950">{company.name}</span>
@@ -55,7 +61,7 @@ export default async function SuperadminPage() {
               <span className="text-sm font-semibold text-teal-700">Открыть</span>
             </Link>
           ))}
-          {companies.every((company) => company.status !== CompanyStatus.PENDING) && <p className="py-3 text-slate-500">Новых заявок нет.</p>}
+          {pendingCompanies.length === 0 && <p className="py-3 text-slate-500">Новых заявок нет.</p>}
         </div>
       </section>
     </AdminShell>
