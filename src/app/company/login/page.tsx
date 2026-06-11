@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { loginCompany } from "@/app/actions";
 import { AuthShell } from "@/components/auth-shell";
 import { SubmitButton } from "@/components/buttons";
 import { FormField } from "@/components/form-field";
+import { getCurrentUser, getUserHomePath } from "@/lib/auth";
 
 export default async function CompanyLoginPage({
   searchParams,
@@ -10,6 +12,11 @@ export default async function CompanyLoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const params = await searchParams;
+  const currentUser = await getCurrentUser();
+
+  if (currentUser && !params.error) {
+    redirect(await getUserHomePath(currentUser));
+  }
 
   return (
     <AuthShell title="Вход" subtitle="Введите телефон и пароль для доступа к кабинету.">

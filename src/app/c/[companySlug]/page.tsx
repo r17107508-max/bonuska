@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { loginClient, registerCustomer } from "@/app/actions";
 import { SubmitButton } from "@/components/buttons";
 import { FormField } from "@/components/form-field";
+import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
 
@@ -25,6 +26,18 @@ export default async function PublicCompanyPage({
 
   const refreshed = await refreshCompanySubscription(company.id);
   const active = refreshed ? hasActiveAccess(refreshed.status, refreshed.trialEndsAt, refreshed.paidUntil) : false;
+  const currentUser = await getCurrentUser();
+
+  if (currentUser && !query.error) {
+    const membership = await getDb().customerMembership.findFirst({
+      where: { userId: currentUser.id, companyId: company.id },
+      select: { id: true },
+    });
+
+    if (membership) {
+      redirect(`/c/${company.slug}/app`);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6">

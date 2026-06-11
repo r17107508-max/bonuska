@@ -6,6 +6,7 @@ import { CompanyStatus, CompanyUserRole, GlobalRole, type User } from "@prisma/c
 import { getDb } from "@/lib/db";
 
 const COOKIE_NAME = "tega_session";
+const SESSION_DAYS = 90;
 const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "replace-this-local-secret-before-production",
 );
@@ -21,7 +22,7 @@ export async function createSession(user: Pick<User, "id">) {
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setIssuedAt()
-    .setExpirationTime("14d")
+    .setExpirationTime(`${SESSION_DAYS}d`)
     .sign(secret);
 
   const cookieStore = await cookies();
@@ -30,7 +31,7 @@ export async function createSession(user: Pick<User, "id">) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 14,
+    maxAge: 60 * 60 * 24 * SESSION_DAYS,
   });
 }
 
@@ -70,6 +71,33 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     where: { id: session.sub },
     select: { id: true, name: true, phone: true, email: true, globalRole: true },
   });
+}
+
+export async function getUserHomePath(user: Pick<User, "id" | "globalRole">) {
+  if (user.globalRole === GlobalRole.SUPERADMIN) {
+    return "/superadmin";
+  }
+
+  const companyUser = await getDb().companyUser.findFirst({
+    where: { userId: user.id, isActive: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (companyUser) {
+    return "/company";
+  }
+
+  const membership = await getDb().customerMembership.findFirst({
+    where: { userId: user.id },
+    include: { company: { select: { slug: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (membership) {
+    return `/c/${membership.company.slug}/app`;
+  }
+
+  return "/";
 }
 
 export async function requireUser(redirectTo = "/") {
