@@ -1,7 +1,9 @@
 import { ArrowRight, Check, QrCode, ShieldCheck, Smartphone } from "lucide-react";
+import { redirect } from "next/navigation";
 import { ButtonLink } from "@/components/buttons";
 import { BrandMark } from "@/components/brand";
 import { InstallPwaButton } from "@/components/install-pwa-button";
+import { getCurrentUser, getUserHomePath } from "@/lib/auth";
 
 const audiences = ["☕ Кофейни", "🌯 Шаурмичные", "🥐 Пекарни", "🧋 Напитки", "🍔 Фастфуд", "💈 Услуги", "🍕 Пиццерии", "🎁 Любой бизнес с повторными покупками"];
 const steps = [
@@ -16,7 +18,13 @@ const steps = [
 ];
 const features = ["цифровые бонусные карты", "личные QR-коды клиентов", "сканер QR для кассира", "история покупок", "настройка подарков", "статистика", "PWA-приложение для клиентов", "ссылка и QR-плакат для регистрации клиентов"];
 
-export default function Home() {
+export default async function Home() {
+  const currentUser = await getCurrentUser();
+
+  if (currentUser) {
+    redirect(await getUserHomePath(currentUser));
+  }
+
   return (
     <main className="bg-slate-50 pb-24 md:pb-0">
       <header className="page-shell flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
