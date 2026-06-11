@@ -1,5 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0f766e"/>
-  <path fill="#fff" d="M144 160h224a32 32 0 0 1 32 32v176a32 32 0 0 1-32 32H144a32 32 0 0 1-32-32V192a32 32 0 0 1 32-32Zm40 56v64h64v-64h-64Zm96 0v64h48v-64h-48Zm-96 96v40h40v-40h-40Zm72 0v40h72v-40h-72Z"/>
-  <path fill="#f59e0b" d="M168 112h176a24 24 0 0 1 24 24v32H144v-32a24 24 0 0 1 24-24Zm88-48 24 48h-48l24-48Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ПроПлюшка">
+  <defs>
+    <linearGradient id="bg" x1="92" y1="54" x2="420" y2="458" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#0f3f3a"/>
+    </linearGradient>
+    <linearGradient id="bun" x1="138" y1="123" x2="379" y2="402" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset=".58" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="cream" x1="181" y1="158" x2="338" y2="334" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff7d6"/>
+      <stop offset="1" stop-color="#fed7aa"/>
+    </linearGradient>
+    <filter id="shadow" x="70" y="82" width="372" height="366" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#042f2e" flood-opacity=".38"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="392" cy="116" r="58" fill="#ccfbf1" opacity=".18"/>
+  <circle cx="116" cy="398" r="42" fill="#fef3c7" opacity=".16"/>
+
+  <g filter="url(#shadow)">
+    <path fill="url(#bun)" d="M260 115c76 0 139 56 151 130 8 50-8 100-43 135-39 39-95 54-150 39-53-15-95-56-111-109-18-58-2-122 42-163 29-27 68-32 111-32Z"/>
+    <path fill="#92400e" opacity=".22" d="M399 279c-6 74-68 133-144 133-70 0-128-49-142-114 23 52 75 88 135 88 74 0 136-46 151-107Z"/>
+    <path fill="url(#cream)" d="M252 152c56 0 105 38 119 91 10 39 0 80-27 110-30 34-78 48-123 35-41-12-72-44-84-85-12-44 1-94 35-125 22-20 50-26 80-26Z"/>
+    <path fill="#d97706" d="M259 185c41 0 76 30 84 70 7 34-8 69-37 88-26 17-61 17-87 0-24-15-38-39-38-65 0-31 20-60 48-72 12-5 19 13 8 18-21 9-35 31-35 54 0 20 11 38 29 49 20 12 46 12 65-1 23-15 34-42 29-68-6-30-33-52-65-53-16 0-32 7-44 18-8 8-21-6-13-14 15-15 36-24 56-24Z"/>
+    <path fill="#92400e" opacity=".9" d="M260 238c22 0 41 15 45 37 4 20-5 41-23 52-15 9-35 8-49-3-12-9-20-23-20-37 0-10 6-19 15-23 11-5 19 12 8 17-3 1-4 4-4 7 0 8 5 16 12 21 8 6 19 7 28 1 11-7 16-19 14-31-3-13-13-21-26-21-8 0-14 3-19 9-7 9-22-3-15-12 8-10 20-15 34-15Z"/>
+    <path fill="#78350f" d="M244 303c8 0 14 6 14 14s-6 14-14 14-14-6-14-14 6-14 14-14Zm54-18c8 0 14 6 14 14s-6 14-14 14-14-6-14-14 6-14 14-14Z" opacity=".95"/>
+    <path fill="#7c2d12" d="M226 353c18 12 41 14 62 4 7-3 13 7 6 12-24 15-55 13-78-3-6-4 4-17 10-13Z" opacity=".7"/>
+    <path fill="#fff7ed" d="M190 223c10-11 22-20 36-26 8-3 13 9 5 13-12 5-23 13-31 22-6 7-16-2-10-9Z" opacity=".72"/>
+    <path fill="#fde68a" d="m363 134 13 27 30 4-22 21 5 30-26-14-27 14 5-30-22-21 30-4 14-27Z"/>
+    <path fill="#fef3c7" d="M178 282c-12 0-22-10-22-22 0-13 10-23 22-23 13 0 23 10 23 23 0 12-10 22-23 22Zm155 91c-10 0-18-8-18-18s8-18 18-18 18 8 18 18-8 18-18 18Z" opacity=".78"/>
+  </g>
 </svg>
