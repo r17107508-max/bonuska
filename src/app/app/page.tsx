@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Gift, History, Search, WalletCards } from "lucide-react";
 import { logout } from "@/app/actions";
+import { DynamicGlobalQrCard } from "@/components/dynamic-global-qr-card";
 import { InstallPwaButton } from "@/components/install-pwa-button";
-import { QrCard } from "@/components/qr-card";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { createDynamicCustomerQr } from "@/lib/dynamic-qr";
 import { ensureGlobalQrToken } from "@/lib/loyalty";
 
 export default async function ClientDashboardPage() {
@@ -13,7 +14,8 @@ export default async function ClientDashboardPage() {
     where: { id: currentUser.id },
     select: { id: true, name: true, globalQrToken: true },
   });
-  const globalQrToken = await ensureGlobalQrToken(user);
+  await ensureGlobalQrToken(user);
+  const dynamicQr = await createDynamicCustomerQr(user.id);
   const memberships = await getDb().customerMembership.findMany({
     where: { userId: user.id },
     include: {
@@ -46,7 +48,7 @@ export default async function ClientDashboardPage() {
           </div>
         </header>
 
-        <QrCard token={globalQrToken} color="#0f172a" companyName="Проплюшки" mode="global" />
+        <DynamicGlobalQrCard initialPayload={dynamicQr.payload} initialExpiresAt={dynamicQr.expiresAt} />
 
         <section className="panel p-5">
           <div className="flex items-center gap-3">

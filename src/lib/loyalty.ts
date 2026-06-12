@@ -10,6 +10,7 @@ import {
   type User,
 } from "@prisma/client";
 import { getDb } from "@/lib/db";
+import { verifyDynamicCustomerQr } from "@/lib/dynamic-qr";
 
 export const REPEAT_GUARD_SECONDS = 30;
 export const DAILY_PURCHASE_LIMIT_PER_CUSTOMER = 5;
@@ -57,11 +58,15 @@ function parseScanPayload(value: string) {
     return { type: "globalUser" as const, token: normalized.replace(/^proplushki:user:/i, "") };
   }
 
+  if (normalized.toLowerCase().startsWith("proplushki:session:")) {
+    return { type: "dynamicUser" as const, token: normalized.replace(/^proplushki:session:/i, "") };
+  }
+
   return { type: "unknown" as const, token: normalized };
 }
 
 export function normalizeScanToken(value: string) {
-  return parseScanPayload(value).token;
+  return decodeURIComponent(value).trim();
 }
 
 export async function refreshCompanySubscription(companyId: string) {
@@ -136,6 +141,10 @@ export async function findMembershipForScan(companyId: string, token: string) {
     return findMembershipByGlobalToken(companyId, parsed.token);
   }
 
+  if (parsed.type === "dynamicUser") {
+    return findMembershipByDynamicToken(companyId, parsed.token);
+  }
+
   const membership = await getDb().customerMembership.findFirst({
     where: {
       companyId,
@@ -186,18 +195,50 @@ async function findMembershipByGlobalToken(companyId: string, globalQrToken: str
   });
 }
 
-export async function findCustomerForGlobalScan(companyId: string, token: string) {
-  const parsed = parseScanPayload(token);
-  const globalQrToken = parsed.type === "globalUser" ? parsed.token : parsed.type === "unknown" ? parsed.token : null;
-
-  if (!globalQrToken) {
+async function findMembershipByDynamicToken(companyId: string, dynamicToken: string) {
+  const userId = await verifyDynamicCustomerQr(dynamicToken);
+  if (!userId) {
     return null;
   }
 
-  const user = await getDb().user.findUnique({
-    where: { globalQrToken },
-    select: { id: true, name: true, phone: true },
+  return getDb().customerMembership.findFirst({
+    where: {
+      companyId,
+      userId,
+    },
+    include: {
+      user: true,
+      company: { include: { loyaltyProgram: true } },
+      transactions: {
+        include: { cashier: { select: { id: true, name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      },
+    },
   });
+}
+
+export async function findCustomerForGlobalScan(companyId: string, token: string) {
+  const parsed = parseScanPayload(token);
+  let user: { id: string; name: string; phone: string } | null = null;
+
+  if (parsed.type === "dynamicUser") {
+    const userId = await verifyDynamicCustomerQr(parsed.token);
+    user = userId
+      ? await getDb().user.findUnique({
+          where: { id: userId },
+          select: { id: true, name: true, phone: true },
+        })
+      : null;
+  } else {
+    const globalQrToken = parsed.type === "globalUser" ? parsed.token : parsed.type === "unknown" ? parsed.token : null;
+    user = globalQrToken
+      ? await getDb().user.findUnique({
+          where: { globalQrToken },
+          select: { id: true, name: true, phone: true },
+        })
+      : null;
+  }
 
   if (!user) {
     return null;

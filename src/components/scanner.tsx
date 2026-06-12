@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Keyboard, ScanLine } from "lucide-react";
-import { normalizeScanToken } from "@/lib/loyalty";
+
+function normalizeScanToken(value: string) {
+  return decodeURIComponent(value).trim();
+}
 
 export function QrScanner() {
   const router = useRouter();
@@ -97,11 +100,11 @@ export function QrScanner() {
           <Keyboard aria-hidden className="size-5" />
           <h2 className="font-semibold">Если камера не работает</h2>
         </div>
-        <p className="mb-3 text-sm text-slate-600">Введите общий QR-токен клиента или старый токен карты после `tega:` вручную.</p>
+        <p className="mb-3 text-sm text-slate-600">Введите полный QR-токен клиента, старый `proplushki:user:...` или токен карты `tega:...` вручную.</p>
         <input
           value={manualValue}
           onChange={(event) => setManualValue(event.target.value)}
-          placeholder="proplushki:user:... или tega:..."
+          placeholder="proplushki:session:... или tega:..."
           className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
         />
         <button
