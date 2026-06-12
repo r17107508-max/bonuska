@@ -138,7 +138,7 @@ export async function requireCompanyUser(roles?: CompanyUserRole[]) {
   });
 
   if (!companyUser) {
-    redirect("/company/login?error=Нет доступа к кабинету компании");
+    redirect(`/company/login?error=${encodeURIComponent("Нет доступа к кабинету компании")}`);
   }
 
   return companyUser;
@@ -166,7 +166,7 @@ export async function requireCustomerMembership(slug: string) {
   });
 
   if (!membership) {
-    redirect(`/c/${slug}?error=Сначала зарегистрируйтесь в этой компании`);
+    redirect(`/c/${slug}?error=${encodeURIComponent("Сначала зарегистрируйтесь в этой компании")}`);
   }
 
   return membership;

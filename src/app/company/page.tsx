@@ -75,15 +75,33 @@ export default async function CompanyDashboardPage() {
   return (
     <AdminShell title={access.company.name} subtitle="Панель запуска программы лояльности, QR для клиентов и статистика." nav={companyNavForRole(access.role)}>
       {!active && (
-        <div className="mb-5 rounded-lg bg-red-50 p-4 font-semibold text-red-800">
-          Сервис временно недоступен из-за статуса подписки. Данные сохранены, доступ восстановится после оплаты.
-        </div>
+        <SubscriptionNotice
+          tone="danger"
+          title="Нужна оплата подписки"
+          text="Данные клиентов и история сохранены. После подтверждения оплаты сканер и начисления снова откроются."
+          href="/company/billing"
+          action="Перейти к оплате"
+        />
       )}
 
-      {active && company?.status === "ACTIVE_TRIAL" && (
-        <div className="mb-5 rounded-lg bg-emerald-50 p-4 font-semibold text-emerald-800">
-          Trial активен. Осталось дней: {left}. Распечатайте QR, поставьте его на стойку и сделайте первое тестовое начисление.
-        </div>
+      {active && company?.status === "ACTIVE_TRIAL" && left <= 3 && (
+        <SubscriptionNotice
+          tone="warning"
+          title={`Trial заканчивается через ${left} дн.`}
+          text="Оплатите подписку заранее, чтобы кассиры не потеряли доступ к начислениям после окончания trial."
+          href="/company/billing"
+          action="Продлить доступ"
+        />
+      )}
+
+      {active && company?.status === "ACTIVE_TRIAL" && left > 3 && (
+        <SubscriptionNotice
+          tone="success"
+          title={`Trial активен. Осталось дней: ${left}`}
+          text="Распечатайте QR, поставьте его на стойку и сделайте первое тестовое начисление."
+          href="/company/settings#registration-qr"
+          action="Распечатать QR"
+        />
       )}
 
       <section className="panel mb-6 p-5">
@@ -176,5 +194,37 @@ function Action({ href, icon, title, text, emphasis = false }: { href: string; i
       <h2 className={`mt-4 text-xl font-semibold ${emphasis ? "text-white" : "text-slate-950"}`}>{title}</h2>
       <p className={`mt-2 ${emphasis ? "text-white/80" : "text-slate-600"}`}>{text}</p>
     </Link>
+  );
+}
+
+function SubscriptionNotice({
+  tone,
+  title,
+  text,
+  href,
+  action,
+}: {
+  tone: "success" | "warning" | "danger";
+  title: string;
+  text: string;
+  href: string;
+  action: string;
+}) {
+  const styles = {
+    success: "bg-emerald-50 text-emerald-900",
+    warning: "bg-amber-50 text-amber-950",
+    danger: "bg-red-50 text-red-900",
+  };
+
+  return (
+    <div className={`mb-5 flex flex-col justify-between gap-4 rounded-lg p-4 font-semibold sm:flex-row sm:items-center ${styles[tone]}`}>
+      <div>
+        <p>{title}</p>
+        <p className="mt-1 text-sm font-medium opacity-80">{text}</p>
+      </div>
+      <Link href={href} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-white px-4 text-sm font-semibold text-slate-900 shadow-sm">
+        {action}
+      </Link>
+    </div>
   );
 }

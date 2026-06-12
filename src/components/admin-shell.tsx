@@ -52,8 +52,9 @@ export const companyNav = [
   { href: "/company/scan", label: "Сканер" },
   { href: "/company/clients", label: "Клиенты" },
   { href: "/company/settings", label: "Акция" },
+  { href: "/company/billing", label: "Оплата" },
   { href: "/company/staff", label: "Сотрудники" },
-  { href: "/company/reports", label: "Отчеты" },
+  { href: "/company/reports", label: "Отчёты" },
 ];
 
 export const cashierCompanyNav = [

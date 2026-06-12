@@ -129,6 +129,33 @@ export async function loginClient(formData: FormData) {
   redirect(`/c/${slug}/app`);
 }
 
+export async function resetPassword(formData: FormData) {
+  const phone = normalizePhone(formData.get("phone"));
+  const email = text(formData, "email").toLowerCase();
+  const password = text(formData, "password");
+
+  if (phone.length < 10 || !email || password.length < 6) {
+    errorRedirect("/forgot-password", "Заполните телефон, email и новый пароль от 6 символов");
+  }
+
+  const user = await getDb().user.findUnique({
+    where: { phone },
+  });
+
+  if (!user || user.email?.toLowerCase() !== email) {
+    errorRedirect("/forgot-password", "Пользователь с таким телефоном и email не найден");
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await getDb().user.update({
+    where: { id: user.id },
+    data: { passwordHash },
+  });
+
+  await clearSession();
+  redirect("/company/login?reset=1");
+}
+
 export async function logout() {
   await clearSession();
   redirect("/");
@@ -333,6 +360,25 @@ export async function markPayment(formData: FormData) {
 
   console.log(`[email stub] Оплата подтверждена для компании ${company.name}`);
   redirect(`/superadmin/companies/${companyId}`);
+}
+
+export async function requestPaymentReview(formData: FormData) {
+  const access = await requireCompanyAdmin();
+  await getDb().auditLog.create({
+    data: {
+      actorUserId: access.userId,
+      companyId: access.companyId,
+      action: "PAYMENT_REVIEW_REQUESTED",
+      entityType: "Company",
+      entityId: access.companyId,
+      metadataJson: JSON.stringify({
+        comment: text(formData, "comment") || null,
+        createdAt: new Date().toISOString(),
+      }),
+    },
+  });
+
+  redirect("/company/billing?success=1");
 }
 
 export async function extendCompany(formData: FormData) {
