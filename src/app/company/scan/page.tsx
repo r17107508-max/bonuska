@@ -62,7 +62,6 @@ export default async function CompanyScanPage({
               </p>
               {active && (
                 <form action={joinScannedCustomerAndConfirmPurchase} className="mt-4">
-                  <input type="hidden" name="userId" value={globalCustomerWithoutMembership.id} />
                   <input type="hidden" name="token" value={token} />
                   <ConfirmSubmit
                     title="Подключить клиента?"

@@ -4,6 +4,7 @@ import { resolveCompanyScan } from "@/lib/company-scan";
 export async function POST(request: Request) {
   const { error, access } = await requireApiCompanyUser();
   if (error) return error;
+
   const body = await request.json();
   const result = await resolveCompanyScan(access!.companyId, String(body.token ?? ""));
 

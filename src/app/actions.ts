@@ -23,6 +23,7 @@ import { normalizePhone, slugify } from "@/lib/format";
 import {
   addPurchase,
   ensureGlobalQrToken,
+  findCustomerForGlobalScan,
   getSuspiciousLoyaltyReason,
   grantReward,
   joinCompanyProgram,
@@ -625,12 +626,19 @@ export async function confirmPurchase(formData: FormData) {
 
 export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) {
   const access = await requireCompanyUser();
-  const userId = text(formData, "userId");
   const token = text(formData, "token");
   let membershipIdForLog = "";
 
   try {
-    const membership = await joinCompanyProgram(access.companyId, userId, access.userId);
+    const customer = await findCustomerForGlobalScan(access.companyId, token);
+    if (!customer) {
+      throw new Error("Клиент не найден или уже подключён к программе вашей компании");
+    }
+    if (customer.id === access.userId) {
+      throw new Error("Кассир не может начислять покупки самому себе");
+    }
+
+    const membership = await joinCompanyProgram(access.companyId, customer.id, access.userId);
     membershipIdForLog = membership.id;
     await addPurchase(access.companyId, membership.id, access.userId);
   } catch (error) {
