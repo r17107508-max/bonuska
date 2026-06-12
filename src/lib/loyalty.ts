@@ -11,8 +11,19 @@ import {
 import { getDb } from "@/lib/db";
 
 export const REPEAT_GUARD_SECONDS = 30;
+export const DAILY_PURCHASE_LIMIT_PER_CUSTOMER = 5;
 const REPEAT_GUARD_MS = REPEAT_GUARD_SECONDS * 1_000;
 const REPEAT_GUARD_MESSAGE = `Повторное начисление этому клиенту доступно через ${REPEAT_GUARD_SECONDS} секунд`;
+const DAILY_LIMIT_MESSAGE = `Дневной лимит начислений этому клиенту исчерпан: максимум ${DAILY_PURCHASE_LIMIT_PER_CUSTOMER} покупок в день`;
+const SELF_OPERATION_MESSAGE = "Кассир не может начислять покупки или выдавать подарки самому себе";
+
+export type SuspiciousLoyaltyReason = "repeat_purchase_guard" | "daily_purchase_limit" | "cashier_self_operation";
+
+const suspiciousMessages: Record<SuspiciousLoyaltyReason, string> = {
+  repeat_purchase_guard: REPEAT_GUARD_MESSAGE,
+  daily_purchase_limit: DAILY_LIMIT_MESSAGE,
+  cashier_self_operation: SELF_OPERATION_MESSAGE,
+};
 
 export function leftToReward(membership: Pick<CustomerMembership, "currentCount" | "rewardAvailable">, goalCount: number) {
   if (membership.rewardAvailable) {
@@ -131,12 +142,31 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       throw new Error("Сервис компании временно недоступен из-за статуса подписки");
     }
 
+    if (membership.userId === cashierId) {
+      throw new Error(SELF_OPERATION_MESSAGE);
+    }
+
     if (membership.rewardAvailable) {
       throw new Error("Сначала выдайте доступный подарок");
     }
 
     if (membership.lastActionAt && Date.now() - membership.lastActionAt.getTime() < REPEAT_GUARD_MS) {
       throw new Error(REPEAT_GUARD_MESSAGE);
+    }
+
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const purchasesToday = await tx.loyaltyTransaction.count({
+      where: {
+        companyId,
+        membershipId,
+        type: LoyaltyTransactionType.PURCHASE,
+        createdAt: { gte: dayStart },
+      },
+    });
+
+    if (purchasesToday >= DAILY_PURCHASE_LIMIT_PER_CUSTOMER) {
+      throw new Error(DAILY_LIMIT_MESSAGE);
     }
 
     const program = membership.company.loyaltyProgram;
@@ -181,22 +211,31 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
   });
 }
 
-export function isRepeatGuardError(error: unknown) {
-  return error instanceof Error && error.message === REPEAT_GUARD_MESSAGE;
+export function getSuspiciousLoyaltyReason(error: unknown): SuspiciousLoyaltyReason | null {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  const entry = Object.entries(suspiciousMessages).find(([, message]) => message === error.message);
+  return entry ? (entry[0] as SuspiciousLoyaltyReason) : null;
 }
 
-export async function recordSuspiciousPurchaseAttempt({
+export async function recordSuspiciousLoyaltyAttempt({
   companyId,
   membershipId,
   cashierId,
   token,
   source,
+  operation,
+  reason,
 }: {
   companyId: string;
   membershipId: string;
   cashierId: string;
   token?: string;
   source: "scan" | "api";
+  operation: "purchase" | "reward";
+  reason: SuspiciousLoyaltyReason;
 }) {
   const db = getDb();
   const membership = await db.customerMembership.findFirst({
@@ -212,13 +251,15 @@ export async function recordSuspiciousPurchaseAttempt({
       entityType: "CustomerMembership",
       entityId: membershipId || null,
       metadataJson: JSON.stringify({
-        reason: "repeat_purchase_guard",
+        reason,
         source,
+        operation,
         token: token || null,
         customerName: membership?.user.name ?? null,
         customerPhone: membership?.user.phone ?? null,
         lastActionAt: membership?.lastActionAt?.toISOString() ?? null,
         guardSeconds: REPEAT_GUARD_SECONDS,
+        dailyLimit: DAILY_PURCHASE_LIMIT_PER_CUSTOMER,
       }),
     },
   });
@@ -240,6 +281,10 @@ export async function grantReward(companyId: string, membershipId: string, cashi
     const company = await refreshCompanyInTransaction(tx, companyId);
     if (!company || !hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil)) {
       throw new Error("Сервис компании временно недоступен из-за статуса подписки");
+    }
+
+    if (membership.userId === cashierId) {
+      throw new Error(SELF_OPERATION_MESSAGE);
     }
 
     if (!membership.rewardAvailable) {

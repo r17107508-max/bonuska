@@ -124,7 +124,7 @@ export default async function CompanyReportsPage() {
       <section className="panel mt-6 p-5">
         <h2 className="text-xl font-semibold text-slate-950">Подозрительные операции</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Здесь появляются попытки повторно начислить покупку одному клиенту раньше, чем закончится защитная пауза.
+          Здесь появляются повторные начисления, превышение дневного лимита и попытки кассира провести собственную карту.
         </p>
         <div className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
           {suspiciousLogs.map((log) => (
@@ -197,10 +197,22 @@ function SuspiciousRow({ log }: { log: SuspiciousLog }) {
       <div>
         <p className="font-medium text-slate-700">Кассир: {log.actor?.name ?? "неизвестно"}</p>
         <p className="text-slate-500">Источник: {meta.source === "api" ? "API" : "сканер"}</p>
+        <p className="text-slate-500">Причина: {suspiciousReasonLabel(meta.reason)}</p>
+        <p className="text-slate-500">Операция: {meta.operation === "reward" ? "выдача подарка" : "начисление покупки"}</p>
       </div>
       <p className="text-slate-500 lg:text-right">{formatDateTime(log.createdAt)}</p>
     </div>
   );
+}
+
+function suspiciousReasonLabel(reason?: string | null) {
+  const labels: Record<string, string> = {
+    repeat_purchase_guard: "повтор раньше защитной паузы",
+    daily_purchase_limit: "дневной лимит клиента",
+    cashier_self_operation: "операция по собственной карте кассира",
+  };
+
+  return reason ? labels[reason] ?? reason : "не указана";
 }
 
 function parseSuspiciousMetadata(metadataJson: string | null) {
@@ -213,6 +225,8 @@ function parseSuspiciousMetadata(metadataJson: string | null) {
       customerName?: string | null;
       customerPhone?: string | null;
       source?: string | null;
+      operation?: string | null;
+      reason?: string | null;
     };
   } catch {
     return {};

@@ -171,10 +171,22 @@ function SuspiciousAuditCard({ log }: { log: SuspiciousLog }) {
     <div className="rounded-lg bg-red-50 p-3 text-red-900">
       <p className="font-semibold">{meta.customerName || "Повторное начисление"}</p>
       <p className="text-red-800/80">{meta.customerPhone || "Телефон не указан"}</p>
+      <p className="mt-1 text-red-800/80">Причина: {suspiciousReasonLabel(meta.reason)}</p>
+      <p className="text-red-800/80">Операция: {meta.operation === "reward" ? "выдача подарка" : "начисление покупки"}</p>
       <p className="mt-1 text-red-800/80">Кассир: {log.actor?.name ?? "неизвестно"}</p>
       <p className="text-red-800/80">{formatDateTime(log.createdAt)}</p>
     </div>
   );
+}
+
+function suspiciousReasonLabel(reason?: string | null) {
+  const labels: Record<string, string> = {
+    repeat_purchase_guard: "повтор раньше защитной паузы",
+    daily_purchase_limit: "дневной лимит клиента",
+    cashier_self_operation: "операция по собственной карте кассира",
+  };
+
+  return reason ? labels[reason] ?? reason : "не указана";
 }
 
 function suspiciousAuditSummary(metadataJson: string | null) {
@@ -186,6 +198,8 @@ function suspiciousAuditSummary(metadataJson: string | null) {
     return JSON.parse(metadataJson) as {
       customerName?: string | null;
       customerPhone?: string | null;
+      operation?: string | null;
+      reason?: string | null;
     };
   } catch {
     return {};

@@ -1,5 +1,5 @@
 import { requireApiCompanyUser, apiError, ok } from "@/lib/api";
-import { addPurchase, isRepeatGuardError, recordSuspiciousPurchaseAttempt } from "@/lib/loyalty";
+import { addPurchase, getSuspiciousLoyaltyReason, recordSuspiciousLoyaltyAttempt } from "@/lib/loyalty";
 
 export async function POST(request: Request) {
   const { error, access } = await requireApiCompanyUser();
@@ -10,12 +10,15 @@ export async function POST(request: Request) {
     await addPurchase(access!.companyId, membershipId, access!.userId);
     return ok();
   } catch (err) {
-    if (isRepeatGuardError(err)) {
-      await recordSuspiciousPurchaseAttempt({
+    const suspiciousReason = getSuspiciousLoyaltyReason(err);
+    if (suspiciousReason) {
+      await recordSuspiciousLoyaltyAttempt({
         companyId: access!.companyId,
         membershipId,
         cashierId: access!.userId,
         source: "api",
+        operation: "purchase",
+        reason: suspiciousReason,
       });
     }
     return apiError(err instanceof Error ? err.message : "Не удалось начислить покупку");
