@@ -14,12 +14,21 @@ import {
   clearSession,
   createSession,
   requireCompanyAdmin,
+  requireUser,
   requireCompanyUser,
   requireSuperadmin,
 } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { normalizePhone, slugify } from "@/lib/format";
-import { addPurchase, getSuspiciousLoyaltyReason, grantReward, newQrToken, recordSuspiciousLoyaltyAttempt } from "@/lib/loyalty";
+import {
+  addPurchase,
+  ensureGlobalQrToken,
+  getSuspiciousLoyaltyReason,
+  grantReward,
+  joinCompanyProgram,
+  newGlobalQrToken,
+  recordSuspiciousLoyaltyAttempt,
+} from "@/lib/loyalty";
 import { notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
 
@@ -70,6 +79,7 @@ async function getOrCreateUser(data: {
       phone: data.phone,
       email: data.email || undefined,
       passwordHash,
+      globalQrToken: newGlobalQrToken(),
     },
   });
 }
@@ -125,8 +135,9 @@ export async function loginClient(formData: FormData) {
     errorRedirect(`/c/${slug}`, "Этот телефон не зарегистрирован в компании");
   }
 
+  await ensureGlobalQrToken(user);
   await createSession(user);
-  redirect(`/c/${slug}/app`);
+  redirect(`/app/cards/${membership.id}`);
 }
 
 export async function resetPassword(formData: FormData) {
@@ -190,6 +201,7 @@ export async function registerCompany(formData: FormData) {
 
   const meta = await requestMeta();
   const user = await getOrCreateUser({ name: ownerName, phone, email, password });
+  await ensureGlobalQrToken(user);
   const company = await db.company.create({
     data: {
       name,
@@ -507,6 +519,7 @@ export async function createStaff(formData: FormData) {
     phone,
     password,
   });
+  await ensureGlobalQrToken(user);
 
   await getDb().companyUser.upsert({
     where: { companyId_userId: { companyId: access.companyId, userId: user.id } },
@@ -550,16 +563,9 @@ export async function registerCustomer(formData: FormData) {
     phone,
     password,
   });
+  await ensureGlobalQrToken(user);
 
-  await getDb().customerMembership.upsert({
-    where: { companyId_userId: { companyId: company.id, userId: user.id } },
-    update: {},
-    create: {
-      companyId: company.id,
-      userId: user.id,
-      qrToken: newQrToken(),
-    },
-  });
+  await joinCompanyProgram(company.id, user.id);
 
   await getDb().personalDataConsent.create({
     data: {
@@ -572,7 +578,24 @@ export async function registerCustomer(formData: FormData) {
   });
 
   await createSession(user);
-  redirect(`/c/${slug}/app`);
+  redirect("/app");
+}
+
+export async function joinCompanyFromPublicPage(formData: FormData) {
+  const slug = text(formData, "slug");
+  const user = await requireUser(`/c/${slug}`);
+  const company = await getDb().company.findUnique({
+    where: { slug },
+    include: { loyaltyProgram: true },
+  });
+
+  if (!company || !company.loyaltyProgram) {
+    errorRedirect("/", "Компания не найдена");
+  }
+
+  await ensureGlobalQrToken(user);
+  const membership = await joinCompanyProgram(company.id, user.id);
+  redirect(`/app/cards/${membership.id}`);
 }
 
 export async function confirmPurchase(formData: FormData) {
@@ -598,6 +621,36 @@ export async function confirmPurchase(formData: FormData) {
   }
   revalidatePath("/company");
   redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent("Начислено")}`);
+}
+
+export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) {
+  const access = await requireCompanyUser();
+  const userId = text(formData, "userId");
+  const token = text(formData, "token");
+  let membershipIdForLog = "";
+
+  try {
+    const membership = await joinCompanyProgram(access.companyId, userId, access.userId);
+    membershipIdForLog = membership.id;
+    await addPurchase(access.companyId, membership.id, access.userId);
+  } catch (error) {
+    const suspiciousReason = getSuspiciousLoyaltyReason(error);
+    if (suspiciousReason) {
+      await recordSuspiciousLoyaltyAttempt({
+        companyId: access.companyId,
+        membershipId: membershipIdForLog,
+        cashierId: access.userId,
+        token,
+        source: "scan",
+        operation: "purchase",
+        reason: suspiciousReason,
+      });
+    }
+    errorRedirect(`/company/scan?token=${encodeURIComponent(token)}`, error instanceof Error ? error.message : "Не удалось подключить клиента");
+  }
+
+  revalidatePath("/company");
+  redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent("Клиент подключён, покупка начислена")}`);
 }
 
 export async function giveReward(formData: FormData) {

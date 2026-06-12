@@ -7,6 +7,7 @@ import {
   type CustomerMembership,
   type GiftOption,
   type LoyaltyProgram,
+  type User,
 } from "@prisma/client";
 import { getDb } from "@/lib/db";
 
@@ -37,8 +38,30 @@ export function buildQrPayload(token: string) {
   return `tega:${token}`;
 }
 
+export function buildGlobalQrPayload(token: string) {
+  return `proplushki:user:${token}`;
+}
+
 export function normalizeQrToken(value: string) {
   return decodeURIComponent(value).trim().replace(/^tega:/i, "");
+}
+
+function parseScanPayload(value: string) {
+  const normalized = decodeURIComponent(value).trim();
+
+  if (normalized.toLowerCase().startsWith("tega:")) {
+    return { type: "membership" as const, token: normalized.replace(/^tega:/i, "") };
+  }
+
+  if (normalized.toLowerCase().startsWith("proplushki:user:")) {
+    return { type: "globalUser" as const, token: normalized.replace(/^proplushki:user:/i, "") };
+  }
+
+  return { type: "unknown" as const, token: normalized };
+}
+
+export function normalizeScanToken(value: string) {
+  return parseScanPayload(value).token;
 }
 
 export async function refreshCompanySubscription(companyId: string) {
@@ -107,10 +130,16 @@ function rewardTitle(program: LoyaltyProgram, giftOptions: GiftOption[]) {
 }
 
 export async function findMembershipForScan(companyId: string, token: string) {
-  return getDb().customerMembership.findFirst({
+  const parsed = parseScanPayload(token);
+
+  if (parsed.type === "globalUser") {
+    return findMembershipByGlobalToken(companyId, parsed.token);
+  }
+
+  const membership = await getDb().customerMembership.findFirst({
     where: {
       companyId,
-      qrToken: normalizeQrToken(token),
+      qrToken: parsed.token,
     },
     include: {
       user: true,
@@ -122,6 +151,90 @@ export async function findMembershipForScan(companyId: string, token: string) {
       },
     },
   });
+
+  if (membership || parsed.type === "membership") {
+    return membership;
+  }
+
+  return findMembershipByGlobalToken(companyId, parsed.token);
+}
+
+async function findMembershipByGlobalToken(companyId: string, globalQrToken: string) {
+  const user = await getDb().user.findUnique({
+    where: { globalQrToken },
+    select: { id: true },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return getDb().customerMembership.findFirst({
+    where: {
+      companyId,
+      userId: user.id,
+    },
+    include: {
+      user: true,
+      company: { include: { loyaltyProgram: true } },
+      transactions: {
+        include: { cashier: { select: { id: true, name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      },
+    },
+  });
+}
+
+export async function findCustomerForGlobalScan(companyId: string, token: string) {
+  const parsed = parseScanPayload(token);
+  const globalQrToken = parsed.type === "globalUser" ? parsed.token : parsed.type === "unknown" ? parsed.token : null;
+
+  if (!globalQrToken) {
+    return null;
+  }
+
+  const user = await getDb().user.findUnique({
+    where: { globalQrToken },
+    select: { id: true, name: true, phone: true },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  const membership = await getDb().customerMembership.findFirst({
+    where: { companyId, userId: user.id },
+    select: { id: true },
+  });
+
+  return membership ? null : user;
+}
+
+export async function joinCompanyProgram(companyId: string, userId: string, actorUserId?: string | null) {
+  const db = getDb();
+  const membership = await db.customerMembership.upsert({
+    where: { companyId_userId: { companyId, userId } },
+    update: {},
+    create: {
+      companyId,
+      userId,
+      qrToken: newQrToken(),
+    },
+  });
+
+  await db.auditLog.create({
+    data: {
+      actorUserId: actorUserId ?? userId,
+      companyId,
+      action: "CUSTOMER_MEMBERSHIP_JOINED",
+      entityType: "CustomerMembership",
+      entityId: membership.id,
+      metadataJson: JSON.stringify({ userId, joinedBy: actorUserId ? "cashier" : "customer" }),
+    },
+  });
+
+  return membership;
 }
 
 export async function addPurchase(companyId: string, membershipId: string, cashierId: string) {
@@ -356,4 +469,31 @@ async function refreshCompanyInTransaction(tx: Prisma.TransactionClient, company
 
 export function newQrToken() {
   return randomUUID();
+}
+
+export function newGlobalQrToken() {
+  return randomUUID();
+}
+
+export async function ensureGlobalQrToken(user: Pick<User, "id"> & { globalQrToken?: string | null }) {
+  if (user.globalQrToken) {
+    return user.globalQrToken;
+  }
+
+  const existing = await getDb().user.findUnique({
+    where: { id: user.id },
+    select: { globalQrToken: true },
+  });
+
+  if (existing?.globalQrToken) {
+    return existing.globalQrToken;
+  }
+
+  const updated = await getDb().user.update({
+    where: { id: user.id },
+    data: { globalQrToken: newGlobalQrToken() },
+    select: { globalQrToken: true },
+  });
+
+  return updated.globalQrToken!;
 }

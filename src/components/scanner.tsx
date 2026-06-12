@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Keyboard, ScanLine } from "lucide-react";
-import { normalizeQrToken } from "@/lib/loyalty";
+import { normalizeScanToken } from "@/lib/loyalty";
 
 export function QrScanner() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export function QrScanner() {
             if (scanned) {
               return;
             }
-            const token = normalizeQrToken(decodedText);
+            const token = normalizeScanToken(decodedText);
             if (token) {
               scanned = true;
               setStatus("QR найден. Открываем карту клиента...");
@@ -68,7 +68,7 @@ export function QrScanner() {
   }, [router]);
 
   function openManualClient() {
-    const token = normalizeQrToken(manualValue);
+    const token = normalizeScanToken(manualValue);
     if (token) {
       router.push(`/company/scan?token=${encodeURIComponent(token)}`);
     }
@@ -83,7 +83,7 @@ export function QrScanner() {
           </div>
           <div>
             <p className="font-semibold">{status}</p>
-            <p className="mt-1 text-sm text-slate-500">Попросите клиента открыть карту и показать QR-код.</p>
+            <p className="mt-1 text-sm text-slate-500">Попросите клиента открыть Проплюшки и показать общий QR-код.</p>
           </div>
         </div>
         <div
@@ -97,11 +97,11 @@ export function QrScanner() {
           <Keyboard aria-hidden className="size-5" />
           <h2 className="font-semibold">Если камера не работает</h2>
         </div>
-        <p className="mb-3 text-sm text-slate-600">Скопируйте токен из карты клиента или введите значение после `tega:` вручную.</p>
+        <p className="mb-3 text-sm text-slate-600">Введите общий QR-токен клиента или старый токен карты после `tega:` вручную.</p>
         <input
           value={manualValue}
           onChange={(event) => setManualValue(event.target.value)}
-          placeholder="tega:... или QR-токен клиента"
+          placeholder="proplushki:user:... или tega:..."
           className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
         />
         <button

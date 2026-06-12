@@ -4,7 +4,7 @@ import { createSession } from "@/lib/auth";
 import { apiError, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
 import { normalizePhone } from "@/lib/format";
-import { newQrToken } from "@/lib/loyalty";
+import { ensureGlobalQrToken, joinCompanyProgram, newGlobalQrToken } from "@/lib/loyalty";
 import { getSettings } from "@/lib/settings";
 
 export async function POST(request: NextRequest) {
@@ -27,13 +27,10 @@ export async function POST(request: NextRequest) {
   const user = await db.user.upsert({
     where: { phone },
     update: { name, passwordHash: await bcrypt.hash(password, 10) },
-    create: { name, phone, passwordHash: await bcrypt.hash(password, 10) },
+    create: { name, phone, passwordHash: await bcrypt.hash(password, 10), globalQrToken: newGlobalQrToken() },
   });
-  const membership = await db.customerMembership.upsert({
-    where: { companyId_userId: { companyId: company.id, userId: user.id } },
-    update: {},
-    create: { companyId: company.id, userId: user.id, qrToken: newQrToken() },
-  });
+  await ensureGlobalQrToken(user);
+  const membership = await joinCompanyProgram(company.id, user.id);
   await db.personalDataConsent.create({
     data: {
       userId: user.id,

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Gift, QrCode, ScanLine, Smartphone } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
-import { loginClient, registerCustomer } from "@/app/actions";
+import { joinCompanyFromPublicPage, loginClient, registerCustomer } from "@/app/actions";
 import { SubmitButton } from "@/components/buttons";
 import { FormField } from "@/components/form-field";
 import { getCurrentUser } from "@/lib/auth";
@@ -36,7 +36,7 @@ export default async function PublicCompanyPage({
     });
 
     if (membership) {
-      redirect(`/c/${company.slug}/app`);
+      redirect(`/app/cards/${membership.id}`);
     }
   }
 
@@ -78,18 +78,29 @@ export default async function PublicCompanyPage({
             <p className="mt-1 text-sm text-slate-500">Регистрация займёт меньше минуты. После неё вы сразу получите личный QR-код.</p>
           </div>
 
-          <form action={registerCustomer} className="mt-5 space-y-3">
-            <input type="hidden" name="slug" value={company.slug} />
-            <h2 className="text-xl font-semibold text-slate-950">Получить бонусную карту</h2>
-            <FormField label="Имя" name="name" autoComplete="name" />
-            <FormField label="Телефон" name="phone" autoComplete="tel" />
-            <FormField label="Пароль для входа на другом телефоне" name="password" type="password" autoComplete="new-password" />
-            <label className="flex gap-3 text-sm font-medium text-slate-700">
-              <input name="privacyAccepted" type="checkbox" required className="mt-1 size-4" />
-              <span>Согласен на обработку персональных данных. <Link href="/privacy" className="font-semibold text-teal-700" target="_blank">Политика</Link></span>
-            </label>
-            <SubmitButton>Получить QR-код</SubmitButton>
-          </form>
+          {currentUser ? (
+            <form action={joinCompanyFromPublicPage} className="mt-5 space-y-3">
+              <input type="hidden" name="slug" value={company.slug} />
+              <h2 className="text-xl font-semibold text-slate-950">Подключиться к программе</h2>
+              <p className="text-sm text-slate-600">
+                Вы уже вошли как {currentUser.name}. Нажмите кнопку, и карта компании появится в общем кабинете Проплюшек.
+              </p>
+              <SubmitButton>Подключиться</SubmitButton>
+            </form>
+          ) : (
+            <form action={registerCustomer} className="mt-5 space-y-3">
+              <input type="hidden" name="slug" value={company.slug} />
+              <h2 className="text-xl font-semibold text-slate-950">Получить бонусную карту</h2>
+              <FormField label="Имя" name="name" autoComplete="name" />
+              <FormField label="Телефон" name="phone" autoComplete="tel" />
+              <FormField label="Пароль для входа на другом телефоне" name="password" type="password" autoComplete="new-password" />
+              <label className="flex gap-3 text-sm font-medium text-slate-700">
+                <input name="privacyAccepted" type="checkbox" required className="mt-1 size-4" />
+                <span>Согласен на обработку персональных данных. <Link href="/privacy" className="font-semibold text-teal-700" target="_blank">Политика</Link></span>
+              </label>
+              <SubmitButton>Получить QR-код</SubmitButton>
+            </form>
+          )}
         </section>
 
         <section className="panel p-5">

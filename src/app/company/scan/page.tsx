@@ -1,12 +1,12 @@
 import { AlertTriangle, CheckCircle2, UserRound } from "lucide-react";
-import { confirmPurchase, giveReward } from "@/app/actions";
+import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { QrScanner } from "@/components/scanner";
 import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyUser } from "@/lib/auth";
-import { findMembershipForScan, hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
+import { findCustomerForGlobalScan, findMembershipForScan, hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
 
 export default async function CompanyScanPage({
   searchParams,
@@ -18,6 +18,7 @@ export default async function CompanyScanPage({
   const company = await refreshCompanySubscription(access.companyId);
   const token = params.token ?? "";
   const membership = token ? await findMembershipForScan(access.companyId, token) : null;
+  const globalCustomerWithoutMembership = token && !membership ? await findCustomerForGlobalScan(access.companyId, token) : null;
   const active = company ? hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil) : false;
 
   return (
@@ -37,10 +38,39 @@ export default async function CompanyScanPage({
             </div>
           )}
 
-          {token && !membership && (
+          {token && !membership && !globalCustomerWithoutMembership && (
             <div className="panel p-5 text-red-700">
               <h2 className="text-xl font-semibold">Клиент не найден</h2>
-              <p className="mt-2 text-sm">Этот QR не зарегистрирован в вашей компании. Попросите клиента отсканировать QR-плакат компании и зарегистрироваться.</p>
+              <p className="mt-2 text-sm">Этот QR не найден. Попросите клиента открыть общий кабинет Проплюшек или отсканировать QR-плакат компании.</p>
+            </div>
+          )}
+
+          {globalCustomerWithoutMembership && (
+            <div className="panel p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                  <UserRound aria-hidden className="size-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold uppercase text-slate-500">Новый клиент для вашей компании</p>
+                  <h2 className="mt-1 text-2xl font-semibold text-slate-950">{globalCustomerWithoutMembership.name}</h2>
+                  <p className="text-slate-600">{globalCustomerWithoutMembership.phone}</p>
+                </div>
+              </div>
+              <p className="mt-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+                Клиент уже зарегистрирован в Проплюшках, но ещё не участвует в программе вашей компании.
+              </p>
+              {active && (
+                <form action={joinScannedCustomerAndConfirmPurchase} className="mt-4">
+                  <input type="hidden" name="userId" value={globalCustomerWithoutMembership.id} />
+                  <input type="hidden" name="token" value={token} />
+                  <ConfirmSubmit
+                    title="Подключить клиента?"
+                    confirmText="Клиент будет подключён к программе вашей компании, после этого первая покупка будет начислена."
+                    buttonText="Подключить и начислить покупку"
+                  />
+                </form>
+              )}
             </div>
           )}
 

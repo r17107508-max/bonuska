@@ -4,6 +4,7 @@ import { createSession } from "@/lib/auth";
 import { apiError, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
 import { normalizePhone } from "@/lib/format";
+import { newGlobalQrToken } from "@/lib/loyalty";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
       phone,
       email: body.email ? String(body.email) : null,
       passwordHash: await bcrypt.hash(password, 10),
+      globalQrToken: newGlobalQrToken(),
     },
   });
   await createSession(user);

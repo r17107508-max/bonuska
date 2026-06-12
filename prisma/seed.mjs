@@ -23,6 +23,7 @@ async function user({ name, phone, email, password, globalRole = GlobalRole.USER
       phone,
       email,
       passwordHash: await bcrypt.hash(password, 10),
+      globalQrToken: randomUUID(),
       globalRole,
     },
   });

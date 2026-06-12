@@ -89,12 +89,12 @@ export async function getUserHomePath(user: Pick<User, "id" | "globalRole">) {
 
   const membership = await getDb().customerMembership.findFirst({
     where: { userId: user.id },
-    include: { company: { select: { slug: true } } },
+    select: { id: true },
     orderBy: { createdAt: "desc" },
   });
 
   if (membership) {
-    return `/c/${membership.company.slug}/app`;
+    return "/app";
   }
 
   return "/";

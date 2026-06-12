@@ -4,6 +4,7 @@ import { CompanyStatus, CompanyUserRole } from "@prisma/client";
 import { apiError, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
 import { normalizePhone, slugify } from "@/lib/format";
+import { ensureGlobalQrToken, newGlobalQrToken } from "@/lib/loyalty";
 import { getSettings } from "@/lib/settings";
 
 export async function POST(request: NextRequest) {
@@ -23,8 +24,9 @@ export async function POST(request: NextRequest) {
   const user = await db.user.upsert({
     where: { phone },
     update: { name: ownerName, email, passwordHash: await bcrypt.hash(password, 10) },
-    create: { name: ownerName, phone, email, passwordHash: await bcrypt.hash(password, 10) },
+    create: { name: ownerName, phone, email, passwordHash: await bcrypt.hash(password, 10), globalQrToken: newGlobalQrToken() },
   });
+  await ensureGlobalQrToken(user);
 
   const baseSlug = slugify(String(body.slug ?? name)) || `company-${Date.now()}`;
   let slug = baseSlug;

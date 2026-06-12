@@ -3,6 +3,7 @@ import { CompanyUserRole } from "@prisma/client";
 import { requireApiCompanyUser, apiError, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
 import { normalizePhone } from "@/lib/format";
+import { ensureGlobalQrToken, newGlobalQrToken } from "@/lib/loyalty";
 
 export async function POST(request: Request) {
   const { error, access } = await requireApiCompanyUser([CompanyUserRole.COMPANY_ADMIN]);
@@ -15,8 +16,9 @@ export async function POST(request: Request) {
   const user = await getDb().user.upsert({
     where: { phone },
     update: { name, passwordHash: await bcrypt.hash(password, 10) },
-    create: { name, phone, passwordHash: await bcrypt.hash(password, 10) },
+    create: { name, phone, passwordHash: await bcrypt.hash(password, 10), globalQrToken: newGlobalQrToken() },
   });
+  await ensureGlobalQrToken(user);
   const staff = await getDb().companyUser.upsert({
     where: { companyId_userId: { companyId: access!.companyId, userId: user.id } },
     update: { role: String(body.role ?? "CASHIER") as CompanyUserRole, isActive: body.isActive !== false },

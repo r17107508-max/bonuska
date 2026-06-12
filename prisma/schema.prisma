@@ -46,6 +46,7 @@ model User {
   phone        String
   email        String?
   passwordHash String
+  globalQrToken String?    @unique
   globalRole   GlobalRole @default(USER)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
