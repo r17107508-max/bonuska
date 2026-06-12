@@ -13,10 +13,11 @@ export function QrScanner() {
 
   useEffect(() => {
     let mounted = true;
+    let scanned = false;
 
     async function start() {
       if (!window.isSecureContext) {
-        setStatus("Камера на телефоне доступна через HTTPS. Для локального теста вставьте QR-токен вручную.");
+        setStatus("Камера на телефоне требует HTTPS. Если камера не открылась, вставьте QR-токен вручную ниже.");
         return;
       }
 
@@ -29,8 +30,13 @@ export function QrScanner() {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 } },
           (decodedText) => {
+            if (scanned) {
+              return;
+            }
             const token = normalizeQrToken(decodedText);
             if (token) {
+              scanned = true;
+              setStatus("QR найден. Открываем карту клиента...");
               scanner.stop().catch(() => undefined);
               router.push(`/company/scan?token=${encodeURIComponent(token)}`);
             }
@@ -43,7 +49,7 @@ export function QrScanner() {
         }
       } catch {
         if (mounted) {
-          setStatus("Камера не запустилась. Проверьте разрешение браузера или вставьте QR-токен вручную.");
+          setStatus("Камера не запустилась. Разрешите доступ к камере или введите QR-токен вручную.");
         }
       }
     }
@@ -75,7 +81,10 @@ export function QrScanner() {
           <div className="flex size-11 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
             <ScanLine aria-hidden className="size-5" />
           </div>
-          <p className="font-semibold">{status}</p>
+          <div>
+            <p className="font-semibold">{status}</p>
+            <p className="mt-1 text-sm text-slate-500">Попросите клиента открыть карту и показать QR-код.</p>
+          </div>
         </div>
         <div
           id="qr-reader"
@@ -86,8 +95,9 @@ export function QrScanner() {
       <section className="panel p-4">
         <div className="mb-3 flex items-center gap-2 text-slate-700">
           <Keyboard aria-hidden className="size-5" />
-          <h2 className="font-semibold">Ручной ввод для теста</h2>
+          <h2 className="font-semibold">Если камера не работает</h2>
         </div>
+        <p className="mb-3 text-sm text-slate-600">Скопируйте токен из карты клиента или введите значение после `tega:` вручную.</p>
         <input
           value={manualValue}
           onChange={(event) => setManualValue(event.target.value)}

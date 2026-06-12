@@ -10,7 +10,9 @@ import {
 } from "@prisma/client";
 import { getDb } from "@/lib/db";
 
-const REPEAT_GUARD_MS = 30_000;
+export const REPEAT_GUARD_SECONDS = 30;
+const REPEAT_GUARD_MS = REPEAT_GUARD_SECONDS * 1_000;
+const REPEAT_GUARD_MESSAGE = `Повторное начисление этому клиенту доступно через ${REPEAT_GUARD_SECONDS} секунд`;
 
 export function leftToReward(membership: Pick<CustomerMembership, "currentCount" | "rewardAvailable">, goalCount: number) {
   if (membership.rewardAvailable) {
@@ -134,7 +136,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
     }
 
     if (membership.lastActionAt && Date.now() - membership.lastActionAt.getTime() < REPEAT_GUARD_MS) {
-      throw new Error("Повторное начисление этому клиенту доступно через 30 секунд");
+      throw new Error(REPEAT_GUARD_MESSAGE);
     }
 
     const program = membership.company.loyaltyProgram;
@@ -176,6 +178,49 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
         metadataJson: JSON.stringify({ countBefore, countAfter, rewardAvailable }),
       },
     });
+  });
+}
+
+export function isRepeatGuardError(error: unknown) {
+  return error instanceof Error && error.message === REPEAT_GUARD_MESSAGE;
+}
+
+export async function recordSuspiciousPurchaseAttempt({
+  companyId,
+  membershipId,
+  cashierId,
+  token,
+  source,
+}: {
+  companyId: string;
+  membershipId: string;
+  cashierId: string;
+  token?: string;
+  source: "scan" | "api";
+}) {
+  const db = getDb();
+  const membership = await db.customerMembership.findFirst({
+    where: { id: membershipId, companyId },
+    include: { user: true },
+  });
+
+  await db.auditLog.create({
+    data: {
+      actorUserId: cashierId,
+      companyId,
+      action: "SUSPICIOUS_REPEAT_PURCHASE",
+      entityType: "CustomerMembership",
+      entityId: membershipId || null,
+      metadataJson: JSON.stringify({
+        reason: "repeat_purchase_guard",
+        source,
+        token: token || null,
+        customerName: membership?.user.name ?? null,
+        customerPhone: membership?.user.phone ?? null,
+        lastActionAt: membership?.lastActionAt?.toISOString() ?? null,
+        guardSeconds: REPEAT_GUARD_SECONDS,
+      }),
+    },
   });
 }
 

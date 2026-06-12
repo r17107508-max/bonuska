@@ -19,7 +19,7 @@ import {
 } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { normalizePhone, slugify } from "@/lib/format";
-import { addPurchase, grantReward, newQrToken } from "@/lib/loyalty";
+import { addPurchase, grantReward, isRepeatGuardError, newQrToken, recordSuspiciousPurchaseAttempt } from "@/lib/loyalty";
 import { notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
 
@@ -578,13 +578,23 @@ export async function registerCustomer(formData: FormData) {
 export async function confirmPurchase(formData: FormData) {
   const access = await requireCompanyUser();
   const membershipId = text(formData, "membershipId");
+  const token = text(formData, "token");
   try {
     await addPurchase(access.companyId, membershipId, access.userId);
   } catch (error) {
-    errorRedirect(`/company/scan?token=${encodeURIComponent(text(formData, "token"))}`, error instanceof Error ? error.message : "Не удалось начислить покупку");
+    if (isRepeatGuardError(error)) {
+      await recordSuspiciousPurchaseAttempt({
+        companyId: access.companyId,
+        membershipId,
+        cashierId: access.userId,
+        token,
+        source: "scan",
+      });
+    }
+    errorRedirect(`/company/scan?token=${encodeURIComponent(token)}`, error instanceof Error ? error.message : "Не удалось начислить покупку");
   }
   revalidatePath("/company");
-  redirect(`/company/scan?token=${encodeURIComponent(text(formData, "token"))}&success=${encodeURIComponent("Начислено")}`);
+  redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent("Начислено")}`);
 }
 
 export async function giveReward(formData: FormData) {

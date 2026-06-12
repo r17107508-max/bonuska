@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { AuditLog, User } from "@prisma/client";
 import { approveCompany, blockCompany, extendCompany, markPayment, rejectCompany, unblockCompany } from "@/app/actions";
 import { AdminShell, superadminNav } from "@/components/admin-shell";
 import { InlineSubmit } from "@/components/buttons";
@@ -7,6 +8,10 @@ import { getDb } from "@/lib/db";
 import { daysLeft, formatDate, formatDateTime, money, statusClass, statusLabel } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 
+type SuspiciousLog = AuditLog & {
+  actor: Pick<User, "id" | "name"> | null;
+};
+
 export default async function SuperadminCompanyPage({
   params,
 }: {
@@ -14,7 +19,7 @@ export default async function SuperadminCompanyPage({
 }) {
   await requireSuperadmin();
   const { id } = await params;
-  const [company, settings] = await Promise.all([
+  const [company, settings, suspiciousLogs] = await Promise.all([
     getDb().company.findUnique({
       where: { id },
       include: {
@@ -31,6 +36,12 @@ export default async function SuperadminCompanyPage({
       },
     }),
     getSettings(),
+    getDb().auditLog.findMany({
+      where: { companyId: id, action: "SUSPICIOUS_REPEAT_PURCHASE" },
+      include: { actor: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
   ]);
 
   if (!company) {
@@ -116,6 +127,16 @@ export default async function SuperadminCompanyPage({
           </section>
 
           <section className="panel p-5">
+            <h2 className="text-xl font-semibold text-slate-950">Подозрительные операции</h2>
+            <div className="mt-3 space-y-3 text-sm">
+              {suspiciousLogs.map((log) => (
+                <SuspiciousAuditCard key={log.id} log={log} />
+              ))}
+              {suspiciousLogs.length === 0 && <p className="text-sm text-slate-500">Подозрительных операций пока нет.</p>}
+            </div>
+          </section>
+
+          <section className="panel p-5">
             <h2 className="text-xl font-semibold text-slate-950">Принятие оферты</h2>
             <div className="mt-3 space-y-3 text-sm">
               {company.offerAcceptances.map((acceptance) => (
@@ -141,6 +162,34 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="mt-1 font-medium text-slate-950">{value}</p>
     </div>
   );
+}
+
+function SuspiciousAuditCard({ log }: { log: SuspiciousLog }) {
+  const meta = suspiciousAuditSummary(log.metadataJson);
+
+  return (
+    <div className="rounded-lg bg-red-50 p-3 text-red-900">
+      <p className="font-semibold">{meta.customerName || "Повторное начисление"}</p>
+      <p className="text-red-800/80">{meta.customerPhone || "Телефон не указан"}</p>
+      <p className="mt-1 text-red-800/80">Кассир: {log.actor?.name ?? "неизвестно"}</p>
+      <p className="text-red-800/80">{formatDateTime(log.createdAt)}</p>
+    </div>
+  );
+}
+
+function suspiciousAuditSummary(metadataJson: string | null) {
+  if (!metadataJson) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(metadataJson) as {
+      customerName?: string | null;
+      customerPhone?: string | null;
+    };
+  } catch {
+    return {};
+  }
 }
 
 function emailAuditLabel(action: string) {

@@ -15,17 +15,19 @@ export function ConfirmSubmit({
   danger?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [locked, setLocked] = useState(false);
 
   return (
     <>
       <button
         type="button"
+        disabled={locked}
         onClick={() => setOpen(true)}
-        className={`inline-flex min-h-11 w-full items-center justify-center rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition active:scale-[0.99] ${
+        className={`inline-flex min-h-12 w-full items-center justify-center rounded-lg px-4 text-base font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60 ${
           danger ? "bg-red-700 hover:bg-red-800" : "bg-teal-700 hover:bg-teal-800"
         }`}
       >
-        {buttonText}
+        {locked ? "Подтверждаем..." : buttonText}
       </button>
 
       {open && (
@@ -36,12 +38,13 @@ export function ConfirmSubmit({
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 type="button"
+                disabled={locked}
                 onClick={() => setOpen(false)}
-                className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 font-semibold text-slate-700"
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 font-semibold text-slate-700 disabled:opacity-60"
               >
                 Отмена
               </button>
-              <ModalSubmitButton danger={danger} />
+              <ModalSubmitButton danger={danger} locked={locked} onLock={() => setLocked(true)} />
             </div>
           </div>
         </div>
@@ -50,18 +53,27 @@ export function ConfirmSubmit({
   );
 }
 
-function ModalSubmitButton({ danger }: { danger: boolean }) {
+function ModalSubmitButton({
+  danger,
+  locked,
+  onLock,
+}: {
+  danger: boolean;
+  locked: boolean;
+  onLock: () => void;
+}) {
   const { pending } = useFormStatus();
 
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={pending || locked}
+      onClick={onLock}
       className={`min-h-11 rounded-lg px-4 font-semibold text-white disabled:opacity-60 ${
         danger ? "bg-red-700" : "bg-teal-700"
       }`}
     >
-      {pending ? "Готовим..." : "Подтвердить"}
+      {pending || locked ? "Отправляем..." : "Подтвердить"}
     </button>
   );
 }

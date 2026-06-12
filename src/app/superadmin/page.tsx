@@ -8,10 +8,11 @@ import { money } from "@/lib/format";
 export default async function SuperadminPage() {
   await requireSuperadmin();
   const db = getDb();
-  const [companies, payments, operations] = await Promise.all([
+  const [companies, payments, operations, suspiciousAttempts] = await Promise.all([
     db.company.findMany({ include: { memberships: true, transactions: true } }),
     db.subscriptionPayment.findMany(),
     db.loyaltyTransaction.count(),
+    db.auditLog.count({ where: { action: "SUSPICIOUS_REPEAT_PURCHASE" } }),
   ]);
 
   const monthStart = new Date();
@@ -27,6 +28,7 @@ export default async function SuperadminPage() {
     ["Заявки", pendingCompanies.length],
     ["Доход за месяц", money(monthlyIncome)],
     ["Операций всего", operations],
+    ["Подозрительных попыток", suspiciousAttempts],
     ["Ожидаемые оплаты", companies.filter((company) => company.status === CompanyStatus.PAYMENT_REQUIRED).length],
   ];
 
