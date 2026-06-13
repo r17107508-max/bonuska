@@ -113,6 +113,22 @@ export async function notifySuperadminsAboutCompanyApplication(
   await writeEmailAudit(company.id, `EMAIL_SUPERADMIN_APPLICATION_${result.status.toUpperCase()}`, result);
 }
 
+export async function notifyCompanyApplicationReceived(company: Pick<Company, "id" | "name" | "ownerEmail">, origin: string) {
+  const result = await sendMail({
+    to: uniqueEmails([company.ownerEmail]),
+    subject: `Заявка компании ${company.name} получена в Проплюшках`,
+    text: [
+      `Спасибо за регистрацию компании «${company.name}» в Проплюшках.`,
+      ``,
+      `Заявка отправлена на проверку. После подтверждения мы пришлём письмо на этот email, и вы сможете войти в кабинет компании.`,
+      ``,
+      `Страница входа: ${origin}/company/login`,
+    ].join("\n"),
+  });
+
+  await writeEmailAudit(company.id, `EMAIL_COMPANY_APPLICATION_RECEIVED_${result.status.toUpperCase()}`, result);
+}
+
 export async function notifyCompanyApproved(company: Pick<Company, "id" | "name" | "ownerEmail" | "trialEndsAt">, origin: string) {
   const trialText = company.trialEndsAt ? company.trialEndsAt.toLocaleDateString("ru-RU") : "14 дней с момента подтверждения";
 

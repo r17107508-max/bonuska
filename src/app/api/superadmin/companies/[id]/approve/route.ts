@@ -1,9 +1,10 @@
 import { CompanyStatus } from "@prisma/client";
 import { requireApiSuperadmin, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
+import { notifyCompanyApproved } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
 
-export async function PATCH(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { error, user } = await requireApiSuperadmin();
   if (error) return error;
   const { id } = await params;
@@ -21,5 +22,6 @@ export async function PATCH(_request: Request, { params }: { params: Promise<{ i
       auditLogs: { create: { actorUserId: user!.id, action: "COMPANY_APPROVED_API", entityType: "Company", entityId: id } },
     },
   });
+  await notifyCompanyApproved(company, new URL(request.url).origin);
   return ok({ company });
 }

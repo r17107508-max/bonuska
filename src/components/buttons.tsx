@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { clsx } from "clsx";
 import type { MouseEvent } from "react";
+import { useFormStatus } from "react-dom";
 
 const base =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60";
@@ -34,13 +35,18 @@ export function ButtonLink({
 export function SubmitButton({
   children,
   variant = "primary",
+  pendingText = "Отправляем...",
 }: {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "danger";
+  pendingText?: string;
 }) {
+  const { pending } = useFormStatus();
+
   return (
     <button
       type="submit"
+      disabled={pending}
       className={clsx(
         base,
         variant === "primary" && "w-full bg-teal-700 text-white shadow-sm hover:bg-teal-800",
@@ -48,7 +54,7 @@ export function SubmitButton({
         variant === "danger" && "w-full bg-red-700 text-white shadow-sm hover:bg-red-800",
       )}
     >
-      {children}
+      {pending ? pendingText : children}
     </button>
   );
 }

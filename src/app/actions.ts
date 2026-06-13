@@ -30,7 +30,7 @@ import {
   newGlobalQrToken,
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
-import { notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
+import { notifyCompanyApplicationReceived, notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
 
 function text(formData: FormData, name: string) {
@@ -259,7 +259,10 @@ export async function registerCompany(formData: FormData) {
     },
   });
 
-  await notifySuperadminsAboutCompanyApplication(company, meta.origin);
+  await Promise.all([
+    notifySuperadminsAboutCompanyApplication(company, meta.origin),
+    notifyCompanyApplicationReceived(company, meta.origin),
+  ]);
   redirect("/company/register?success=1");
 }
 

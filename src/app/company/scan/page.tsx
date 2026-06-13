@@ -48,6 +48,58 @@ export default async function CompanyScanPage({
       {params.error && <Notice tone="danger" text={params.error} />}
       {params.success && <Notice tone="success" text={params.success} />}
 
+      {active && membership && membership.company.loyaltyProgram && (
+        <form action={membership.rewardAvailable ? giveReward : confirmPurchase} className="panel mb-5 border-2 border-teal-200 bg-teal-50 p-5">
+          <input type="hidden" name="membershipId" value={membership.id} />
+          <input type="hidden" name="token" value={token} />
+          <p className="text-sm font-semibold uppercase text-teal-800">QR распознан</p>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-950">{membership.user.name}</h2>
+              <p className="text-sm text-slate-700">
+                {membership.currentCount} из {membership.company.loyaltyProgram.goalCount}
+                {membership.rewardAvailable ? " · подарок доступен" : " · можно начислить покупку"}
+              </p>
+            </div>
+            <div className="w-full sm:w-72">
+              {membership.rewardAvailable ? (
+                <ConfirmSubmit
+                  title="Выдать подарок?"
+                  confirmText={`Подтвердите выдачу: ${membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}. После выдачи прогресс клиента сбросится.`}
+                  buttonText="Выдать подарок"
+                />
+              ) : (
+                <ConfirmSubmit
+                  title="Начислить покупку?"
+                  confirmText="Подтвердите, что клиент совершил покупку сейчас. Повторное начисление одному клиенту временно блокируется."
+                  buttonText="Начислить покупку"
+                />
+              )}
+            </div>
+          </div>
+        </form>
+      )}
+
+      {active && globalCustomerWithoutMembership && (
+        <form action={joinScannedCustomerAndConfirmPurchase} className="panel mb-5 border-2 border-amber-200 bg-amber-50 p-5">
+          <input type="hidden" name="token" value={token} />
+          <p className="text-sm font-semibold uppercase text-amber-900">Новый клиент для этой компании</p>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-950">{globalCustomerWithoutMembership.name}</h2>
+              <p className="text-sm text-slate-700">Подключить к программе и сразу начислить покупку.</p>
+            </div>
+            <div className="w-full sm:w-80">
+              <ConfirmSubmit
+                title="Подключить клиента?"
+                confirmText="Клиент будет подключён к программе вашей компании, после этого первая покупка будет начислена."
+                buttonText="Подключить и начислить"
+              />
+            </div>
+          </div>
+        </form>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <QrScanner />
 

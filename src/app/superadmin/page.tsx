@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CompanyStatus, CompanyUserRole } from "@prisma/client";
 import { AdminShell, superadminNav } from "@/components/admin-shell";
+import { SuperadminNotifications } from "@/components/superadmin-notifications";
 import { requireSuperadmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { daysLeft, money } from "@/lib/format";
@@ -76,6 +77,8 @@ export default async function SuperadminPage() {
 
   return (
     <AdminShell title="Глобальная панель" subtitle="Состояние SaaS-платформы и быстрый контроль компаний." nav={superadminNav}>
+      <SuperadminNotifications pendingCount={pendingCompanies.length} />
+
       {pendingCompanies.length > 0 && (
         <Link href="/superadmin/companies" className="mb-5 block rounded-lg bg-amber-50 p-4 font-semibold text-amber-900">
           Новые заявки на подтверждение: {pendingCompanies.length}. Откройте список компаний, чтобы проверить и подтвердить регистрацию.

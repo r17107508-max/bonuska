@@ -76,7 +76,7 @@ export default async function CompanyRegisterPage({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <SubmitButton>Отправить заявку</SubmitButton>
+                    <SubmitButton pendingText="Отправляем заявку...">Отправить заявку</SubmitButton>
                   </div>
                 </form>
               </>
