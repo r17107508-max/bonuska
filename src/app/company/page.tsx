@@ -6,7 +6,7 @@ import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { RegistrationQrPoster } from "@/components/registration-qr-poster";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { daysLeft, statusClass, statusLabel } from "@/lib/format";
+import { daysLeft, formatDateTime, operationLabel, statusClass, statusLabel } from "@/lib/format";
 import { loyaltyTemplates } from "@/lib/loyalty-templates";
 import { hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
 import { getCompanyRegistrationUrl } from "@/lib/request-url";
@@ -19,11 +19,20 @@ export default async function CompanyDashboardPage() {
   today.setHours(0, 0, 0, 0);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [clientsTotal, operationsToday, operationsMonth, staffTotal] = await Promise.all([
+  const [clientsTotal, operationsToday, operationsMonth, staffTotal, recentTransactions] = await Promise.all([
     getDb().customerMembership.count({ where: { companyId: access.companyId } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, createdAt: { gte: today } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, createdAt: { gte: monthStart } } }),
     getDb().companyUser.count({ where: { companyId: access.companyId, isActive: true } }),
+    getDb().loyaltyTransaction.findMany({
+      where: { companyId: access.companyId },
+      include: {
+        cashier: { select: { id: true, name: true } },
+        membership: { include: { user: { select: { name: true, phone: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
   ]);
 
   const active = company ? hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil) : false;
@@ -47,7 +56,12 @@ export default async function CompanyDashboardPage() {
 
   if (isCashier) {
     return (
-      <AdminShell title={access.company.name} subtitle="Рабочее место кассира." nav={companyNavForRole(access.role)}>
+      <AdminShell
+        title={access.company.name}
+        subtitle="Рабочее место кассира."
+        nav={companyNavForRole(access.role)}
+        cashier={{ companyName: access.company.name, status: statusLabel(company?.status ?? access.company.status) }}
+      >
         {!active && (
           <div className="mb-5 rounded-lg bg-red-50 p-4 font-semibold text-red-800">
             Сервис временно недоступен из-за статуса подписки. Обратитесь к администратору компании.
@@ -68,6 +82,23 @@ export default async function CompanyDashboardPage() {
             </ol>
           </div>
         </div>
+        <section className="panel mt-6 p-5">
+          <h2 className="text-xl font-semibold text-slate-950">Последние операции</h2>
+          <div className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+            {recentTransactions.map((transaction) => (
+              <div key={transaction.id} className="grid gap-1 p-4 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                <div>
+                  <p className="font-semibold text-slate-950">{operationLabel(transaction.type)}</p>
+                  <p className="text-slate-500">
+                    {transaction.membership.user.name} · кассир: {transaction.cashier.name}
+                  </p>
+                </div>
+                <p className="font-medium text-slate-500 sm:text-right">{formatDateTime(transaction.createdAt)}</p>
+              </div>
+            ))}
+            {recentTransactions.length === 0 && <p className="p-4 text-sm text-slate-500">Операций пока нет.</p>}
+          </div>
+        </section>
       </AdminShell>
     );
   }

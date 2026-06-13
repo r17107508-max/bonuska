@@ -112,9 +112,9 @@ export async function notifySuperadminsAboutCompanyApplication(
 
   const result = await sendMail({
     to: uniqueEmails([settings.supportEmail, ...admins.map((admin) => admin.email)]),
-    subject: `Новая заявка компании в ПроПлюшке: ${company.name}`,
+    subject: `Новая заявка компании в сервисе «ПроПлюшка»: ${company.name}`,
     text: [
-      `В ПроПлюшке зарегистрировалась новая компания и ждёт подтверждения.`,
+      `В сервисе «ПроПлюшка» зарегистрировалась новая компания и ждёт подтверждения.`,
       ``,
       `Компания: ${company.name}`,
       `Город: ${company.city || "не указан"}`,
@@ -133,9 +133,9 @@ export async function notifySuperadminsAboutCompanyApplication(
 export async function notifyCompanyApplicationReceived(company: Pick<Company, "id" | "name" | "ownerEmail">, origin: string) {
   const result = await sendMail({
     to: uniqueEmails([company.ownerEmail]),
-    subject: `Заявка компании ${company.name} получена в Проплюшках`,
+    subject: `Заявка компании ${company.name} получена в сервисе «ПроПлюшка»`,
     text: [
-      `Спасибо за регистрацию компании «${company.name}» в Проплюшках.`,
+      `Спасибо за регистрацию компании «${company.name}» в сервисе «ПроПлюшка».`,
       ``,
       `Заявка отправлена на проверку. После подтверждения мы пришлём письмо на этот email, и вы сможете войти в кабинет компании.`,
       ``,
@@ -151,9 +151,9 @@ export async function notifyCompanyApproved(company: Pick<Company, "id" | "name"
 
   const result = await sendMail({
     to: uniqueEmails([company.ownerEmail]),
-    subject: `Компания ${company.name} одобрена в ПроПлюшке`,
+    subject: `Компания ${company.name} одобрена в сервисе «ПроПлюшка»`,
     text: [
-      `Ваша компания «${company.name}» одобрена в сервисе ПроПлюшка.`,
+      `Ваша компания «${company.name}» одобрена в сервисе «ПроПлюшка».`,
       ``,
       `Пробный период активен до: ${trialText}.`,
       `Теперь можно войти в кабинет компании, настроить программу лояльности и распечатать QR для регистрации клиентов.`,

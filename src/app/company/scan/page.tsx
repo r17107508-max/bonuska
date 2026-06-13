@@ -1,3 +1,4 @@
+import { CompanyUserRole } from "@prisma/client";
 import { AlertTriangle, CheckCircle2, UserRound } from "lucide-react";
 import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
@@ -7,6 +8,7 @@ import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { statusLabel } from "@/lib/format";
 import { findCustomerForGlobalScan, findMembershipForScan, hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
 
 export default async function CompanyScanPage({
@@ -21,6 +23,7 @@ export default async function CompanyScanPage({
   const membership = token ? await findMembershipForScan(access.companyId, token) : null;
   const globalCustomerWithoutMembership = token && !membership ? await findCustomerForGlobalScan(access.companyId, token) : null;
   const active = company ? hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil) : false;
+  const isCashier = access.role === CompanyUserRole.CASHIER;
   const q = params.q?.trim() ?? "";
   const manualMatches = q
     ? await getDb().customerMembership.findMany({
@@ -43,7 +46,12 @@ export default async function CompanyScanPage({
     : [];
 
   return (
-    <AdminShell title="Сканер QR" subtitle="Рабочий экран кассира: сканируйте QR, начисляйте покупки и выдавайте подарки." nav={companyNavForRole(access.role)}>
+    <AdminShell
+      title="Сканер QR"
+      subtitle="Рабочий экран кассира: сканируйте QR, начисляйте покупки и выдавайте подарки."
+      nav={companyNavForRole(access.role)}
+      cashier={isCashier ? { companyName: access.company.name, status: statusLabel(company?.status ?? access.company.status) } : undefined}
+    >
       {!active && <Notice tone="danger" text="Сервис временно недоступен из-за отсутствия оплаты или блокировки. Начисления закрыты." />}
       {params.error && <Notice tone="danger" text={params.error} />}
       {params.success && <Notice tone="success" text={params.success} />}
@@ -159,7 +167,7 @@ export default async function CompanyScanPage({
                 </div>
               </div>
               <p className="mt-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
-                Клиент уже зарегистрирован в Проплюшках, но ещё не участвует в программе вашей компании.
+                Клиент уже зарегистрирован в сервисе «ПроПлюшка», но ещё не участвует в программе вашей компании.
               </p>
               {active && (
                 <form action={joinScannedCustomerAndConfirmPurchase} className="mt-4">
