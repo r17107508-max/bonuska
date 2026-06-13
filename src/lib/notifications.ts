@@ -1,4 +1,6 @@
+import { resolve4 } from "node:dns/promises";
 import nodemailer from "nodemailer";
+import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import { GlobalRole, type Company } from "@prisma/client";
 import { getDb } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
@@ -16,6 +18,15 @@ type MailResult =
 
 function uniqueEmails(emails: Array<string | null | undefined>) {
   return Array.from(new Set(emails.map((email) => email?.trim()).filter((email): email is string => Boolean(email))));
+}
+
+async function resolveSmtpHost(host: string) {
+  try {
+    const [ipv4] = await resolve4(host);
+    return ipv4 ? { host: ipv4, servername: host } : { host, servername: undefined };
+  } catch {
+    return { host, servername: undefined };
+  }
 }
 
 export function getMailConfigStatus() {
@@ -47,12 +58,18 @@ async function sendMail({ to, subject, text }: MailPayload): Promise<MailResult>
   }
 
   const port = Number(process.env.SMTP_PORT ?? 587);
-  const transporter = nodemailer.createTransport({
-    host,
+  const resolvedHost = await resolveSmtpHost(host);
+  const transportOptions: SMTPTransport.Options = {
+    host: resolvedHost.host,
     port,
     secure: process.env.SMTP_SECURE === "true" || port === 465,
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 30_000,
+    tls: resolvedHost.servername ? { servername: resolvedHost.servername } : undefined,
     auth: { user, pass },
-  });
+  };
+  const transporter = nodemailer.createTransport(transportOptions);
 
   try {
     await transporter.sendMail({
