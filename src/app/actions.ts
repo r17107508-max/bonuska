@@ -141,6 +141,18 @@ export async function loginClient(formData: FormData) {
   redirect(`/app/cards/${membership.id}`);
 }
 
+export async function loginClientAccount(formData: FormData) {
+  const user = await authenticate(normalizePhone(formData.get("phone")), text(formData, "password"));
+
+  if (!user) {
+    errorRedirect("/client/login", "Неверный телефон или пароль");
+  }
+
+  await ensureGlobalQrToken(user);
+  await createSession(user);
+  redirect("/app");
+}
+
 export async function resetPassword(formData: FormData) {
   const phone = normalizePhone(formData.get("phone"));
   const email = text(formData, "email").toLowerCase();
@@ -581,6 +593,49 @@ export async function registerCustomer(formData: FormData) {
     },
   });
 
+  await createSession(user);
+  redirect("/app");
+}
+
+export async function registerClientAccount(formData: FormData) {
+  const name = text(formData, "name");
+  const phone = normalizePhone(formData.get("phone"));
+  const password = text(formData, "password");
+
+  if (!name || phone.length < 10 || password.length < 6) {
+    errorRedirect("/client/register", "Заполните имя, телефон и пароль от 6 символов");
+  }
+
+  if (formData.get("privacyAccepted") !== "on") {
+    errorRedirect("/client/register", "Нужно согласие на обработку персональных данных");
+  }
+
+  const db = getDb();
+  const existing = await db.user.findUnique({ where: { phone } });
+  if (existing) {
+    errorRedirect("/client/login", "Телефон уже зарегистрирован. Войдите по телефону и паролю");
+  }
+
+  const meta = await requestMeta();
+  const settings = await getSettings();
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = await db.user.create({
+    data: {
+      name,
+      phone,
+      passwordHash,
+      globalQrToken: newGlobalQrToken(),
+      personalDataConsents: {
+        create: {
+          consentVersion: settings.privacyVersion,
+          ip: meta.ip,
+          userAgent: meta.userAgent,
+        },
+      },
+    },
+  });
+
+  await ensureGlobalQrToken(user);
   await createSession(user);
   redirect("/app");
 }
