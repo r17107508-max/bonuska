@@ -142,7 +142,7 @@ export default async function CompanyScanPage({
           {token && !membership && !globalCustomerWithoutMembership && (
             <div className="panel p-5 text-red-700">
               <h2 className="text-xl font-semibold">Клиент не найден</h2>
-              <p className="mt-2 text-sm">Этот QR не найден. Попросите клиента открыть общий кабинет Проплюшек или отсканировать QR-плакат компании.</p>
+              <p className="mt-2 text-sm">Этот QR не найден. Попросите клиента открыть общий кабинет «ПроПлюшка» или отсканировать QR-плакат компании.</p>
             </div>
           )}
 

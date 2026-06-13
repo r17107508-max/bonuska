@@ -9,7 +9,7 @@ export default async function PublicPartnersPage() {
     <main className="min-h-screen bg-slate-100">
       <header className="border-b border-slate-200 bg-white">
         <div className="page-shell flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <Link href="/" className="text-xl font-semibold text-slate-950">Проплюшки</Link>
+          <Link href="/" className="text-xl font-semibold text-slate-950">ПроПлюшка</Link>
           <div className="flex flex-wrap gap-2">
             <Link href="/client/register" className="inline-flex min-h-10 items-center justify-center rounded-lg bg-teal-700 px-4 text-sm font-semibold text-white">
               Стать клиентом
@@ -26,7 +26,7 @@ export default async function PublicPartnersPage() {
           <p className="text-sm font-semibold uppercase text-teal-700">Партнёры</p>
           <h1 className="mt-2 text-4xl font-semibold leading-tight text-slate-950">Где можно копить плюшки</h1>
           <p className="mt-4 text-lg leading-8 text-slate-600">
-            Активные компании, где можно использовать один QR-код Проплюшек.
+            Активные компании, где можно использовать один QR-код сервиса «ПроПлюшка».
           </p>
         </div>
 

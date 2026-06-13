@@ -116,7 +116,7 @@ export function HomeScenarios({
           <span className="flex size-10 items-center justify-center rounded-lg bg-teal-700 text-white shadow-sm">
             <Gift aria-hidden className="size-5" />
           </span>
-          <span className="text-xl font-semibold text-slate-950">Проплюшки</span>
+          <span className="text-xl font-semibold text-slate-950">ПроПлюшка</span>
         </Link>
         <nav className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
           {superadminHref && <NavLink href={superadminHref}>Супер-админка</NavLink>}
@@ -128,7 +128,7 @@ export function HomeScenarios({
       <section className="border-y border-slate-200 bg-white">
         <div className="page-shell py-10 text-center md:py-14">
           <p className="text-sm font-semibold uppercase text-teal-700">Главная страница</p>
-          <h1 className="mt-3 text-4xl font-semibold leading-tight text-slate-950 md:text-6xl">Проплюшки</h1>
+          <h1 className="mt-3 text-4xl font-semibold leading-tight text-slate-950 md:text-6xl">ПроПлюшка</h1>
           <p className="mx-auto mt-4 max-w-3xl text-lg leading-8 text-slate-600 md:text-xl">
             Один QR-код для бонусов, подарков и программ лояльности
           </p>
@@ -154,7 +154,7 @@ export function HomeScenarios({
 
       <footer className="border-t border-slate-200 bg-white py-6">
         <div className="page-shell flex flex-col gap-4 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
-          <p>Проплюшки. QR-программы лояльности для бизнеса и клиентов.</p>
+          <p>ПроПлюшка. QR-программы лояльности для бизнеса и клиентов.</p>
           <div className="flex flex-wrap gap-x-4 gap-y-2 font-semibold">
             <Link className="hover:text-teal-700" href="/offer">Договор-оферта</Link>
             <Link className="hover:text-teal-700" href="/privacy">Политика обработки персональных данных</Link>

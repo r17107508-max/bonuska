@@ -20,7 +20,7 @@ export default async function PartnersPage() {
             </div>
             <div>
               <h1 className="text-2xl font-semibold text-slate-950">Партнёры</h1>
-              <p className="mt-1 text-sm leading-5 text-slate-600">Где работает один QR-код ПроПлюшки.</p>
+              <p className="mt-1 text-sm leading-5 text-slate-600">Где работает один QR-код сервиса «ПроПлюшка».</p>
             </div>
           </div>
         </section>

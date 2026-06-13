@@ -29,7 +29,7 @@ export default async function ClientRegisterPage({
   }
 
   return (
-    <AuthShell title="Стать клиентом" subtitle="Зарегистрируйтесь один раз и получите общий QR-код для партнёров Проплюшек.">
+    <AuthShell title="Стать клиентом" subtitle="Зарегистрируйтесь один раз и получите общий QR-код для партнёров сервиса «ПроПлюшка».">
       {params.error && <p className="mt-5 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">{params.error}</p>}
       <form action={registerClientAccount} className="mt-6 space-y-4">
         <FormField label="Имя" name="name" autoComplete="name" />

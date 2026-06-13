@@ -86,7 +86,7 @@ export function QrScanner() {
           </div>
           <div>
             <p className="font-semibold">{status}</p>
-            <p className="mt-1 text-sm text-slate-500">Попросите клиента открыть Проплюшки и показать общий QR-код.</p>
+            <p className="mt-1 text-sm text-slate-500">Попросите клиента открыть приложение «ПроПлюшка» и показать общий QR-код.</p>
           </div>
         </div>
         <div

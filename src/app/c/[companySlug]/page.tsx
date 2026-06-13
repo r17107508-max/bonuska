@@ -83,7 +83,7 @@ export default async function PublicCompanyPage({
               <input type="hidden" name="slug" value={company.slug} />
               <h2 className="text-xl font-semibold text-slate-950">Подключиться к программе</h2>
               <p className="text-sm text-slate-600">
-                Вы уже вошли как {currentUser.name}. Нажмите кнопку, и карта компании появится в общем кабинете Проплюшек.
+                Вы уже вошли как {currentUser.name}. Нажмите кнопку, и карта компании появится в общем кабинете «ПроПлюшка».
               </p>
               <SubmitButton>Подключиться</SubmitButton>
             </form>
