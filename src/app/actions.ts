@@ -749,7 +749,7 @@ export async function deleteCustomerAccount() {
   const user = await requireUser("/app");
 
   if (user.globalRole === "SUPERADMIN") {
-    errorRedirect("/app", "Супер-админ не может удалить аккаунт из клиентского кабинета");
+    errorRedirect("/app/account", "Супер-админ не может удалить аккаунт из клиентского кабинета");
   }
 
   const [companyAccess, cashierTransactions, confirmedPayments] = await Promise.all([
@@ -762,7 +762,7 @@ export async function deleteCustomerAccount() {
   ]);
 
   if (companyAccess || cashierTransactions > 0 || confirmedPayments > 0) {
-    errorRedirect("/app", "Аккаунт связан с компанией или операциями. Сначала передайте доступ и обратитесь к администратору сервиса.");
+    errorRedirect("/app/account", "Аккаунт связан с компанией или операциями. Сначала передайте доступ и обратитесь к администратору сервиса.");
   }
 
   await getDb().user.delete({ where: { id: user.id } });

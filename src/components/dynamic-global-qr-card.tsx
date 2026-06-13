@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { RefreshCw, ShieldCheck } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 type DynamicGlobalQrCardProps = {
   initialPayload: string;
@@ -61,7 +61,7 @@ export function DynamicGlobalQrCard({
     async function renderQr() {
       const dataUrl = await QRCode.toDataURL(payload, {
         margin: 1,
-        width: 360,
+        width: 380,
         color: {
           dark: color,
           light: "#ffffff",
@@ -94,11 +94,13 @@ export function DynamicGlobalQrCard({
   }, [refreshQr]);
 
   return (
-    <section className="panel p-5 text-center">
-      <div className="mx-auto flex max-w-72 items-center justify-center rounded-lg bg-white p-4 shadow-inner ring-1 ring-slate-200">
+    <section className="panel p-4 text-center">
+      <p className="text-lg font-semibold text-slate-950">Мой QR для всех компаний</p>
+
+      <div className="mx-auto mt-4 flex max-w-80 items-center justify-center rounded-lg bg-white p-3 shadow-inner ring-1 ring-slate-200">
         {qrDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={qrDataUrl} alt="Динамический QR-код клиента" />
+          <img src={qrDataUrl} alt="Динамический QR-код клиента" className="w-full" />
         ) : (
           <div className="flex aspect-square w-full items-center justify-center text-sm font-semibold text-slate-500">
             Обновляем QR
@@ -106,40 +108,25 @@ export function DynamicGlobalQrCard({
         )}
       </div>
 
-      <p className="mt-4 text-lg font-semibold text-slate-950">Мой QR для всех компаний</p>
-      <p className="mt-1 text-sm text-slate-500">QR обновляется автоматически и не содержит телефон.</p>
+      <p className="mt-4 text-base font-semibold text-slate-950">Покажите QR-код кассиру</p>
+      <p className="mt-1 text-sm leading-5 text-slate-500">QR обновляется автоматически и не содержит телефон</p>
 
-      <div className="mt-4 rounded-lg bg-slate-50 p-4 text-left">
-        <div className="flex items-start gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-            <ShieldCheck aria-hidden className="size-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="font-semibold text-slate-950">Защита от фотографии QR</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Покажите этот экран кассиру. Код действует короткое время, поэтому сохранённая картинка быстро устаревает.
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => void refreshQr()}
-                disabled={loading}
-                className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 font-semibold text-slate-700 disabled:opacity-60"
-              >
-                <RefreshCw aria-hidden className={`size-5 ${loading ? "animate-spin" : ""}`} />
-                Обновить
-              </button>
-              <span className="min-w-16 text-right text-sm font-semibold text-slate-600">{secondsLeft} сек.</span>
-            </div>
-            {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
-          </div>
-        </div>
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => void refreshQr()}
+          disabled={loading}
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white disabled:opacity-60"
+        >
+          <RefreshCw aria-hidden className={`size-5 ${loading ? "animate-spin" : ""}`} />
+          Обновить QR
+        </button>
+        <span className="min-w-28 text-right text-sm font-semibold leading-5 text-slate-600">
+          Обновится через {secondsLeft} сек.
+        </span>
       </div>
 
-      <details className="mt-4 rounded-lg bg-slate-100 p-3 text-left">
-        <summary className="cursor-pointer text-sm font-semibold text-slate-700">Токен для локального теста</summary>
-        <p className="mt-2 break-all font-mono text-xs text-slate-600">{payload}</p>
-      </details>
+      {error && <p className="mt-2 text-sm font-semibold text-red-700">{error}</p>}
     </section>
   );
 }
