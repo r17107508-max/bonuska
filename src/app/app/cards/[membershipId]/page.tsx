@@ -75,7 +75,7 @@ export default async function ClientCardPage({
           <input type="hidden" name="membershipId" value={membership.id} />
           <h2 className="text-xl font-semibold text-slate-950">Участие в программе</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Можно выйти из программы этой компании. Остальные бонусные карты и аккаунт Проплюшек останутся.
+            Можно выйти из программы этой компании. Остальные бонусные карты и аккаунт ПроПлюшки останутся.
           </p>
           <div className="mt-4">
             <ConfirmSubmit

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ExternalLink, MapPinned, Store } from "lucide-react";
+import { ClientBrandHeader } from "@/components/client-brand-header";
 import { getActivePartnerCompanies } from "@/lib/customer-app";
 import { requireUser } from "@/lib/auth";
 
@@ -10,11 +11,7 @@ export default async function PartnersPage() {
   return (
     <main className="min-h-screen bg-slate-100 px-4 pb-28 pt-4">
       <section className="mx-auto max-w-md space-y-4">
-        <header className="flex min-h-10 items-center justify-between">
-          <Link href="/app" className="text-2xl font-semibold text-slate-950">
-            Проплюшки
-          </Link>
-        </header>
+        <ClientBrandHeader />
 
         <section className="panel p-4">
           <div className="flex items-start gap-3">
@@ -23,7 +20,7 @@ export default async function PartnersPage() {
             </div>
             <div>
               <h1 className="text-2xl font-semibold text-slate-950">Партнёры</h1>
-              <p className="mt-1 text-sm leading-5 text-slate-600">Где работает один QR-код Проплюшек.</p>
+              <p className="mt-1 text-sm leading-5 text-slate-600">Где работает один QR-код ПроПлюшки.</p>
             </div>
           </div>
         </section>

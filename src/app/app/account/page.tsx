@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HelpCircle, LogOut, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { deleteCustomerAccount, logout } from "@/app/actions";
+import { ClientBrandHeader } from "@/components/client-brand-header";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -23,11 +24,7 @@ export default async function AccountPage({
   return (
     <main className="min-h-screen bg-slate-100 px-4 pb-28 pt-4">
       <section className="mx-auto max-w-md space-y-4">
-        <header className="flex min-h-10 items-center justify-between">
-          <Link href="/app" className="text-2xl font-semibold text-slate-950">
-            Проплюшки
-          </Link>
-        </header>
+        <ClientBrandHeader />
 
         <section className="panel p-4">
           <div className="flex items-start gap-3">
