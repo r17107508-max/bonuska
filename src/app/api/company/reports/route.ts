@@ -1,8 +1,8 @@
-import { requireApiCompanyUser, ok } from "@/lib/api";
+import { requireApiCompanyAdmin, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
 
 export async function GET() {
-  const { error, access } = await requireApiCompanyUser();
+  const { error, access } = await requireApiCompanyAdmin();
   if (error) return error;
   const now = new Date();
   const today = new Date(now);

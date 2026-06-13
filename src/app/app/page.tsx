@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Gift, History, Search, WalletCards } from "lucide-react";
-import { logout } from "@/app/actions";
+import { Gift, History, Search, Settings, WalletCards } from "lucide-react";
+import { deleteCustomerAccount, logout } from "@/app/actions";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { DynamicGlobalQrCard } from "@/components/dynamic-global-qr-card";
 import { InstallPwaButton } from "@/components/install-pwa-button";
 import { requireUser } from "@/lib/auth";
@@ -8,8 +9,12 @@ import { getDb } from "@/lib/db";
 import { createDynamicCustomerQr } from "@/lib/dynamic-qr";
 import { ensureGlobalQrToken } from "@/lib/loyalty";
 
-export default async function ClientDashboardPage() {
-  const currentUser = await requireUser("/company/login");
+export default async function ClientDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const [currentUser, params] = await Promise.all([requireUser("/company/login"), searchParams]);
   const user = await getDb().user.findUniqueOrThrow({
     where: { id: currentUser.id },
     select: { id: true, name: true, globalQrToken: true },
@@ -42,11 +47,13 @@ export default async function ClientDashboardPage() {
           <div className="mt-2 flex items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-semibold">Мои бонусы</h1>
-              <p className="mt-2 text-sm text-white/75">{user.name}, показывайте один QR в любой компании с Проплюшками.</p>
+              <p className="mt-2 text-sm text-white/75">{user.name}, один аккаунт для всех бонусных карт.</p>
             </div>
             <WalletCards aria-hidden className="size-10 text-teal-300" />
           </div>
         </header>
+
+        {params.error && <p className="rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-800">{params.error}</p>}
 
         <DynamicGlobalQrCard initialPayload={dynamicQr.payload} initialExpiresAt={dynamicQr.expiresAt} />
 
@@ -103,9 +110,28 @@ export default async function ClientDashboardPage() {
 
         <InstallPwaButton />
 
-        <form action={logout}>
-          <button type="submit" className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-4 font-semibold text-slate-700">Выйти</button>
-        </form>
+        <section className="panel p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+              <Settings aria-hidden className="size-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl font-semibold text-slate-950">Аккаунт</h2>
+              <p className="mt-1 text-sm text-slate-600">Можно выйти из приложения или полностью удалить клиентский аккаунт.</p>
+            </div>
+          </div>
+          <form action={logout} className="mt-4">
+            <button type="submit" className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-4 font-semibold text-slate-700">Выйти</button>
+          </form>
+          <form action={deleteCustomerAccount} className="mt-3">
+            <ConfirmSubmit
+              danger
+              title="Удалить аккаунт?"
+              confirmText="Будут удалены клиентский аккаунт, бонусные карты и история участия в программах. Если аккаунт привязан к компании, удаление будет остановлено."
+              buttonText="Удалить аккаунт"
+            />
+          </form>
+        </section>
       </section>
     </main>
   );

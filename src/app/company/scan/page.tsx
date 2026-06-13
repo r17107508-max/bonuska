@@ -6,12 +6,13 @@ import { QrScanner } from "@/components/scanner";
 import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyUser } from "@/lib/auth";
+import { getDb } from "@/lib/db";
 import { findCustomerForGlobalScan, findMembershipForScan, hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
 
 export default async function CompanyScanPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string; error?: string; success?: string }>;
+  searchParams: Promise<{ token?: string; error?: string; success?: string; q?: string }>;
 }) {
   const access = await requireCompanyUser();
   const params = await searchParams;
@@ -20,6 +21,26 @@ export default async function CompanyScanPage({
   const membership = token ? await findMembershipForScan(access.companyId, token) : null;
   const globalCustomerWithoutMembership = token && !membership ? await findCustomerForGlobalScan(access.companyId, token) : null;
   const active = company ? hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil) : false;
+  const q = params.q?.trim() ?? "";
+  const manualMatches = q
+    ? await getDb().customerMembership.findMany({
+        where: {
+          companyId: access.companyId,
+          user: {
+            OR: [
+              { name: { contains: q } },
+              { phone: { contains: q.replace(/\D/g, "") || q } },
+            ],
+          },
+        },
+        include: {
+          user: true,
+          company: { include: { loyaltyProgram: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+      })
+    : [];
 
   return (
     <AdminShell title="Сканер QR" subtitle="Рабочий экран кассира: сканируйте QR, начисляйте покупки и выдавайте подарки." nav={companyNavForRole(access.role)}>
@@ -31,6 +52,34 @@ export default async function CompanyScanPage({
         <QrScanner />
 
         <section className="space-y-5">
+          <div className="panel p-5">
+            <h2 className="text-xl font-semibold text-slate-950">Ручной поиск клиента</h2>
+            <p className="mt-2 text-sm text-slate-600">Если камера не сработала, найдите клиента по имени или телефону внутри вашей компании.</p>
+            <form className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="Имя или телефон"
+                className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+              />
+              <button className="min-h-11 rounded-lg bg-teal-700 px-4 font-semibold text-white">Найти</button>
+            </form>
+            {q && (
+              <div className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+                {manualMatches.map((item) => (
+                  <a key={item.id} href={`/company/scan?token=${encodeURIComponent(`tega:${item.qrToken}`)}`} className="flex items-center justify-between gap-3 p-3">
+                    <span>
+                      <span className="font-semibold text-slate-950">{item.user.name}</span>
+                      <span className="ml-2 text-sm text-slate-500">{item.user.phone}</span>
+                    </span>
+                    <span className="text-sm font-semibold text-teal-700">Открыть</span>
+                  </a>
+                ))}
+                {manualMatches.length === 0 && <p className="p-3 text-sm text-slate-500">Клиент в вашей компании не найден.</p>}
+              </div>
+            )}
+          </div>
+
           {!token && (
             <div className="panel p-5 text-slate-700">
               <h2 className="text-xl font-semibold text-slate-950">Ожидаем QR клиента</h2>

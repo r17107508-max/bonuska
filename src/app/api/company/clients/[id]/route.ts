@@ -1,8 +1,8 @@
-import { requireApiCompanyUser, apiError, ok } from "@/lib/api";
+import { requireApiCompanyAdmin, apiError, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error, access } = await requireApiCompanyUser();
+  const { error, access } = await requireApiCompanyAdmin();
   if (error) return error;
   const { id } = await params;
   const client = await getDb().customerMembership.findFirst({

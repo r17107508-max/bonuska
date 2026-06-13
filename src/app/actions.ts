@@ -688,8 +688,17 @@ export async function giveReward(formData: FormData) {
 export async function deleteClient(formData: FormData) {
   const access = await requireCompanyAdmin();
   const membershipId = text(formData, "membershipId");
+  const membership = await getDb().customerMembership.findFirst({
+    where: { id: membershipId, companyId: access.companyId },
+    select: { id: true },
+  });
+
+  if (!membership) {
+    errorRedirect("/company/clients", "Клиент не найден в вашей компании");
+  }
+
   await getDb().customerMembership.delete({
-    where: { id: membershipId },
+    where: { id: membership.id },
   });
   await getDb().auditLog.create({
     data: {
@@ -697,8 +706,63 @@ export async function deleteClient(formData: FormData) {
       companyId: access.companyId,
       action: "CUSTOMER_MEMBERSHIP_DELETED",
       entityType: "CustomerMembership",
-      entityId: membershipId,
+      entityId: membership.id,
     },
   });
   redirect("/company/clients");
+}
+
+export async function leaveCustomerMembership(formData: FormData) {
+  const user = await requireUser("/app");
+  const membershipId = text(formData, "membershipId");
+  const membership = await getDb().customerMembership.findFirst({
+    where: { id: membershipId, userId: user.id },
+    select: { id: true, companyId: true },
+  });
+
+  if (!membership) {
+    errorRedirect("/app/cards", "Карта не найдена");
+  }
+
+  await getDb().customerMembership.delete({
+    where: { id: membership.id },
+  });
+  await getDb().auditLog.create({
+    data: {
+      actorUserId: user.id,
+      companyId: membership.companyId,
+      action: "CUSTOMER_MEMBERSHIP_LEFT",
+      entityType: "CustomerMembership",
+      entityId: membership.id,
+    },
+  });
+
+  revalidatePath("/app");
+  revalidatePath("/app/cards");
+  redirect("/app/cards");
+}
+
+export async function deleteCustomerAccount() {
+  const user = await requireUser("/app");
+
+  if (user.globalRole === "SUPERADMIN") {
+    errorRedirect("/app", "Супер-админ не может удалить аккаунт из клиентского кабинета");
+  }
+
+  const [companyAccess, cashierTransactions, confirmedPayments] = await Promise.all([
+    getDb().companyUser.findFirst({
+      where: { userId: user.id },
+      select: { id: true },
+    }),
+    getDb().loyaltyTransaction.count({ where: { cashierId: user.id } }),
+    getDb().subscriptionPayment.count({ where: { confirmedById: user.id } }),
+  ]);
+
+  if (companyAccess || cashierTransactions > 0 || confirmedPayments > 0) {
+    errorRedirect("/app", "Аккаунт связан с компанией или операциями. Сначала передайте доступ и обратитесь к администратору сервиса.");
+  }
+
+  await getDb().user.delete({ where: { id: user.id } });
+  await clearSession();
+  redirect("/");
 }

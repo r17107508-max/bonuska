@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { AdminShell, companyNavForRole } from "@/components/admin-shell";
-import { requireCompanyUser } from "@/lib/auth";
+import { AdminShell, companyNav } from "@/components/admin-shell";
+import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 
@@ -9,7 +9,7 @@ export default async function CompanyClientsPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const access = await requireCompanyUser();
+  const access = await requireCompanyAdmin();
   const params = await searchParams;
   const q = params.q?.trim();
   const clients = await getDb().customerMembership.findMany({
@@ -34,7 +34,7 @@ export default async function CompanyClientsPage({
   });
 
   return (
-    <AdminShell title="Клиенты" subtitle="Поиск по имени или телефону, прогресс и последняя операция." nav={companyNavForRole(access.role)}>
+    <AdminShell title="Клиенты" subtitle="Поиск по имени или телефону, прогресс и последняя операция." nav={companyNav}>
       <form className="mb-5 flex gap-3">
         <input name="q" defaultValue={q ?? ""} placeholder="Имя или телефон" className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15" />
         <button className="rounded-lg bg-teal-700 px-4 font-semibold text-white">Найти</button>

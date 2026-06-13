@@ -40,3 +40,7 @@ export async function requireApiCompanyUser(roles?: CompanyUserRole[]) {
 
   return { error: null, access };
 }
+
+export function requireApiCompanyAdmin() {
+  return requireApiCompanyUser([CompanyUserRole.COMPANY_ADMIN]);
+}

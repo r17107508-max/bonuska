@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { leaveCustomerMembership } from "@/app/actions";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { HistoryList } from "@/components/history-list";
 import { InstallPwaButton } from "@/components/install-pwa-button";
 import { ProgressIcons } from "@/components/progress-cups";
@@ -68,6 +70,22 @@ export default async function ClientCardPage({
           <h2 className="mb-3 text-xl font-semibold text-slate-950">История покупок</h2>
           <HistoryList transactions={membership.transactions} emptyText="Покупок пока нет" />
         </section>
+
+        <form action={leaveCustomerMembership} className="panel p-5">
+          <input type="hidden" name="membershipId" value={membership.id} />
+          <h2 className="text-xl font-semibold text-slate-950">Участие в программе</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Можно выйти из программы этой компании. Остальные бонусные карты и аккаунт Проплюшек останутся.
+          </p>
+          <div className="mt-4">
+            <ConfirmSubmit
+              danger
+              title="Выйти из программы?"
+              confirmText={`Карта ${membership.company.name}, прогресс и история в этой компании будут удалены. Аккаунт и другие карты сохранятся.`}
+              buttonText="Выйти из программы"
+            />
+          </div>
+        </form>
       </section>
     </main>
   );

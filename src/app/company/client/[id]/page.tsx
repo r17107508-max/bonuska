@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { deleteClient } from "@/app/actions";
-import { AdminShell, companyNavForRole } from "@/components/admin-shell";
+import { AdminShell, companyNav } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
-import { requireCompanyUser } from "@/lib/auth";
+import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
 export default async function CompanyClientPage({
@@ -12,7 +12,7 @@ export default async function CompanyClientPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const access = await requireCompanyUser();
+  const access = await requireCompanyAdmin();
   const { id } = await params;
   const membership = await getDb().customerMembership.findFirst({
     where: { id, companyId: access.companyId },
@@ -30,7 +30,7 @@ export default async function CompanyClientPage({
   const program = membership.company.loyaltyProgram;
 
   return (
-    <AdminShell title={membership.user.name} subtitle="Карточка клиента, прогресс, QR-токен и история операций." nav={companyNavForRole(access.role)}>
+    <AdminShell title={membership.user.name} subtitle="Карточка клиента, прогресс, QR-токен и история операций." nav={companyNav}>
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
           <ProgressIcons icon={program.icon} current={membership.currentCount} goal={program.goalCount} rewardAvailable={membership.rewardAvailable} rewardTitle={membership.pendingReward ?? program.rewardTitle} />
