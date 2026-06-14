@@ -37,21 +37,30 @@ enum LoyaltyProgramType {
 
 enum LoyaltyTransactionType {
   PURCHASE
+  REWARD_OPENED
   REWARD_GRANTED
   MANUAL_ADJUSTMENT
 }
 
+enum RewardClaimStatus {
+  AVAILABLE
+  OPENED
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}
+
 model User {
-  id           String     @id @default(cuid())
-  name         String
-  phone        String
-  email        String?
-  city         String?
-  passwordHash String
+  id            String     @id @default(cuid())
+  name          String
+  phone         String
+  email         String?
+  city          String?
+  passwordHash  String
   globalQrToken String?    @unique
-  globalRole   GlobalRole @default(USER)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  globalRole    GlobalRole @default(USER)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   companyUsers         CompanyUser[]
   memberships          CustomerMembership[]
@@ -59,6 +68,8 @@ model User {
   personalDataConsents PersonalDataConsent[]
   confirmedPayments    SubscriptionPayment[] @relation("ConfirmedPayments")
   cashierTransactions  LoyaltyTransaction[]  @relation("CashierTransactions")
+  rewardClaims         RewardClaim[]         @relation("CustomerRewardClaims")
+  redeemedRewardClaims RewardClaim[]         @relation("RedeemedRewardClaims")
   auditLogs            AuditLog[]
 
   @@unique([phone])
@@ -66,36 +77,37 @@ model User {
 }
 
 model Company {
-  id             String        @id @default(cuid())
-  name           String
-  slug           String        @unique
-  description    String?
-  businessType   String
-  icon           String        @default("☕")
-  themeColor     String        @default("#0f766e")
-  city           String
-  address        String
-  ownerName      String
-  ownerPhone     String
-  ownerEmail     String
-  inn            String?
-  comment        String?
-  status         CompanyStatus @default(PENDING)
-  deletedAt      DateTime?
-  onboardingChecklistHidden Boolean @default(false)
-  trialStartedAt DateTime?
-  trialEndsAt    DateTime?
-  paidUntil      DateTime?
-  lastPaidAt     DateTime?
-  isBlocked      Boolean       @default(false)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                        String        @id @default(cuid())
+  name                      String
+  slug                      String        @unique
+  description               String?
+  businessType              String
+  icon                      String        @default("☕")
+  themeColor                String        @default("#0f766e")
+  city                      String
+  address                   String
+  ownerName                 String
+  ownerPhone                String
+  ownerEmail                String
+  inn                       String?
+  comment                   String?
+  status                    CompanyStatus @default(PENDING)
+  deletedAt                 DateTime?
+  onboardingChecklistHidden Boolean       @default(false)
+  trialStartedAt            DateTime?
+  trialEndsAt               DateTime?
+  paidUntil                 DateTime?
+  lastPaidAt                DateTime?
+  isBlocked                 Boolean       @default(false)
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
 
   users                CompanyUser[]
   loyaltyProgram       LoyaltyProgram?
   memberships          CustomerMembership[]
   transactions         LoyaltyTransaction[]
   giftOptions          GiftOption[]
+  rewardClaims         RewardClaim[]
   payments             SubscriptionPayment[]
   offerAcceptances     OfferAcceptance[]
   personalDataConsents PersonalDataConsent[]
@@ -154,6 +166,7 @@ model CustomerMembership {
   company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions LoyaltyTransaction[]
+  rewardClaims RewardClaim[]
 
   @@unique([companyId, userId])
   @@index([companyId, qrToken])
@@ -189,9 +202,38 @@ model GiftOption {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  rewardClaims RewardClaim[]
 
   @@index([companyId, isActive])
+}
+
+model RewardClaim {
+  id           String            @id @default(cuid())
+  companyId    String
+  membershipId String
+  userId       String
+  giftOptionId String?
+  title        String?
+  description  String?
+  token        String            @unique
+  status       RewardClaimStatus @default(AVAILABLE)
+  openedAt     DateTime?
+  redeemedAt   DateTime?
+  redeemedById String?
+  expiresAt    DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  membership CustomerMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  user       User               @relation("CustomerRewardClaims", fields: [userId], references: [id], onDelete: Cascade)
+  giftOption GiftOption?        @relation(fields: [giftOptionId], references: [id], onDelete: SetNull)
+  redeemedBy User?              @relation("RedeemedRewardClaims", fields: [redeemedById], references: [id], onDelete: SetNull)
+
+  @@index([companyId, status])
+  @@index([membershipId, status])
+  @@index([userId, status])
 }
 
 model SubscriptionPayment {
@@ -262,14 +304,14 @@ model AuditLog {
 }
 
 model ServiceSettings {
-  id                     String   @id @default("default")
-  subscriptionPrice      Int      @default(499)
-  trialDays              Int      @default(14)
-  offerVersion           String   @default("1.0")
-  offerText              String
-  privacyVersion         String   @default("1.0")
-  privacyText            String
-  paymentRequisites      String   @default("")
-  supportEmail           String   @default("rf173@bk.ru")
-  updatedAt              DateTime @updatedAt
+  id                String   @id @default("default")
+  subscriptionPrice Int      @default(499)
+  trialDays         Int      @default(14)
+  offerVersion      String   @default("1.0")
+  offerText         String
+  privacyVersion    String   @default("1.0")
+  privacyText       String
+  paymentRequisites String   @default("")
+  supportEmail      String   @default("rf173@bk.ru")
+  updatedAt         DateTime @updatedAt
 }

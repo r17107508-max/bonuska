@@ -27,7 +27,9 @@ export function HistoryList({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-semibold text-slate-950">{operationLabel(transaction.type)}</p>
-              <p className="mt-1 text-sm text-slate-500">Кассир: {transaction.cashier.name}</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {transaction.type === "REWARD_OPENED" ? `Клиент: ${transaction.cashier.name}` : `Кассир: ${transaction.cashier.name}`}
+              </p>
             </div>
             <p className="text-right text-xs font-medium text-slate-500">{formatDateTime(transaction.createdAt)}</p>
           </div>

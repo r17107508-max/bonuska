@@ -60,6 +60,7 @@ export default async function ClientHistoryPage() {
 function clientOperationLabel(type: LoyaltyTransactionType) {
   const labels: Record<LoyaltyTransactionType, string> = {
     PURCHASE: "начислена покупка",
+    REWARD_OPENED: "открыт подарок",
     REWARD_GRANTED: "выдан подарок",
     MANUAL_ADJUSTMENT: "ручное изменение",
   };

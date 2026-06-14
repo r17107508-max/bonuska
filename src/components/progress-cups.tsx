@@ -6,12 +6,14 @@ export function ProgressIcons({
   goal,
   rewardAvailable,
   rewardTitle,
+  rewardReadyHint,
 }: {
   icon: string;
   current: number;
   goal: number;
   rewardAvailable: boolean;
   rewardTitle: string;
+  rewardReadyHint?: string;
 }) {
   const safeGoal = Math.max(goal, 1);
   const visibleCurrent = Math.min(current, safeGoal);
@@ -27,7 +29,7 @@ export function ProgressIcons({
             {rewardAvailable ? "Подарок готов" : `${visibleCurrent} из ${safeGoal}`}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            {rewardAvailable ? `${rewardTitle}. Покажите QR-код кассиру.` : `Осталось ${left} покупок до подарка.`}
+            {rewardAvailable ? (rewardReadyHint ?? `${rewardTitle}. Покажите QR-код кассиру.`) : `Осталось ${left} покупок до подарка.`}
           </p>
         </div>
         <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
@@ -62,7 +64,9 @@ export function ProgressIcons({
         {rewardAvailable ? (
           <>
             <p className="text-lg font-semibold text-amber-950">Можно забрать подарок</p>
-            <p className="text-sm text-amber-800">Покажите QR-код кассиру перед оплатой, чтобы он выдал подарок и сбросил прогресс.</p>
+            <p className="text-sm text-amber-800">
+              {rewardReadyHint ?? "Покажите QR-код кассиру перед оплатой, чтобы он выдал подарок и сбросил прогресс."}
+            </p>
           </>
         ) : (
           <>

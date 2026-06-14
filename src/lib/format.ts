@@ -84,6 +84,7 @@ export function programTypeLabel(type: LoyaltyProgramType) {
 export function operationLabel(type: LoyaltyTransactionType) {
   const labels: Record<LoyaltyTransactionType, string> = {
     PURCHASE: "Покупка",
+    REWARD_OPENED: "Подарок открыт",
     REWARD_GRANTED: "Подарок выдан",
     MANUAL_ADJUSTMENT: "Ручная корректировка",
   };

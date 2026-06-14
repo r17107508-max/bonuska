@@ -8,6 +8,8 @@
   --line: #e2e8f0;
   --accent: #0f766e;
   --accent-2: #f59e0b;
+  --font-geist-sans: "Geist", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-geist-mono: "Geist Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 @theme inline {
@@ -74,4 +76,122 @@ textarea {
     url("https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=80");
   background-size: cover;
   background-position: center;
+}
+
+.gift-box-animation {
+  position: relative;
+  width: 132px;
+  height: 132px;
+}
+
+.gift-box-body,
+.gift-box-lid {
+  position: absolute;
+  left: 18px;
+  width: 96px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  box-shadow: 0 18px 32px rgba(146, 64, 14, 0.22);
+}
+
+.gift-box-body {
+  bottom: 12px;
+  height: 72px;
+}
+
+.gift-box-lid {
+  top: 24px;
+  height: 30px;
+  transform-origin: left bottom;
+}
+
+.gift-box-ribbon {
+  position: absolute;
+  left: 58px;
+  bottom: 12px;
+  width: 16px;
+  height: 102px;
+  border-radius: 999px;
+  background: #fff7ed;
+  box-shadow: 0 0 0 999px transparent;
+}
+
+.gift-box-ribbon::before {
+  content: "";
+  position: absolute;
+  left: -40px;
+  top: 37px;
+  width: 96px;
+  height: 16px;
+  border-radius: 999px;
+  background: #fff7ed;
+}
+
+.gift-box-sparkles {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.gift-box-sparkles::before,
+.gift-box-sparkles::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #fbbf24;
+  box-shadow:
+    28px -10px 0 #34d399,
+    64px -18px 0 #f472b6,
+    92px 4px 0 #60a5fa,
+    16px 28px 0 #fb7185,
+    106px 34px 0 #a78bfa;
+}
+
+.gift-box-sparkles::before {
+  left: 12px;
+  top: 20px;
+}
+
+.gift-box-sparkles::after {
+  left: 4px;
+  top: 42px;
+  transform: scale(0.78);
+}
+
+.gift-box-animation.is-opening .gift-box-lid,
+.gift-box-animation.is-opened .gift-box-lid {
+  animation: gift-lid-open 900ms ease forwards;
+}
+
+.gift-box-animation.is-opening .gift-box-sparkles,
+.gift-box-animation.is-opened .gift-box-sparkles {
+  animation: gift-sparkles 1100ms ease forwards;
+}
+
+@keyframes gift-lid-open {
+  0% {
+    transform: rotate(0deg) translateY(0);
+  }
+  55% {
+    transform: rotate(-16deg) translate(-8px, -24px);
+  }
+  100% {
+    transform: rotate(-12deg) translate(-6px, -20px);
+  }
+}
+
+@keyframes gift-sparkles {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.75);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-18px) scale(1);
+  }
 }

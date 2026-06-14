@@ -1,6 +1,6 @@
-import { CompanyUserRole } from "@prisma/client";
+import { CompanyUserRole, RewardClaimStatus } from "@prisma/client";
 import { AlertTriangle, CheckCircle2, UserRound } from "lucide-react";
-import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase } from "@/app/actions";
+import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase, redeemRewardClaim } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { QrScanner } from "@/components/scanner";
@@ -9,7 +9,7 @@ import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { statusLabel } from "@/lib/format";
-import { findCustomerForGlobalScan, findMembershipForScan, hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
+import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
 
 export default async function CompanyScanPage({
   searchParams,
@@ -20,8 +20,9 @@ export default async function CompanyScanPage({
   const params = await searchParams;
   const company = await refreshCompanySubscription(access.companyId);
   const token = params.token ?? "";
-  const membership = token ? await findMembershipForScan(access.companyId, token) : null;
-  const globalCustomerWithoutMembership = token && !membership ? await findCustomerForGlobalScan(access.companyId, token) : null;
+  const rewardClaim = token ? await findRewardClaimForScan(token) : null;
+  const membership = token && !rewardClaim ? await findMembershipForScan(access.companyId, token) : null;
+  const globalCustomerWithoutMembership = token && !membership && !rewardClaim ? await findCustomerForGlobalScan(access.companyId, token) : null;
   const active = company ? hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil) : false;
   const isCashier = access.role === CompanyUserRole.CASHIER;
   const q = params.q?.trim() ?? "";
@@ -55,6 +56,43 @@ export default async function CompanyScanPage({
       {!active && <Notice tone="danger" text="Сервис временно недоступен из-за отсутствия оплаты или блокировки. Начисления закрыты." />}
       {params.error && <Notice tone="danger" text={params.error} />}
       {params.success && <Notice tone="success" text={params.success} />}
+
+      {active && rewardClaim && (
+        <section className={`panel mb-5 border-2 p-5 ${rewardClaim.companyId === access.companyId && rewardClaim.status === RewardClaimStatus.OPENED ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-white"}`}>
+          <p className="text-sm font-semibold uppercase text-amber-800">QR подарка распознан</p>
+          <div className="mt-3 grid gap-4 lg:grid-cols-[1fr_280px] lg:items-start">
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-950">{rewardClaim.user.name}</h2>
+              <div className="mt-2 space-y-1 text-sm text-slate-700">
+                <p><span className="font-semibold">Компания:</span> {rewardClaim.company.name}</p>
+                <p><span className="font-semibold">Подарок:</span> {rewardClaim.title ?? "пока не открыт"}</p>
+                <p><span className="font-semibold">Статус:</span> {rewardClaimStatusText(rewardClaim.status)}</p>
+                {rewardClaim.openedAt && <p><span className="font-semibold">Открыт:</span> {rewardClaim.openedAt.toLocaleString("ru-RU")}</p>}
+                {rewardClaim.redeemedAt && <p><span className="font-semibold">Выдан:</span> {rewardClaim.redeemedAt.toLocaleString("ru-RU")}</p>}
+              </div>
+              {rewardClaim.companyId !== access.companyId && (
+                <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">Этот подарок не относится к вашей компании.</p>
+              )}
+              {rewardClaim.companyId === access.companyId && rewardClaim.status === RewardClaimStatus.REDEEMED && (
+                <p className="mt-4 rounded-lg bg-slate-100 p-3 text-sm font-semibold text-slate-700">Этот подарок уже был выдан.</p>
+              )}
+              {rewardClaim.companyId === access.companyId && rewardClaim.status === RewardClaimStatus.AVAILABLE && (
+                <p className="mt-4 rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-900">Клиент ещё не открыл подарок.</p>
+              )}
+            </div>
+            {rewardClaim.companyId === access.companyId && rewardClaim.status === RewardClaimStatus.OPENED && (
+              <form action={redeemRewardClaim}>
+                <input type="hidden" name="token" value={token} />
+                <ConfirmSubmit
+                  title="Выдать подарок?"
+                  confirmText={`Подтвердите выдачу: ${rewardClaim.title ?? "Подарок"}. После выдачи прогресс клиента сбросится, а QR станет недействительным.`}
+                  buttonText="Выдать подарок"
+                />
+              </form>
+            )}
+          </div>
+        </section>
+      )}
 
       {active && membership && membership.company.loyaltyProgram && (
         <form action={membership.rewardAvailable ? giveReward : confirmPurchase} className="panel mb-5 border-2 border-teal-200 bg-teal-50 p-5">
@@ -147,7 +185,7 @@ export default async function CompanyScanPage({
             </div>
           )}
 
-          {token && !membership && !globalCustomerWithoutMembership && (
+          {token && !membership && !globalCustomerWithoutMembership && !rewardClaim && (
             <div className="panel p-5 text-red-700">
               <h2 className="text-xl font-semibold">Клиент не найден</h2>
               <p className="mt-2 text-sm">Этот QR не найден. Попросите клиента открыть общий кабинет «ПроПлюшка» или отсканировать QR-плакат компании.</p>
@@ -254,4 +292,16 @@ function Notice({ tone, text }: { tone: "success" | "danger"; text: string }) {
       <p>{text}</p>
     </div>
   );
+}
+
+function rewardClaimStatusText(status: RewardClaimStatus) {
+  const labels: Record<RewardClaimStatus, string> = {
+    AVAILABLE: "доступен, не открыт",
+    OPENED: "открыт клиентом",
+    REDEEMED: "выдан",
+    EXPIRED: "истёк",
+    CANCELLED: "отменён",
+  };
+
+  return labels[status];
 }

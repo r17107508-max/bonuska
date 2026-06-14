@@ -1,15 +1,18 @@
 import Link from "next/link";
-import { CompanyStatus } from "@prisma/client";
+import QRCode from "qrcode";
+import { CompanyStatus, LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { leaveCustomerMembership } from "@/app/actions";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { GiftOpenCard } from "@/components/gift-open-card";
 import { HistoryList } from "@/components/history-list";
 import { InstallPwaButton } from "@/components/install-pwa-button";
 import { ProgressIcons } from "@/components/progress-cups";
 import { QrCard } from "@/components/qr-card";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { buildRewardQrPayload } from "@/lib/loyalty";
 
 export default async function ClientCardPage({
   params,
@@ -35,6 +38,29 @@ export default async function ClientCardPage({
   }
 
   const program = membership.company.loyaltyProgram;
+  const isGiftBox = program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
+  const activeRewardClaim = isGiftBox && membership.rewardAvailable
+    ? await getDb().rewardClaim.findFirst({
+        where: {
+          membershipId: membership.id,
+          status: { in: [RewardClaimStatus.OPENED, RewardClaimStatus.AVAILABLE] },
+        },
+        orderBy: [{ openedAt: "desc" }, { createdAt: "asc" }],
+      })
+    : null;
+  const initialRewardClaim = activeRewardClaim?.status === RewardClaimStatus.OPENED
+    ? {
+        id: activeRewardClaim.id,
+        status: activeRewardClaim.status,
+        title: activeRewardClaim.title,
+        description: activeRewardClaim.description,
+        qrDataUrl: await QRCode.toDataURL(buildRewardQrPayload(activeRewardClaim.token), {
+          margin: 1,
+          width: 360,
+          color: { dark: "#92400e", light: "#ffffff" },
+        }),
+      }
+    : null;
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-5">
@@ -57,12 +83,27 @@ export default async function ClientCardPage({
 
         <QrCard token={membership.qrToken} color={program.themeColor} companyName={membership.company.name} />
 
+        {membership.rewardAvailable && isGiftBox && (
+          <GiftOpenCard
+            membershipId={membership.id}
+            companyName={membership.company.name}
+            initialClaim={initialRewardClaim}
+          />
+        )}
+
         <ProgressIcons
           icon={program.icon}
           current={membership.currentCount}
           goal={program.goalCount}
           rewardAvailable={membership.rewardAvailable}
           rewardTitle={membership.pendingReward ?? program.rewardTitle}
+          rewardReadyHint={
+            membership.rewardAvailable && isGiftBox
+              ? initialRewardClaim
+                ? "Покажите QR подарка кассиру, чтобы получить подарок."
+                : "Откройте коробку, узнайте подарок и покажите отдельный QR кассиру."
+              : undefined
+          }
         />
 
         <InstallPwaButton />

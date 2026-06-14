@@ -4,6 +4,7 @@ import {
   LoyaltyProgramType,
   LoyaltyTransactionType,
   Prisma,
+  RewardClaimStatus,
   type CustomerMembership,
   type GiftOption,
   type LoyaltyProgram,
@@ -43,6 +44,10 @@ export function buildGlobalQrPayload(token: string) {
   return `proplushki:user:${token}`;
 }
 
+export function buildRewardQrPayload(token: string) {
+  return `proplushki:reward:${token}`;
+}
+
 export function normalizeQrToken(value: string) {
   return decodeURIComponent(value).trim().replace(/^tega:/i, "");
 }
@@ -62,11 +67,20 @@ function parseScanPayload(value: string) {
     return { type: "dynamicUser" as const, token: normalized.replace(/^proplushki:session:/i, "") };
   }
 
+  if (normalized.toLowerCase().startsWith("proplushki:reward:")) {
+    return { type: "rewardClaim" as const, token: normalized.replace(/^proplushki:reward:/i, "") };
+  }
+
   return { type: "unknown" as const, token: normalized };
 }
 
 export function normalizeScanToken(value: string) {
   return decodeURIComponent(value).trim();
+}
+
+export function normalizeRewardClaimToken(value: string) {
+  const parsed = parseScanPayload(value);
+  return parsed.type === "rewardClaim" ? parsed.token : decodeURIComponent(value).trim();
 }
 
 export async function refreshCompanySubscription(companyId: string) {
@@ -140,6 +154,10 @@ function rewardTitle(program: LoyaltyProgram, giftOptions: GiftOption[]) {
 
 export async function findMembershipForScan(companyId: string, token: string) {
   const parsed = parseScanPayload(token);
+
+  if (parsed.type === "rewardClaim") {
+    return null;
+  }
 
   if (parsed.type === "globalUser") {
     return findMembershipByGlobalToken(companyId, parsed.token);
@@ -339,7 +357,8 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
     const countBefore = membership.currentCount;
     const countAfter = countBefore + 1;
     const rewardAvailable = countAfter >= program.goalCount;
-    const pendingReward = rewardAvailable ? rewardTitle(program, membership.company.giftOptions) : null;
+    const isGiftBox = program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
+    const pendingReward = rewardAvailable && !isGiftBox ? rewardTitle(program, membership.company.giftOptions) : null;
 
     await tx.customerMembership.update({
       where: { id: membership.id },
@@ -364,6 +383,28 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       },
     });
 
+    if (rewardAvailable && isGiftBox) {
+      const existingClaim = await tx.rewardClaim.findFirst({
+        where: {
+          membershipId: membership.id,
+          status: { in: [RewardClaimStatus.AVAILABLE, RewardClaimStatus.OPENED] },
+        },
+        select: { id: true },
+      });
+
+      if (!existingClaim) {
+        await tx.rewardClaim.create({
+          data: {
+            companyId,
+            membershipId,
+            userId: membership.userId,
+            token: newRewardToken(),
+            status: RewardClaimStatus.AVAILABLE,
+          },
+        });
+      }
+    }
+
     await tx.auditLog.create({
       data: {
         actorUserId: cashierId,
@@ -374,6 +415,119 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
         metadataJson: JSON.stringify({ countBefore, countAfter, rewardAvailable }),
       },
     });
+  });
+}
+
+export async function openRewardClaimForCustomer(userId: string, membershipId: string) {
+  return getDb().$transaction(async (tx: Prisma.TransactionClient) => {
+    const membership = await tx.customerMembership.findFirst({
+      where: { id: membershipId, userId },
+      include: {
+        company: { include: { loyaltyProgram: true, giftOptions: true } },
+      },
+    });
+
+    if (!membership || !membership.company.loyaltyProgram) {
+      throw new Error("Карта или программа лояльности не найдены");
+    }
+
+    const company = await refreshCompanyInTransaction(tx, membership.companyId);
+    if (!company || !hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil)) {
+      throw new Error("Компания сейчас недоступна");
+    }
+
+    const program = membership.company.loyaltyProgram;
+    const isGiftBox = program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
+    if (!isGiftBox) {
+      throw new Error("Для этой компании не включена случайная коробка подарков");
+    }
+
+    if (!membership.rewardAvailable) {
+      throw new Error("Подарок пока не доступен");
+    }
+
+    const existingOpened = await tx.rewardClaim.findFirst({
+      where: { membershipId: membership.id, status: RewardClaimStatus.OPENED },
+      include: { giftOption: true },
+      orderBy: { openedAt: "desc" },
+    });
+
+    if (existingOpened) {
+      return existingOpened;
+    }
+
+    const activeGifts = membership.company.giftOptions.filter((gift) => gift.isActive);
+    if (activeGifts.length === 0) {
+      throw new Error("У компании пока нет активных подарков для коробки");
+    }
+
+    const claim =
+      (await tx.rewardClaim.findFirst({
+        where: { membershipId: membership.id, status: RewardClaimStatus.AVAILABLE },
+        orderBy: { createdAt: "asc" },
+      })) ??
+      (await tx.rewardClaim.create({
+        data: {
+          companyId: membership.companyId,
+          membershipId: membership.id,
+          userId: membership.userId,
+          token: newRewardToken(),
+          status: RewardClaimStatus.AVAILABLE,
+        },
+      }));
+
+    const gift = chooseGift(activeGifts);
+    if (!gift) {
+      throw new Error("У компании пока нет активных подарков для коробки");
+    }
+
+    const openedAt = new Date();
+    const openedClaim = await tx.rewardClaim.update({
+      where: { id: claim.id },
+      data: {
+        giftOptionId: gift.id,
+        title: gift.title,
+        description: gift.description,
+        status: RewardClaimStatus.OPENED,
+        openedAt,
+      },
+      include: { giftOption: true },
+    });
+
+    await tx.customerMembership.update({
+      where: { id: membership.id },
+      data: { pendingReward: gift.title, lastActionAt: openedAt },
+    });
+
+    await tx.loyaltyTransaction.create({
+      data: {
+        companyId: membership.companyId,
+        membershipId: membership.id,
+        cashierId: userId,
+        type: LoyaltyTransactionType.REWARD_OPENED,
+        countBefore: membership.currentCount,
+        countAfter: membership.currentCount,
+        rewardTitle: gift.title,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorUserId: userId,
+        companyId: membership.companyId,
+        action: "REWARD_CLAIM_OPENED",
+        entityType: "RewardClaim",
+        entityId: openedClaim.id,
+        metadataJson: JSON.stringify({
+          membershipId: membership.id,
+          giftOptionId: gift.id,
+          rewardTitle: gift.title,
+          openedAt: openedAt.toISOString(),
+        }),
+      },
+    });
+
+    return openedClaim;
   });
 }
 
@@ -457,42 +611,178 @@ export async function grantReward(companyId: string, membershipId: string, cashi
       throw new Error("Подарок пока недоступен");
     }
 
-    const countBefore = membership.currentCount;
-    const title = membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle;
+    const program = membership.company.loyaltyProgram;
+    const isGiftBox = program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
+    const openedClaim = isGiftBox
+      ? await tx.rewardClaim.findFirst({
+          where: { membershipId: membership.id, companyId, status: RewardClaimStatus.OPENED },
+          orderBy: { openedAt: "desc" },
+        })
+      : null;
 
-    await tx.customerMembership.update({
-      where: { id: membership.id },
-      data: {
-        currentCount: 0,
-        rewardAvailable: false,
-        pendingReward: null,
-        totalRewards: { increment: 1 },
-        lastActionAt: new Date(),
+    if (isGiftBox && !openedClaim) {
+      const redeemedClaim = await tx.rewardClaim.findFirst({
+        where: { membershipId: membership.id, companyId, status: RewardClaimStatus.REDEEMED },
+        select: { id: true },
+      });
+
+      if (redeemedClaim) {
+        throw new Error("Этот подарок уже был выдан");
+      }
+
+      throw new Error("Клиент ещё не открыл подарок");
+    }
+
+    await redeemMembershipRewardInTransaction(tx, {
+      companyId,
+      membership,
+      cashierId,
+      claimId: openedClaim?.id ?? null,
+      rewardTitle: openedClaim?.title ?? membership.pendingReward ?? program.rewardTitle,
+    });
+  });
+}
+
+export async function findRewardClaimForScan(token: string) {
+  const normalizedToken = normalizeRewardClaimToken(token);
+
+  return getDb().rewardClaim.findUnique({
+    where: { token: normalizedToken },
+    include: {
+      company: true,
+      membership: {
+        include: {
+          user: true,
+          company: { include: { loyaltyProgram: true } },
+        },
+      },
+      user: true,
+      giftOption: true,
+      redeemedBy: { select: { id: true, name: true } },
+    },
+  });
+}
+
+export async function redeemRewardClaimByToken(companyId: string, token: string, cashierId: string) {
+  return getDb().$transaction(async (tx: Prisma.TransactionClient) => {
+    const normalizedToken = normalizeRewardClaimToken(token);
+    const claim = await tx.rewardClaim.findUnique({
+      where: { token: normalizedToken },
+      include: {
+        membership: { include: { company: { include: { loyaltyProgram: true } } } },
       },
     });
 
-    await tx.loyaltyTransaction.create({
-      data: {
-        companyId,
-        membershipId,
-        cashierId,
-        type: LoyaltyTransactionType.REWARD_GRANTED,
-        countBefore,
-        countAfter: 0,
-        rewardTitle: title,
-      },
-    });
+    if (!claim) {
+      throw new Error("Подарочный QR не найден");
+    }
 
-    await tx.auditLog.create({
+    if (claim.companyId !== companyId) {
+      throw new Error("Этот подарок не относится к вашей компании");
+    }
+
+    if (claim.status === RewardClaimStatus.REDEEMED) {
+      throw new Error("Этот подарок уже был выдан");
+    }
+
+    if (claim.status === RewardClaimStatus.AVAILABLE) {
+      throw new Error("Клиент ещё не открыл подарок");
+    }
+
+    if (claim.status !== RewardClaimStatus.OPENED) {
+      throw new Error("Этот подарок сейчас недоступен для выдачи");
+    }
+
+    const company = await refreshCompanyInTransaction(tx, companyId);
+    if (!company || !hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil)) {
+      throw new Error("Сервис компании временно недоступен из-за статуса подписки");
+    }
+
+    if (claim.membership.userId === cashierId) {
+      throw new Error(SELF_OPERATION_MESSAGE);
+    }
+
+    if (!claim.membership.rewardAvailable) {
+      throw new Error("Подарок уже недоступен по карте клиента");
+    }
+
+    await redeemMembershipRewardInTransaction(tx, {
+      companyId,
+      membership: claim.membership,
+      cashierId,
+      claimId: claim.id,
+      rewardTitle: claim.title ?? claim.membership.pendingReward ?? claim.membership.company.loyaltyProgram?.rewardTitle ?? "Подарок",
+    });
+  });
+}
+
+async function redeemMembershipRewardInTransaction(
+  tx: Prisma.TransactionClient,
+  {
+    companyId,
+    membership,
+    cashierId,
+    claimId,
+    rewardTitle,
+  }: {
+    companyId: string;
+    membership: Pick<CustomerMembership, "id" | "currentCount" | "pendingReward">;
+    cashierId: string;
+    claimId: string | null;
+    rewardTitle: string;
+  },
+) {
+  const countBefore = membership.currentCount;
+  const redeemedAt = new Date();
+
+  await tx.customerMembership.update({
+    where: { id: membership.id },
+    data: {
+      currentCount: 0,
+      rewardAvailable: false,
+      pendingReward: null,
+      totalRewards: { increment: 1 },
+      lastActionAt: redeemedAt,
+    },
+  });
+
+  if (claimId) {
+    await tx.rewardClaim.update({
+      where: { id: claimId },
       data: {
-        actorUserId: cashierId,
-        companyId,
-        action: "LOYALTY_REWARD_GRANTED",
-        entityType: "CustomerMembership",
-        entityId: membershipId,
-        metadataJson: JSON.stringify({ rewardTitle: title }),
+        status: RewardClaimStatus.REDEEMED,
+        redeemedAt,
+        redeemedById: cashierId,
       },
     });
+  }
+
+  await tx.loyaltyTransaction.create({
+    data: {
+      companyId,
+      membershipId: membership.id,
+      cashierId,
+      type: LoyaltyTransactionType.REWARD_GRANTED,
+      countBefore,
+      countAfter: 0,
+      rewardTitle,
+    },
+  });
+
+  await tx.auditLog.create({
+    data: {
+      actorUserId: cashierId,
+      companyId,
+      action: "LOYALTY_REWARD_GRANTED",
+      entityType: claimId ? "RewardClaim" : "CustomerMembership",
+      entityId: claimId ?? membership.id,
+      metadataJson: JSON.stringify({
+        membershipId: membership.id,
+        rewardClaimId: claimId,
+        rewardTitle,
+        redeemedAt: redeemedAt.toISOString(),
+      }),
+    },
   });
 }
 
@@ -521,6 +811,10 @@ async function refreshCompanyInTransaction(tx: Prisma.TransactionClient, company
 }
 
 export function newQrToken() {
+  return randomUUID();
+}
+
+export function newRewardToken() {
   return randomUUID();
 }
 

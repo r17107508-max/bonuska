@@ -58,7 +58,7 @@ export default async function CompanyReportsPage() {
       take: 10,
     }),
     getDb().loyaltyTransaction.findMany({
-      where: { companyId: access.companyId, createdAt: { gte: monthStart } },
+      where: { companyId: access.companyId, type: { in: ["PURCHASE", "REWARD_GRANTED"] }, createdAt: { gte: monthStart } },
       include: { cashier: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     }),

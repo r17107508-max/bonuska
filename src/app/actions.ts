@@ -28,6 +28,7 @@ import {
   grantReward,
   joinCompanyProgram,
   newGlobalQrToken,
+  redeemRewardClaimByToken,
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
 import { notifyCompanyApplicationReceived, notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
@@ -873,6 +874,17 @@ export async function giveReward(formData: FormData) {
         reason: suspiciousReason,
       });
     }
+    errorRedirect(`/company/scan?token=${encodeURIComponent(token)}`, error instanceof Error ? error.message : "Не удалось выдать подарок");
+  }
+  redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent("Подарок выдан")}`);
+}
+
+export async function redeemRewardClaim(formData: FormData) {
+  const access = await requireCompanyUser();
+  const token = text(formData, "token");
+  try {
+    await redeemRewardClaimByToken(access.companyId, token, access.userId);
+  } catch (error) {
     errorRedirect(`/company/scan?token=${encodeURIComponent(token)}`, error instanceof Error ? error.message : "Не удалось выдать подарок");
   }
   redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent("Подарок выдан")}`);

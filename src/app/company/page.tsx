@@ -97,7 +97,7 @@ export default async function CompanyDashboardPage() {
                 <div>
                   <p className="font-semibold text-slate-950">{operationLabel(transaction.type)}</p>
                   <p className="text-slate-500">
-                    {transaction.membership.user.name} · кассир: {transaction.cashier.name}
+                    {transaction.membership.user.name} · {transaction.type === "REWARD_OPENED" ? "открыл клиент" : `кассир: ${transaction.cashier.name}`}
                   </p>
                 </div>
                 <p className="font-medium text-slate-500 sm:text-right">{formatDateTime(transaction.createdAt)}</p>
