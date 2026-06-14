@@ -59,12 +59,20 @@ export function CashierBottomNav() {
       </nav>
 
       {isLogoutOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end bg-slate-950/40 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:items-center sm:justify-center">
-          <div role="dialog" aria-modal="true" aria-labelledby="cashier-logout-title" className="w-full rounded-xl bg-white p-5 shadow-2xl sm:max-w-sm">
-            <h2 id="cashier-logout-title" className="text-xl font-semibold text-slate-950">
-              Выйти из аккаунта кассира?
-            </h2>
-            <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-slate-950/45 p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cashier-logout-title"
+            className="flex w-full max-w-sm flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+            style={{ maxHeight: "calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))" }}
+          >
+            <div className="overflow-y-auto p-5">
+              <h2 id="cashier-logout-title" className="text-xl font-semibold text-slate-950">
+                Выйти из аккаунта кассира?
+              </h2>
+            </div>
+            <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-slate-100 bg-white p-5">
               <button
                 type="button"
                 onClick={() => setIsLogoutOpen(false)}
