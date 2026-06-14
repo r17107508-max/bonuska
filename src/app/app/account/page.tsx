@@ -1,24 +1,27 @@
 import Link from "next/link";
 import { HelpCircle, LogOut, ShieldCheck, Trash2, UserRound } from "lucide-react";
-import { deleteCustomerAccount, logout } from "@/app/actions";
+import { changeCustomerPassword, deleteCustomerAccount, logout, updateCustomerProfile } from "@/app/actions";
+import { SubmitButton } from "@/components/buttons";
 import { ClientBrandHeader } from "@/components/client-brand-header";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { requireUser } from "@/lib/auth";
+import { getPartnerCities } from "@/lib/customer-app";
 import { getDb } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; success?: string }>;
 }) {
   const [currentUser, params] = await Promise.all([requireUser("/company/login"), searchParams]);
-  const [user, settings] = await Promise.all([
+  const [user, settings, cities] = await Promise.all([
     getDb().user.findUniqueOrThrow({
       where: { id: currentUser.id },
-      select: { name: true, phone: true, email: true },
+      select: { name: true, phone: true, email: true, city: true },
     }),
     getSettings(),
+    getPartnerCities(),
   ]);
 
   return (
@@ -39,11 +42,76 @@ export default async function AccountPage({
         </section>
 
         {params.error && <p className="rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-800">{params.error}</p>}
+        {params.success === "profile" && <p className="rounded-lg bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Данные аккаунта сохранены.</p>}
+        {params.success === "password" && <p className="rounded-lg bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Пароль изменён.</p>}
 
-        <section className="panel divide-y divide-slate-100">
-          <AccountRow label="Имя" value={user.name} />
-          <AccountRow label="Телефон" value={formatPhone(user.phone)} />
-          <AccountRow label="Email" value={user.email || "Не указан"} />
+        <section className="panel p-4">
+          <form action={updateCustomerProfile} className="space-y-4">
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Имя</span>
+              <input
+                name="name"
+                defaultValue={user.name}
+                required
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+              />
+            </label>
+            <AccountRow label="Телефон" value={formatPhone(user.phone)} />
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Email</span>
+              <input
+                name="email"
+                type="email"
+                defaultValue={user.email ?? ""}
+                placeholder="email@example.ru"
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Город</span>
+              <input
+                name="city"
+                list="account-city-options"
+                defaultValue={user.city ?? ""}
+                required
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+              />
+              <datalist id="account-city-options">
+                {cities.map((city) => (
+                  <option key={city} value={city} />
+                ))}
+              </datalist>
+            </label>
+            <SubmitButton>Сохранить</SubmitButton>
+          </form>
+        </section>
+
+        <section className="panel p-4">
+          <form action={changeCustomerPassword} className="space-y-4">
+            <h2 className="text-xl font-semibold text-slate-950">Сменить пароль</h2>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Текущий пароль</span>
+              <input
+                name="currentPassword"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Новый пароль</span>
+              <input
+                name="newPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={6}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+              />
+            </label>
+            <SubmitButton variant="secondary">Сменить пароль</SubmitButton>
+          </form>
         </section>
 
         <section className="panel p-4">

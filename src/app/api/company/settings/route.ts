@@ -12,6 +12,7 @@ export async function PATCH(request: Request) {
       name: body.name ? String(body.name) : undefined,
       description: body.description ? String(body.description) : undefined,
       businessType: body.businessType ? String(body.businessType) : undefined,
+      city: body.city ? String(body.city) : undefined,
       address: body.address ? String(body.address) : undefined,
       themeColor: body.themeColor ? String(body.themeColor) : undefined,
       icon: body.icon ? String(body.icon) : undefined,

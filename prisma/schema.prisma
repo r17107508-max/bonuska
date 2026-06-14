@@ -19,6 +19,7 @@ enum CompanyStatus {
   PAYMENT_REQUIRED
   BLOCKED
   REJECTED
+  DELETED
 }
 
 enum CompanyUserRole {
@@ -45,6 +46,7 @@ model User {
   name         String
   phone        String
   email        String?
+  city         String?
   passwordHash String
   globalQrToken String?    @unique
   globalRole   GlobalRole @default(USER)
@@ -79,6 +81,8 @@ model Company {
   inn            String?
   comment        String?
   status         CompanyStatus @default(PENDING)
+  deletedAt      DateTime?
+  onboardingChecklistHidden Boolean @default(false)
   trialStartedAt DateTime?
   trialEndsAt    DateTime?
   paidUntil      DateTime?

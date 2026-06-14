@@ -7,11 +7,13 @@ export function ConfirmSubmit({
   title,
   confirmText,
   buttonText,
+  confirmButtonText = "Подтвердить",
   danger = false,
 }: {
   title: string;
   confirmText: string;
   buttonText: string;
+  confirmButtonText?: string;
   danger?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -41,7 +43,7 @@ export function ConfirmSubmit({
               >
                 Отмена
               </button>
-              <ModalSubmitButton danger={danger} />
+              <ModalSubmitButton danger={danger} confirmButtonText={confirmButtonText} />
             </div>
           </div>
         </div>
@@ -52,8 +54,10 @@ export function ConfirmSubmit({
 
 function ModalSubmitButton({
   danger,
+  confirmButtonText,
 }: {
   danger: boolean;
+  confirmButtonText: string;
 }) {
   const { pending } = useFormStatus();
 
@@ -65,7 +69,7 @@ function ModalSubmitButton({
         danger ? "bg-red-700" : "bg-teal-700"
       }`}
     >
-      {pending ? "Отправляем..." : "Подтвердить"}
+      {pending ? "Отправляем..." : confirmButtonText}
     </button>
   );
 }

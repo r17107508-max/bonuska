@@ -30,22 +30,28 @@ export function pickNearestGift(memberships: ClientMembership[]) {
 
 export async function getClientMemberships(userId: string) {
   return getDb().customerMembership.findMany({
-    where: { userId },
+    where: { userId, company: { status: { not: CompanyStatus.DELETED } } },
     include: { company: { include: { loyaltyProgram: true } } },
     orderBy: { updatedAt: "desc" },
   });
 }
 
-export async function getActivePartnerCompanies() {
+export async function getActivePartnerCompanies(city?: string | null) {
   const companies = await getDb().company.findMany({
     where: {
       isBlocked: false,
       status: { in: [CompanyStatus.ACTIVE_TRIAL, CompanyStatus.ACTIVE_PAID] },
       loyaltyProgram: { isNot: null },
+      ...(city ? { city: { equals: city } } : {}),
     },
     include: { loyaltyProgram: true },
     orderBy: [{ city: "asc" }, { name: "asc" }],
   });
 
   return companies.filter((company) => hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil));
+}
+
+export async function getPartnerCities() {
+  const companies = await getActivePartnerCompanies();
+  return Array.from(new Set(companies.map((company) => company.city).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ru"));
 }

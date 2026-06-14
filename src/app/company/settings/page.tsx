@@ -1,6 +1,6 @@
 import Link from "next/link";
 import QRCode from "qrcode";
-import { saveCompanySettings } from "@/app/actions";
+import { saveCompanySettings, showCompanyOnboardingChecklist } from "@/app/actions";
 import { AdminShell, companyNav } from "@/components/admin-shell";
 import { RegistrationQrPoster } from "@/components/registration-qr-poster";
 import { SubmitButton } from "@/components/buttons";
@@ -48,6 +48,17 @@ export default async function CompanySettingsPage({
     <AdminShell title="Настройки акции" subtitle="Ссылка для клиентов, QR-плакат, шаблон программы лояльности и подарок." nav={companyNav}>
       {params.success && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">Настройки сохранены.</p>}
 
+      {access.company.onboardingChecklistHidden && (
+        <form action={showCompanyOnboardingChecklist} className="mb-6 rounded-lg bg-slate-50 p-4">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <p className="text-sm font-semibold text-slate-700">Чек-лист запуска скрыт.</p>
+            <button type="submit" className="min-h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700">
+              Показать чек-лист запуска снова
+            </button>
+          </div>
+        </form>
+      )}
+
       <div id="registration-qr" className="mb-6 scroll-mt-6">
         <RegistrationQrPoster
           companyName={access.company.name}
@@ -91,6 +102,7 @@ export default async function CompanySettingsPage({
           <SelectField label="Иконка прогресса" name="icon" defaultValue={defaults.icon} options={icons.map((item) => ({ value: item.split(" ")[0] ?? "🎁", label: item }))} />
           <FormField label="Цветовая тема" name="themeColor" type="color" defaultValue={defaults.themeColor} />
           <FormField label="Телефон" name="phone" defaultValue={access.company.ownerPhone} />
+          <FormField label="Город" name="city" defaultValue={access.company.city} />
           <FormField label="Адрес" name="address" defaultValue={access.company.address} required={false} />
           <FormField label="Количество покупок до подарка" name="goalCount" type="number" defaultValue={defaults.goalCount} />
           <SelectField label="Тип программы" name="programType" defaultValue={program?.programType ?? "CLASSIC_REWARD"} options={programTypes} />

@@ -14,8 +14,9 @@ export async function POST(request: NextRequest) {
   const phone = normalizePhone(String(body.phone ?? ""));
   const email = String(body.email ?? "").trim();
   const password = String(body.password ?? "");
+  const city = String(body.city ?? "").trim();
 
-  if (!name || !ownerName || phone.length < 10 || !email || password.length < 6 || !body.offerAccepted || !body.privacyAccepted) {
+  if (!name || !ownerName || phone.length < 10 || !email || password.length < 6 || !city || !body.offerAccepted || !body.privacyAccepted) {
     return apiError("Заполните обязательные поля и примите документы");
   }
 
@@ -23,8 +24,8 @@ export async function POST(request: NextRequest) {
   const settings = await getSettings();
   const user = await db.user.upsert({
     where: { phone },
-    update: { name: ownerName, email, passwordHash: await bcrypt.hash(password, 10) },
-    create: { name: ownerName, phone, email, passwordHash: await bcrypt.hash(password, 10), globalQrToken: newGlobalQrToken() },
+    update: { name: ownerName, email, city, passwordHash: await bcrypt.hash(password, 10) },
+    create: { name: ownerName, phone, email, city, passwordHash: await bcrypt.hash(password, 10), globalQrToken: newGlobalQrToken() },
   });
   await ensureGlobalQrToken(user);
 
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       name,
       slug,
       businessType: String(body.businessType ?? "Другое"),
-      city: String(body.city ?? ""),
+      city,
       address: String(body.address ?? ""),
       ownerName,
       ownerPhone: phone,

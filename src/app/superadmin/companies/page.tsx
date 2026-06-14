@@ -24,7 +24,7 @@ export default async function SuperadminCompaniesPage({
 
   const companies = await getDb().company.findMany({
     where: {
-      ...(selectedStatus ? { status: selectedStatus } : {}),
+      ...(selectedStatus ? { status: selectedStatus } : { status: { not: CompanyStatus.DELETED } }),
       ...(q
         ? {
             OR: [

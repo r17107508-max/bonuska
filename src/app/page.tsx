@@ -1,8 +1,7 @@
-import { GlobalRole } from "@prisma/client";
 import { HomeScenarios, type PartnerPreview } from "@/components/home-scenarios";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUserHomePath } from "@/lib/auth";
 import { getActivePartnerCompanies } from "@/lib/customer-app";
-import { getDb } from "@/lib/db";
+import { redirect } from "next/navigation";
 
 export default async function Home() {
   const [currentUser, companies] = await Promise.all([
@@ -10,34 +9,15 @@ export default async function Home() {
     getActivePartnerCompanies(),
   ]);
 
-  const companyUser = currentUser?.globalRole === GlobalRole.SUPERADMIN
-    ? null
-    : currentUser
-      ? await getDb().companyUser.findFirst({
-          where: { userId: currentUser.id, isActive: true },
-          select: { id: true },
-        })
-      : null;
+  if (currentUser) {
+    redirect(await getUserHomePath(currentUser));
+  }
 
-  const businessHref = currentUser
-    ? currentUser.globalRole === GlobalRole.SUPERADMIN
-      ? "/superadmin"
-      : companyUser
-        ? "/company"
-        : "/company/register"
-    : "/company/register";
-
-  const businessLoginHref = currentUser
-    ? currentUser.globalRole === GlobalRole.SUPERADMIN
-      ? "/superadmin"
-      : companyUser
-        ? "/company"
-        : "/company/login"
-    : "/company/login";
-
-  const clientHref = currentUser ? "/app" : "/client/register";
-  const clientLoginHref = currentUser ? "/app" : "/client/login";
-  const superadminHref = currentUser?.globalRole === GlobalRole.SUPERADMIN ? "/superadmin" : null;
+  const businessHref = "/company/register";
+  const businessLoginHref = "/company/login";
+  const clientHref = "/client/register";
+  const clientLoginHref = "/client/login";
+  const superadminHref = null;
 
   const partners: PartnerPreview[] = companies.map((company) => ({
     id: company.id,

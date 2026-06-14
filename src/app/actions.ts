@@ -63,6 +63,7 @@ async function getOrCreateUser(data: {
   name: string;
   phone: string;
   email?: string;
+  city?: string;
   password: string;
 }) {
   const db = getDb();
@@ -73,12 +74,14 @@ async function getOrCreateUser(data: {
     update: {
       name: data.name,
       email: data.email || undefined,
+      city: data.city || undefined,
       passwordHash,
     },
     create: {
       name: data.name,
       phone: data.phone,
       email: data.email || undefined,
+      city: data.city || undefined,
       passwordHash,
       globalQrToken: newGlobalQrToken(),
     },
@@ -109,7 +112,7 @@ export async function loginCompany(formData: FormData) {
   }
 
   const companyUser = await getDb().companyUser.findFirst({
-    where: { userId: user.id, isActive: true },
+    where: { userId: user.id, isActive: true, company: { status: { not: CompanyStatus.DELETED } } },
   });
 
   if (!companyUser) {
@@ -129,7 +132,7 @@ export async function loginClient(formData: FormData) {
   }
 
   const membership = await getDb().customerMembership.findFirst({
-    where: { userId: user.id, company: { slug } },
+    where: { userId: user.id, company: { slug, status: { not: CompanyStatus.DELETED } } },
   });
 
   if (!membership) {
@@ -185,6 +188,62 @@ export async function logout() {
   redirect("/");
 }
 
+export async function updateCustomerProfile(formData: FormData) {
+  const user = await requireUser("/app/account");
+  const name = text(formData, "name");
+  const email = text(formData, "email").toLowerCase();
+  const city = text(formData, "city");
+
+  if (!name) {
+    errorRedirect("/app/account", "Имя не может быть пустым");
+  }
+
+  if (!city) {
+    errorRedirect("/app/account", "Укажите город");
+  }
+
+  await getDb().user.update({
+    where: { id: user.id },
+    data: {
+      name,
+      email: email || null,
+      city,
+    },
+  });
+
+  revalidatePath("/app");
+  revalidatePath("/app/account");
+  revalidatePath("/app/partners");
+  redirect("/app/account?success=profile");
+}
+
+export async function changeCustomerPassword(formData: FormData) {
+  const user = await requireUser("/app/account");
+  const currentPassword = text(formData, "currentPassword");
+  const newPassword = text(formData, "newPassword");
+
+  if (newPassword.length < 6) {
+    errorRedirect("/app/account", "Новый пароль должен быть от 6 символов");
+  }
+
+  const fullUser = await getDb().user.findUniqueOrThrow({
+    where: { id: user.id },
+    select: { passwordHash: true },
+  });
+  const passwordOk = await bcrypt.compare(currentPassword, fullUser.passwordHash);
+
+  if (!passwordOk) {
+    errorRedirect("/app/account", "Текущий пароль указан неверно");
+  }
+
+  await getDb().user.update({
+    where: { id: user.id },
+    data: { passwordHash: await bcrypt.hash(newPassword, 10) },
+  });
+
+  redirect("/app/account?success=password");
+}
+
 export async function registerCompany(formData: FormData) {
   const settings = await getSettings();
   const name = text(formData, "name");
@@ -192,10 +251,12 @@ export async function registerCompany(formData: FormData) {
   const phone = normalizePhone(formData.get("phone"));
   const email = text(formData, "email");
   const password = text(formData, "password");
+  const city = text(formData, "city");
+  const address = text(formData, "address");
   const acceptedOffer = formData.get("offerAccepted") === "on";
   const acceptedPrivacy = formData.get("privacyAccepted") === "on";
 
-  if (!name || !ownerName || phone.length < 10 || !email || password.length < 6) {
+  if (!name || !ownerName || phone.length < 10 || !email || password.length < 6 || !city) {
     errorRedirect("/company/register", "Заполните обязательные поля");
   }
 
@@ -213,15 +274,15 @@ export async function registerCompany(formData: FormData) {
   }
 
   const meta = await requestMeta();
-  const user = await getOrCreateUser({ name: ownerName, phone, email, password });
+  const user = await getOrCreateUser({ name: ownerName, phone, email, city, password });
   await ensureGlobalQrToken(user);
   const company = await db.company.create({
     data: {
       name,
       slug,
       businessType: text(formData, "businessType"),
-      city: text(formData, "city"),
-      address: text(formData, "address"),
+      city,
+      address,
       ownerName,
       ownerPhone: phone,
       ownerEmail: email,
@@ -336,6 +397,40 @@ export async function blockCompany(formData: FormData) {
       auditLogs: { create: { actorUserId: admin.id, action: "COMPANY_BLOCKED", entityType: "Company", entityId: companyId } },
     },
   });
+  redirect(`/superadmin/companies/${companyId}`);
+}
+
+export async function deleteCompanySoft(formData: FormData) {
+  const admin = await requireSuperadmin();
+  const companyId = text(formData, "companyId");
+  const now = new Date();
+
+  await getDb().company.update({
+    where: { id: companyId },
+    data: {
+      status: CompanyStatus.DELETED,
+      isBlocked: true,
+      deletedAt: now,
+      users: {
+        updateMany: {
+          where: { isActive: true },
+          data: { isActive: false },
+        },
+      },
+      auditLogs: {
+        create: {
+          actorUserId: admin.id,
+          action: "COMPANY_SOFT_DELETED",
+          entityType: "Company",
+          entityId: companyId,
+          metadataJson: JSON.stringify({ deletedAt: now.toISOString() }),
+        },
+      },
+    },
+  });
+
+  revalidatePath("/superadmin");
+  revalidatePath("/superadmin/companies");
   redirect(`/superadmin/companies/${companyId}`);
 }
 
@@ -472,6 +567,7 @@ export async function saveCompanySettings(formData: FormData) {
       businessType: text(formData, "businessType"),
       icon: text(formData, "icon") || "🎁",
       themeColor: text(formData, "themeColor") || "#0f766e",
+      city: text(formData, "city") || access.company.city,
       address: text(formData, "address"),
       ownerPhone: text(formData, "phone") || access.company.ownerPhone,
       loyaltyProgram: {
@@ -533,6 +629,7 @@ export async function createStaff(formData: FormData) {
   const user = await getOrCreateUser({
     name: text(formData, "name"),
     phone,
+    city: access.company.city,
     password,
   });
   await ensureGlobalQrToken(user);
@@ -564,7 +661,8 @@ export async function registerCustomer(formData: FormData) {
 
   const phone = normalizePhone(formData.get("phone"));
   const password = text(formData, "password");
-  if (!text(formData, "name") || phone.length < 10 || password.length < 6) {
+  const city = text(formData, "city") || company.city;
+  if (!text(formData, "name") || phone.length < 10 || password.length < 6 || !city) {
     errorRedirect(`/c/${slug}`, "Заполните имя, телефон и пароль от 6 символов");
   }
 
@@ -577,11 +675,16 @@ export async function registerCustomer(formData: FormData) {
   const user = await getOrCreateUser({
     name: text(formData, "name"),
     phone,
+    city,
     password,
   });
   await ensureGlobalQrToken(user);
 
-  await joinCompanyProgram(company.id, user.id);
+  try {
+    await joinCompanyProgram(company.id, user.id);
+  } catch (error) {
+    errorRedirect(`/c/${slug}`, error instanceof Error ? error.message : "Компания сейчас недоступна");
+  }
 
   await getDb().personalDataConsent.create({
     data: {
@@ -601,8 +704,9 @@ export async function registerClientAccount(formData: FormData) {
   const name = text(formData, "name");
   const phone = normalizePhone(formData.get("phone"));
   const password = text(formData, "password");
+  const city = text(formData, "city");
 
-  if (!name || phone.length < 10 || password.length < 6) {
+  if (!name || phone.length < 10 || password.length < 6 || !city) {
     errorRedirect("/client/register", "Заполните имя, телефон и пароль от 6 символов");
   }
 
@@ -623,6 +727,7 @@ export async function registerClientAccount(formData: FormData) {
     data: {
       name,
       phone,
+      city,
       passwordHash,
       globalQrToken: newGlobalQrToken(),
       personalDataConsents: {
@@ -640,6 +745,31 @@ export async function registerClientAccount(formData: FormData) {
   redirect("/app");
 }
 
+export async function hideCompanyOnboardingChecklist() {
+  const access = await requireCompanyAdmin();
+
+  await getDb().company.update({
+    where: { id: access.companyId },
+    data: { onboardingChecklistHidden: true },
+  });
+
+  revalidatePath("/company");
+  redirect("/company");
+}
+
+export async function showCompanyOnboardingChecklist() {
+  const access = await requireCompanyAdmin();
+
+  await getDb().company.update({
+    where: { id: access.companyId },
+    data: { onboardingChecklistHidden: false },
+  });
+
+  revalidatePath("/company");
+  revalidatePath("/company/settings");
+  redirect("/company/settings?success=1");
+}
+
 export async function joinCompanyFromPublicPage(formData: FormData) {
   const slug = text(formData, "slug");
   const user = await requireUser(`/c/${slug}`);
@@ -653,7 +783,12 @@ export async function joinCompanyFromPublicPage(formData: FormData) {
   }
 
   await ensureGlobalQrToken(user);
-  const membership = await joinCompanyProgram(company.id, user.id);
+  let membership: Awaited<ReturnType<typeof joinCompanyProgram>>;
+  try {
+    membership = await joinCompanyProgram(company.id, user.id);
+  } catch (error) {
+    errorRedirect(`/c/${slug}`, error instanceof Error ? error.message : "Компания сейчас недоступна");
+  }
   redirect(`/app/cards/${membership.id}`);
 }
 

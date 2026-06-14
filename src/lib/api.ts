@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { CompanyUserRole, GlobalRole } from "@prisma/client";
+import { CompanyStatus, CompanyUserRole, GlobalRole } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
@@ -29,6 +29,7 @@ export async function requireApiCompanyUser(roles?: CompanyUserRole[]) {
     where: {
       userId: user.id,
       isActive: true,
+      company: { status: { not: CompanyStatus.DELETED } },
       ...(roles ? { role: { in: roles } } : {}),
     },
     include: { company: true, user: true },

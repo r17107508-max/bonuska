@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { apiError, ok } from "@/lib/api";
+import { CompanyStatus } from "@prisma/client";
 
 export async function GET(
   _request: Request,
@@ -9,7 +10,7 @@ export async function GET(
   const user = await requireUser();
   const { membershipId } = await params;
   const card = await getDb().customerMembership.findFirst({
-    where: { id: membershipId, userId: user.id },
+    where: { id: membershipId, userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
     include: {
       company: { include: { loyaltyProgram: true } },
       transactions: {

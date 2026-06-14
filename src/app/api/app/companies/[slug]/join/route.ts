@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { apiError, ok } from "@/lib/api";
 import { ensureGlobalQrToken, joinCompanyProgram } from "@/lib/loyalty";
+import { CompanyStatus } from "@prisma/client";
 
 export async function POST(
   _request: Request,
@@ -14,12 +15,17 @@ export async function POST(
     include: { loyaltyProgram: true },
   });
 
-  if (!company || !company.loyaltyProgram) {
+  if (!company || company.status === CompanyStatus.DELETED || company.isBlocked || !company.loyaltyProgram) {
     return apiError("Компания не найдена", 404);
   }
 
   await ensureGlobalQrToken(user);
-  const membership = await joinCompanyProgram(company.id, user.id);
+  let membership: Awaited<ReturnType<typeof joinCompanyProgram>>;
+  try {
+    membership = await joinCompanyProgram(company.id, user.id);
+  } catch (error) {
+    return apiError(error instanceof Error ? error.message : "Компания сейчас недоступна", 403);
+  }
 
   return ok({ membership });
 }

@@ -77,6 +77,10 @@ export async function refreshCompanySubscription(companyId: string) {
     return null;
   }
 
+  if (company.status === CompanyStatus.DELETED) {
+    return company;
+  }
+
   const now = new Date();
   if (company.status === CompanyStatus.ACTIVE_TRIAL && company.trialEndsAt && company.trialEndsAt <= now) {
     return db.company.update({
@@ -149,6 +153,7 @@ export async function findMembershipForScan(companyId: string, token: string) {
     where: {
       companyId,
       qrToken: parsed.token,
+      company: { status: { not: CompanyStatus.DELETED } },
     },
     include: {
       user: true,
@@ -182,6 +187,7 @@ async function findMembershipByGlobalToken(companyId: string, globalQrToken: str
     where: {
       companyId,
       userId: user.id,
+      company: { status: { not: CompanyStatus.DELETED } },
     },
     include: {
       user: true,
@@ -205,6 +211,7 @@ async function findMembershipByDynamicToken(companyId: string, dynamicToken: str
     where: {
       companyId,
       userId,
+      company: { status: { not: CompanyStatus.DELETED } },
     },
     include: {
       user: true,
@@ -245,7 +252,7 @@ export async function findCustomerForGlobalScan(companyId: string, token: string
   }
 
   const membership = await getDb().customerMembership.findFirst({
-    where: { companyId, userId: user.id },
+    where: { companyId, userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
     select: { id: true },
   });
 
@@ -254,6 +261,11 @@ export async function findCustomerForGlobalScan(companyId: string, token: string
 
 export async function joinCompanyProgram(companyId: string, userId: string, actorUserId?: string | null) {
   const db = getDb();
+  const company = await refreshCompanySubscription(companyId);
+  if (!company || !hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil)) {
+    throw new Error("Компания сейчас недоступна для участия");
+  }
+
   const membership = await db.customerMembership.upsert({
     where: { companyId_userId: { companyId, userId } },
     update: {},

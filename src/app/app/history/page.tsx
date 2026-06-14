@@ -1,5 +1,5 @@
 import { Clock3 } from "lucide-react";
-import { LoyaltyTransactionType } from "@prisma/client";
+import { CompanyStatus, LoyaltyTransactionType } from "@prisma/client";
 import { ClientBrandHeader } from "@/components/client-brand-header";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format";
 export default async function ClientHistoryPage() {
   const user = await requireUser("/company/login");
   const transactions = await getDb().loyaltyTransaction.findMany({
-    where: { membership: { userId: user.id } },
+    where: { membership: { userId: user.id, company: { status: { not: CompanyStatus.DELETED } } } },
     include: {
       company: { include: { loyaltyProgram: true } },
       cashier: { select: { id: true, name: true } },

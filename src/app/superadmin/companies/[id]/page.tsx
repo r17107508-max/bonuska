@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
-import type { AuditLog, User } from "@prisma/client";
-import { approveCompany, blockCompany, extendCompany, markPayment, rejectCompany, unblockCompany } from "@/app/actions";
+import { CompanyStatus, type AuditLog, type User } from "@prisma/client";
+import { approveCompany, blockCompany, deleteCompanySoft, extendCompany, markPayment, rejectCompany, unblockCompany } from "@/app/actions";
 import { AdminShell, superadminNav } from "@/components/admin-shell";
 import { InlineSubmit } from "@/components/buttons";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { requireSuperadmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { daysLeft, formatDate, formatDateTime, money, statusClass, statusLabel } from "@/lib/format";
@@ -71,6 +72,7 @@ export default async function SuperadminCompanyPage({
             <Info label="Trial до" value={`${formatDate(company.trialEndsAt)} · ${daysLeft(company.trialEndsAt)} дн.`} />
             <Info label="Оплачено до" value={`${formatDate(company.paidUntil)} · ${daysLeft(company.paidUntil)} дн.`} />
             <Info label="Последняя оплата" value={formatDateTime(company.lastPaidAt)} />
+            <Info label="Удалена" value={formatDateTime(company.deletedAt)} />
             <Info label="Клиентов" value={String(company.memberships.length)} />
             <Info label="Операций" value={String(company.transactions.length)} />
             <Info label="Slug" value={`/c/${company.slug}`} />
@@ -103,14 +105,41 @@ export default async function SuperadminCompanyPage({
           <section className="panel p-5">
             <h2 className="text-xl font-semibold text-slate-950">Действия</h2>
             <div className="mt-4 grid gap-3">
-              {action(approveCompany, "Подтвердить")}
-              {action(rejectCompany, "Отклонить", "danger")}
-              {action(blockCompany, "Заблокировать", "danger")}
-              {action(unblockCompany, "Разблокировать", "secondary")}
-              {action(markPayment, `Отметить оплату ${money(settings.subscriptionPrice)}`)}
-              {action(extendCompany, "Продлить на 30 дней", "secondary")}
+              {company.status === CompanyStatus.DELETED ? (
+                <p className="rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">
+                  Компания удалена. Обычные действия недоступны, история сохранена.
+                </p>
+              ) : (
+                <>
+                  {action(approveCompany, "Подтвердить")}
+                  {action(rejectCompany, "Отклонить", "danger")}
+                  {action(blockCompany, "Заблокировать", "danger")}
+                  {action(unblockCompany, "Разблокировать", "secondary")}
+                  {action(markPayment, `Отметить оплату ${money(settings.subscriptionPrice)}`)}
+                  {action(extendCompany, "Продлить на 30 дней", "secondary")}
+                </>
+              )}
             </div>
           </section>
+
+          {company.status !== CompanyStatus.DELETED && (
+            <section className="panel border-red-200 p-5">
+              <h2 className="text-xl font-semibold text-red-900">Удаление компании</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Компания будет скрыта из приложения, доступ владельца, кассиров и клиентов к этой компании будет закрыт. История сохранится.
+              </p>
+              <form action={deleteCompanySoft} className="mt-4">
+                <input type="hidden" name="companyId" value={company.id} />
+                <ConfirmSubmit
+                  danger
+                  title="Удалить компанию?"
+                  confirmText="Вы уверены, что хотите удалить компанию? Компания будет скрыта из приложения, доступ владельца, кассиров и клиентов к этой компании будет закрыт. История сохранится."
+                  buttonText="Удалить компанию"
+                  confirmButtonText="Удалить"
+                />
+              </form>
+            </section>
+          )}
 
           <section className="panel p-5">
             <h2 className="text-xl font-semibold text-slate-950">Email-уведомления</h2>

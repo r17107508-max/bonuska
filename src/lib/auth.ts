@@ -6,7 +6,7 @@ import { CompanyStatus, CompanyUserRole, GlobalRole, type User } from "@prisma/c
 import { getDb } from "@/lib/db";
 
 const COOKIE_NAME = "tega_session";
-const SESSION_DAYS = 90;
+const SESSION_DAYS = 30;
 const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "replace-this-local-secret-before-production",
 );
@@ -15,7 +15,7 @@ type SessionPayload = {
   sub: string;
 };
 
-export type CurrentUser = Pick<User, "id" | "name" | "phone" | "email" | "globalRole">;
+export type CurrentUser = Pick<User, "id" | "name" | "phone" | "email" | "city" | "globalRole">;
 
 export async function createSession(user: Pick<User, "id">) {
   const token = await new SignJWT({})
@@ -69,7 +69,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   return getDb().user.findUnique({
     where: { id: session.sub },
-    select: { id: true, name: true, phone: true, email: true, globalRole: true },
+    select: { id: true, name: true, phone: true, email: true, city: true, globalRole: true },
   });
 }
 
@@ -79,7 +79,7 @@ export async function getUserHomePath(user: Pick<User, "id" | "globalRole">) {
   }
 
   const companyUser = await getDb().companyUser.findFirst({
-    where: { userId: user.id, isActive: true },
+    where: { userId: user.id, isActive: true, company: { status: { not: CompanyStatus.DELETED } } },
     orderBy: { createdAt: "asc" },
   });
 
@@ -88,7 +88,7 @@ export async function getUserHomePath(user: Pick<User, "id" | "globalRole">) {
   }
 
   const membership = await getDb().customerMembership.findFirst({
-    where: { userId: user.id },
+    where: { userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
     select: { id: true },
     orderBy: { createdAt: "desc" },
   });
@@ -126,6 +126,7 @@ export async function requireCompanyUser(roles?: CompanyUserRole[]) {
     where: {
       userId: user.id,
       isActive: true,
+      company: { status: { not: CompanyStatus.DELETED } },
       ...(roles ? { role: { in: roles } } : {}),
     },
     include: {
@@ -153,7 +154,7 @@ export async function requireCustomerMembership(slug: string) {
   const membership = await getDb().customerMembership.findFirst({
     where: {
       userId: user.id,
-      company: { slug },
+      company: { slug, status: { not: CompanyStatus.DELETED } },
     },
     include: {
       company: { include: { loyaltyProgram: true } },
@@ -187,7 +188,7 @@ export async function authenticate(phone: string, password: string) {
 }
 
 export function isCompanyAccessible(status: CompanyStatus, paidUntil: Date | null, trialEndsAt: Date | null) {
-  if (status === CompanyStatus.BLOCKED || status === CompanyStatus.REJECTED || status === CompanyStatus.PENDING) {
+  if (status === CompanyStatus.BLOCKED || status === CompanyStatus.REJECTED || status === CompanyStatus.PENDING || status === CompanyStatus.DELETED) {
     return false;
   }
 

@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import { apiError, ok } from "@/lib/api";
+import { CompanyStatus } from "@prisma/client";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -7,7 +8,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     where: { slug },
     include: { loyaltyProgram: true },
   });
-  if (!company) {
+  if (!company || company.status === CompanyStatus.DELETED || company.isBlocked) {
     return apiError("Компания не найдена", 404);
   }
   return ok({ company });

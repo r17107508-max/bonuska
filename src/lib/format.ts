@@ -49,6 +49,7 @@ export function statusLabel(status: CompanyStatus) {
     PAYMENT_REQUIRED: "Нужна оплата",
     BLOCKED: "Заблокирована",
     REJECTED: "Отклонена",
+    DELETED: "Удалена",
   };
 
   return labels[status];
@@ -62,6 +63,7 @@ export function statusClass(status: CompanyStatus) {
     PAYMENT_REQUIRED: "bg-rose-100 text-rose-800",
     BLOCKED: "bg-zinc-200 text-zinc-800",
     REJECTED: "bg-red-100 text-red-800",
+    DELETED: "bg-slate-200 text-slate-700",
   };
 
   return classes[status];

@@ -51,7 +51,8 @@ export default async function CompanyRegisterPage({
                 <form action={registerCompany} className="mt-6 grid gap-4 sm:grid-cols-2">
                   <FormField label="Название компании" name="name" />
                   <SelectField label="Тип бизнеса" name="businessType" options={businessTypes.map((item) => ({ value: item.replace(/^.\s/, ""), label: item }))} />
-                  <FormField label="Город" name="city" />
+                  <FormField label="Город" name="city" autoComplete="address-level2" />
+                  <FormField label="Адрес" name="address" required={false} autoComplete="street-address" />
                   <FormField label="ФИО владельца/управляющего" name="ownerName" />
                   <FormField label="Телефон" name="phone" autoComplete="tel" />
                   <FormField label="Email для уведомлений" name="email" type="email" autoComplete="email" />
@@ -59,7 +60,6 @@ export default async function CompanyRegisterPage({
                     <FormField label="Пароль для кабинета" name="password" type="password" autoComplete="new-password" />
                   </div>
 
-                  <input type="hidden" name="address" value="" />
                   <input type="hidden" name="inn" value="" />
                   <input type="hidden" name="slug" value="" />
                   <input type="hidden" name="comment" value="" />

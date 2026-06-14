@@ -2,6 +2,7 @@ import Link from "next/link";
 import QRCode from "qrcode";
 import { CompanyUserRole } from "@prisma/client";
 import { CheckCircle2, Gift, QrCode, ScanLine, UserPlus, Users } from "lucide-react";
+import { hideCompanyOnboardingChecklist } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { RegistrationQrPoster } from "@/components/registration-qr-poster";
 import { requireCompanyUser } from "@/lib/auth";
@@ -19,10 +20,15 @@ export default async function CompanyDashboardPage() {
   today.setHours(0, 0, 0, 0);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [clientsTotal, operationsToday, operationsMonth, staffTotal, recentTransactions] = await Promise.all([
+  const activeClientSince = new Date(now);
+  activeClientSince.setDate(activeClientSince.getDate() - 30);
+
+  const [clientsTotal, activeClients, operationsToday, operationsMonth, rewardsIssued, staffTotal, recentTransactions] = await Promise.all([
     getDb().customerMembership.count({ where: { companyId: access.companyId } }),
+    getDb().customerMembership.count({ where: { companyId: access.companyId, lastActionAt: { gte: activeClientSince } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, createdAt: { gte: today } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, createdAt: { gte: monthStart } } }),
+    getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "REWARD_GRANTED" } }),
     getDb().companyUser.count({ where: { companyId: access.companyId, isActive: true } }),
     getDb().loyaltyTransaction.findMany({
       where: { companyId: access.companyId },
@@ -53,6 +59,7 @@ export default async function CompanyDashboardPage() {
     { done: operationsMonth > 0, label: "Сделать первое начисление", href: "/company/scan" },
   ];
   const completedSteps = setupProgress.filter((item) => item.done).length;
+  const showSetupChecklist = !access.company.onboardingChecklistHidden && completedSteps < setupProgress.length;
 
   if (isCashier) {
     return (
@@ -135,27 +142,36 @@ export default async function CompanyDashboardPage() {
         />
       )}
 
-      <section className="panel mb-6 p-5">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <div>
-            <p className="text-sm font-semibold uppercase text-teal-700">Первый запуск</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-950">Чек-лист запуска: {completedSteps}/{setupProgress.length}</h2>
-            <p className="mt-2 text-slate-600">Выполните эти шаги, чтобы за trial получить первых клиентов и понять ценность сервиса.</p>
+      {showSetupChecklist && (
+        <section className="panel mb-6 p-5">
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase text-teal-700">Первый запуск</p>
+              <h2 className="mt-1 text-2xl font-semibold text-slate-950">Чек-лист запуска: {completedSteps}/{setupProgress.length}</h2>
+              <p className="mt-2 text-slate-600">Выполните эти шаги, чтобы за trial получить первых клиентов и понять ценность сервиса.</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Link href="/company/settings#registration-qr" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white">
+                <QrCode aria-hidden className="size-5" />
+                Распечатать QR
+              </Link>
+              <form action={hideCompanyOnboardingChecklist}>
+                <button type="submit" className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-4 font-semibold text-slate-700">
+                  Скрыть чек-лист
+                </button>
+              </form>
+            </div>
           </div>
-          <Link href="/company/settings#registration-qr" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white">
-            <QrCode aria-hidden className="size-5" />
-            Распечатать QR
-          </Link>
-        </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-5">
-          {setupProgress.map((item) => (
-            <Link key={item.label} href={item.href} className={`rounded-lg border p-3 text-sm font-semibold ${item.done ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-700"}`}>
-              <CheckCircle2 aria-hidden className={`mb-2 size-5 ${item.done ? "text-emerald-700" : "text-slate-300"}`} />
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </section>
+          <div className="mt-5 grid gap-3 md:grid-cols-5">
+            {setupProgress.map((item) => (
+              <Link key={item.label} href={item.href} className={`rounded-lg border p-3 text-sm font-semibold ${item.done ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-700"}`}>
+                <CheckCircle2 aria-hidden className={`mb-2 size-5 ${item.done ? "text-emerald-700" : "text-slate-300"}`} />
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="panel p-5">
@@ -166,6 +182,8 @@ export default async function CompanyDashboardPage() {
         <Metric label="Клиентов всего" value={clientsTotal} />
         <Metric label="Операций сегодня" value={operationsToday} />
         <Metric label="Операций за месяц" value={operationsMonth} />
+        <Metric label="Подарков выдано" value={rewardsIssued} />
+        <Metric label="Активных клиентов" value={activeClients} />
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-4">

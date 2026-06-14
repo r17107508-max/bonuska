@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CompanyStatus } from "@prisma/client";
 import { Gift, QrCode, ScanLine, Smartphone } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { joinCompanyFromPublicPage, loginClient, registerCustomer } from "@/app/actions";
@@ -21,7 +22,7 @@ export default async function PublicCompanyPage({
     include: { loyaltyProgram: true },
   });
 
-  if (!company || !company.loyaltyProgram) {
+  if (!company || company.status === CompanyStatus.DELETED || !company.loyaltyProgram) {
     notFound();
   }
 
@@ -31,7 +32,7 @@ export default async function PublicCompanyPage({
 
   if (currentUser && !query.error) {
     const membership = await getDb().customerMembership.findFirst({
-      where: { userId: currentUser.id, companyId: company.id },
+      where: { userId: currentUser.id, companyId: company.id, company: { status: { not: CompanyStatus.DELETED } } },
       select: { id: true },
     });
 
@@ -93,6 +94,7 @@ export default async function PublicCompanyPage({
               <h2 className="text-xl font-semibold text-slate-950">Получить бонусную карту</h2>
               <FormField label="Имя" name="name" autoComplete="name" />
               <FormField label="Телефон" name="phone" autoComplete="tel" />
+              <FormField label="Город" name="city" defaultValue={company.city} autoComplete="address-level2" />
               <FormField label="Пароль для входа на другом телефоне" name="password" type="password" autoComplete="new-password" />
               <label className="flex gap-3 text-sm font-medium text-slate-700">
                 <input name="privacyAccepted" type="checkbox" required className="mt-1 size-4" />

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GlobalRole } from "@prisma/client";
+import { CompanyStatus, GlobalRole } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { loginClientAccount } from "@/app/actions";
 import { AuthShell } from "@/components/auth-shell";
@@ -21,7 +21,7 @@ export default async function ClientLoginPage({
     }
 
     const companyUser = await getDb().companyUser.findFirst({
-      where: { userId: currentUser.id, isActive: true },
+      where: { userId: currentUser.id, isActive: true, company: { status: { not: CompanyStatus.DELETED } } },
       select: { id: true },
     });
 

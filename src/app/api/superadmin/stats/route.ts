@@ -8,6 +8,7 @@ export async function GET() {
   if (error) return error;
   const [companies, payments, operations, suspiciousAttempts, paymentRequests, emailLogs] = await Promise.all([
     getDb().company.findMany({
+      where: { status: { not: CompanyStatus.DELETED } },
       include: {
         memberships: true,
         transactions: true,

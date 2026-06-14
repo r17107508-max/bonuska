@@ -11,6 +11,7 @@ export default async function SuperadminPage() {
   const db = getDb();
   const [companies, payments, operations, suspiciousAttempts, paymentRequests, emailLogs] = await Promise.all([
     db.company.findMany({
+      where: { status: { not: CompanyStatus.DELETED } },
       include: {
         memberships: true,
         transactions: true,

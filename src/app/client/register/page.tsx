@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GlobalRole } from "@prisma/client";
+import { CompanyStatus, GlobalRole } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { registerClientAccount } from "@/app/actions";
 import { AuthShell } from "@/components/auth-shell";
@@ -21,7 +21,7 @@ export default async function ClientRegisterPage({
     }
 
     const companyUser = await getDb().companyUser.findFirst({
-      where: { userId: currentUser.id, isActive: true },
+      where: { userId: currentUser.id, isActive: true, company: { status: { not: CompanyStatus.DELETED } } },
       select: { id: true },
     });
 
@@ -34,6 +34,7 @@ export default async function ClientRegisterPage({
       <form action={registerClientAccount} className="mt-6 space-y-4">
         <FormField label="Имя" name="name" autoComplete="name" />
         <FormField label="Телефон" name="phone" autoComplete="tel" />
+        <FormField label="Город" name="city" autoComplete="address-level2" />
         <FormField label="Пароль" name="password" type="password" autoComplete="new-password" />
         <label className="flex gap-3 text-sm font-medium text-slate-700">
           <input name="privacyAccepted" type="checkbox" required className="mt-1 size-4" />

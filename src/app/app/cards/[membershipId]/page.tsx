@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CompanyStatus } from "@prisma/client";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { leaveCustomerMembership } from "@/app/actions";
@@ -18,7 +19,7 @@ export default async function ClientCardPage({
   const user = await requireUser("/company/login");
   const { membershipId } = await params;
   const membership = await getDb().customerMembership.findFirst({
-    where: { id: membershipId, userId: user.id },
+    where: { id: membershipId, userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
     include: {
       company: { include: { loyaltyProgram: true } },
       user: true,
