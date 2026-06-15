@@ -6,6 +6,7 @@ import { RegistrationQrPoster } from "@/components/registration-qr-poster";
 import { SubmitButton } from "@/components/buttons";
 import { FormField, SelectField, TextAreaField } from "@/components/form-field";
 import { requireCompanyAdmin } from "@/lib/auth";
+import { getDb } from "@/lib/db";
 import { findLoyaltyTemplate, loyaltyTemplates } from "@/lib/loyalty-templates";
 import { getCompanyRegistrationUrl } from "@/lib/request-url";
 
@@ -29,6 +30,7 @@ export default async function CompanySettingsPage({
   const program = access.company.loyaltyProgram;
   const selectedTemplate = findLoyaltyTemplate(params.template);
   const clientUrl = await getCompanyRegistrationUrl(access.company.slug);
+  const giftOptions = await getCompanyGiftOptions(access.companyId);
   const qrDataUrl = await QRCode.toDataURL(clientUrl, {
     width: 420,
     margin: 1,
@@ -114,7 +116,7 @@ export default async function CompanySettingsPage({
           label="Подарки для коробки, по одному в строке"
           name="giftOptions"
           rows={5}
-          defaultValue={"кофе\nдесерт\nскидка 10%\nскидка 20%\nсироп бесплатно\nапгрейд размера"}
+          defaultValue={giftOptions.length > 0 ? giftOptions.map((gift) => gift.title).join("\n") : ""}
         />
         <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
           <p className="font-semibold">Ссылка для клиентов: {clientUrl}</p>
@@ -124,4 +126,12 @@ export default async function CompanySettingsPage({
       </form>
     </AdminShell>
   );
+}
+
+async function getCompanyGiftOptions(companyId: string) {
+  return getDb().giftOption.findMany({
+    where: { companyId },
+    orderBy: { createdAt: "asc" },
+    select: { title: true },
+  });
 }

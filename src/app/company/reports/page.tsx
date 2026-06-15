@@ -87,6 +87,10 @@ export default async function CompanyReportsPage() {
   const activeClients7 = new Set(weekTransactions.map((transaction) => transaction.membershipId)).size;
   const cashierStats = Array.from(
     monthTransactions.reduce((map, transaction) => {
+      if (transaction.type === "REWARD_OPENED") {
+        return map;
+      }
+
       const current = map.get(transaction.cashierId) ?? {
         cashierId: transaction.cashierId,
         cashierName: transaction.cashier.name,

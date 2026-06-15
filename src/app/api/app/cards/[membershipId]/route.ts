@@ -1,7 +1,9 @@
+import QRCode from "qrcode";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { apiError, ok } from "@/lib/api";
-import { CompanyStatus } from "@prisma/client";
+import { buildRewardQrPayload } from "@/lib/loyalty";
+import { CompanyStatus, RewardClaimStatus } from "@prisma/client";
 
 export async function GET(
   _request: Request,
@@ -24,5 +26,30 @@ export async function GET(
     return apiError("Карта не найдена", 404);
   }
 
-  return ok({ card });
+  const activeRewardClaim = card.rewardAvailable
+    ? await getDb().rewardClaim.findFirst({
+        where: {
+          membershipId: card.id,
+          status: { in: [RewardClaimStatus.OPENED, RewardClaimStatus.AVAILABLE] },
+        },
+        orderBy: [{ openedAt: "desc" }, { createdAt: "asc" }],
+      })
+    : null;
+  const rewardClaim = activeRewardClaim?.status === RewardClaimStatus.OPENED
+    ? {
+        id: activeRewardClaim.id,
+        status: activeRewardClaim.status,
+        title: activeRewardClaim.title,
+        description: activeRewardClaim.description,
+        openedAt: activeRewardClaim.openedAt,
+        qrPayload: buildRewardQrPayload(activeRewardClaim.token),
+        qrDataUrl: await QRCode.toDataURL(buildRewardQrPayload(activeRewardClaim.token), {
+          margin: 1,
+          width: 360,
+          color: { dark: "#92400e", light: "#ffffff" },
+        }),
+      }
+    : null;
+
+  return ok({ card, rewardClaim });
 }

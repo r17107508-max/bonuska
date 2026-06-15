@@ -609,8 +609,8 @@ export async function saveCompanySettings(formData: FormData) {
     .map((item) => item.trim())
     .filter(Boolean);
 
+  await getDb().giftOption.deleteMany({ where: { companyId: access.companyId } });
   if (gifts.length > 0) {
-    await getDb().giftOption.deleteMany({ where: { companyId: access.companyId } });
     await getDb().giftOption.createMany({
       data: gifts.map((title) => ({ companyId: access.companyId, title })),
     });

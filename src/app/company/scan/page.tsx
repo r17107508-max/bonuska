@@ -49,6 +49,16 @@ export default async function CompanyScanPage({
     membership?.company.loyaltyProgram &&
       (membership.company.loyaltyProgram.programType === LoyaltyProgramType.GIFT_BOX || membership.company.loyaltyProgram.isGiftBoxEnabled),
   );
+  const openedRewardClaim = membership && scannedMembershipUsesGiftBox
+    ? await getDb().rewardClaim.findFirst({
+        where: {
+          companyId: access.companyId,
+          membershipId: membership.id,
+          status: RewardClaimStatus.OPENED,
+        },
+        orderBy: [{ openedAt: "desc" }, { createdAt: "desc" }],
+      })
+    : null;
 
   return (
     <AdminShell
@@ -110,9 +120,7 @@ export default async function CompanyScanPage({
       )}
 
       {active && membership && membership.company.loyaltyProgram && (
-        <form action={membership.rewardAvailable ? giveReward : confirmPurchase} className="panel mb-5 border-2 border-teal-200 bg-teal-50 p-5">
-          <input type="hidden" name="membershipId" value={membership.id} />
-          <input type="hidden" name="token" value={token} />
+        <section className="panel mb-5 border-2 border-teal-200 bg-teal-50 p-5">
           <p className="text-sm font-semibold uppercase text-teal-800">QR распознан</p>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -123,26 +131,48 @@ export default async function CompanyScanPage({
               </p>
             </div>
             <div className="w-full sm:w-72">
-              {membership.rewardAvailable && scannedMembershipUsesGiftBox ? (
+              {membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
+                <div className="rounded-lg bg-amber-100 p-3 text-sm text-amber-950">
+                  <p className="font-semibold">🎁 У клиента есть открытый подарок</p>
+                  <p className="mt-1 font-semibold">{openedRewardClaim.title ?? "Подарок"}</p>
+                  {openedRewardClaim.description && <p className="mt-1">{openedRewardClaim.description}</p>}
+                  <form action={redeemRewardClaim} className="mt-3">
+                    <input type="hidden" name="token" value={openedRewardClaim.token} />
+                    <ConfirmSubmit
+                      title="Выдать подарок?"
+                      confirmText={`Подтвердите выдачу: ${openedRewardClaim.title ?? "Подарок"}. После выдачи прогресс клиента сбросится, а QR станет недействительным.`}
+                      buttonText="Выдать подарок"
+                    />
+                  </form>
+                </div>
+              ) : membership.rewardAvailable && scannedMembershipUsesGiftBox ? (
                 <div className="rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-950">
                   Попросите клиента открыть подарок и показать подарочный QR-код. По обычному QR видно только прогресс карты.
                 </div>
               ) : membership.rewardAvailable ? (
-                <ConfirmSubmit
-                  title="Выдать подарок?"
-                  confirmText={`Подтвердите выдачу: ${membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}. После выдачи прогресс клиента сбросится.`}
-                  buttonText="Выдать подарок"
-                />
+                <form action={giveReward}>
+                  <input type="hidden" name="membershipId" value={membership.id} />
+                  <input type="hidden" name="token" value={token} />
+                  <ConfirmSubmit
+                    title="Выдать подарок?"
+                    confirmText={`Подтвердите выдачу: ${membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}. После выдачи прогресс клиента сбросится.`}
+                    buttonText="Выдать подарок"
+                  />
+                </form>
               ) : (
-                <ConfirmSubmit
-                  title="Начислить покупку?"
-                  confirmText="Подтвердите, что клиент совершил покупку сейчас. Повторное начисление одному клиенту временно блокируется."
-                  buttonText="Начислить покупку"
-                />
+                <form action={confirmPurchase}>
+                  <input type="hidden" name="membershipId" value={membership.id} />
+                  <input type="hidden" name="token" value={token} />
+                  <ConfirmSubmit
+                    title="Начислить покупку?"
+                    confirmText="Подтвердите, что клиент совершил покупку сейчас. Повторное начисление одному клиенту временно блокируется."
+                    buttonText="Начислить покупку"
+                  />
+                </form>
               )}
             </div>
           </div>
-        </form>
+        </section>
       )}
 
       {active && globalCustomerWithoutMembership && (
@@ -263,9 +293,7 @@ export default async function CompanyScanPage({
               />
 
               {active && (
-                <form action={membership.rewardAvailable ? giveReward : confirmPurchase} className="panel p-5">
-                  <input type="hidden" name="membershipId" value={membership.id} />
-                  <input type="hidden" name="token" value={token} />
+                <section className="panel p-5">
                   <div className="mb-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
                     <p className="font-semibold text-slate-950">Проверьте перед нажатием</p>
                     <ul className="mt-2 space-y-1">
@@ -274,24 +302,47 @@ export default async function CompanyScanPage({
                       <li>Повторное начисление одному клиенту временно блокируется.</li>
                     </ul>
                   </div>
-                  {membership.rewardAvailable && scannedMembershipUsesGiftBox ? (
+                  {membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
+                    <div className="rounded-lg bg-amber-100 p-4 text-sm text-amber-950">
+                      <p className="text-base font-semibold">🎁 У клиента есть открытый подарок</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-950">{openedRewardClaim.title ?? "Подарок"}</p>
+                      {openedRewardClaim.description && <p className="mt-1">{openedRewardClaim.description}</p>}
+                      {openedRewardClaim.openedAt && <p className="mt-2 text-slate-700">Открыт: {openedRewardClaim.openedAt.toLocaleString("ru-RU")}</p>}
+                      <form action={redeemRewardClaim} className="mt-4">
+                        <input type="hidden" name="token" value={openedRewardClaim.token} />
+                        <ConfirmSubmit
+                          title="Выдать подарок?"
+                          confirmText={`Подтвердите выдачу: ${openedRewardClaim.title ?? "Подарок"}. После выдачи прогресс клиента сбросится, а QR станет недействительным.`}
+                          buttonText="Выдать подарок"
+                        />
+                      </form>
+                    </div>
+                  ) : membership.rewardAvailable && scannedMembershipUsesGiftBox ? (
                     <div className="rounded-lg bg-amber-100 p-4 text-sm font-semibold text-amber-950">
                       Попросите клиента нажать «Открыть подарок» в приложении и показать подарочный QR-код. После сканирования подарочного QR здесь появится конкретный подарок и кнопка выдачи.
                     </div>
                   ) : membership.rewardAvailable ? (
-                    <ConfirmSubmit
-                      title="Выдать подарок?"
-                      confirmText={`Подтвердите выдачу: ${membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}. После выдачи прогресс клиента сбросится.`}
-                      buttonText="Выдать подарок"
-                    />
+                    <form action={giveReward}>
+                      <input type="hidden" name="membershipId" value={membership.id} />
+                      <input type="hidden" name="token" value={token} />
+                      <ConfirmSubmit
+                        title="Выдать подарок?"
+                        confirmText={`Подтвердите выдачу: ${membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}. После выдачи прогресс клиента сбросится.`}
+                        buttonText="Выдать подарок"
+                      />
+                    </form>
                   ) : (
-                    <ConfirmSubmit
-                      title="Начислить покупку?"
-                      confirmText="Подтвердите, что клиент действительно совершил покупку. Повторное начисление одному клиенту временно блокируется."
-                      buttonText="Начислить покупку"
-                    />
+                    <form action={confirmPurchase}>
+                      <input type="hidden" name="membershipId" value={membership.id} />
+                      <input type="hidden" name="token" value={token} />
+                      <ConfirmSubmit
+                        title="Начислить покупку?"
+                        confirmText="Подтвердите, что клиент действительно совершил покупку. Повторное начисление одному клиенту временно блокируется."
+                        buttonText="Начислить покупку"
+                      />
+                    </form>
                   )}
-                </form>
+                </section>
               )}
 
               <section>

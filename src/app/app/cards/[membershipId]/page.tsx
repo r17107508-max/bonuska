@@ -63,7 +63,7 @@ export default async function ClientCardPage({
     : null;
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-5">
+    <main className="min-h-screen bg-slate-100 px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-5">
       <section className="mx-auto max-w-md space-y-5">
         <Link href="/app" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
           <ArrowLeft aria-hidden className="size-4" />
