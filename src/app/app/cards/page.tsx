@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { LoyaltyProgramType } from "@prisma/client";
 import { Gift, WalletCards } from "lucide-react";
 import { ClientBrandHeader } from "@/components/client-brand-header";
 import { requireUser } from "@/lib/auth";
 import { getClientMemberships, rewardGoal, rewardLeft, type ClientMembership } from "@/lib/customer-app";
+import { isGiftBoxProgram } from "@/lib/loyalty";
 
 export default async function ClientCardsPage() {
   const user = await requireUser("/company/login");
@@ -47,7 +47,7 @@ function MembershipCard({ membership }: { membership: ClientMembership }) {
   const goal = rewardGoal(membership);
   const left = rewardLeft(membership);
   const progress = Math.min(100, Math.round((membership.currentCount / goal) * 100));
-  const isGiftBox = program?.programType === LoyaltyProgramType.GIFT_BOX || program?.isGiftBoxEnabled;
+  const isGiftBox = program ? isGiftBoxProgram(program, membership.company.giftOptions) : false;
 
   return (
     <Link href={`/app/cards/${membership.id}`} className="panel block p-4 transition active:scale-[0.99]">

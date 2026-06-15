@@ -1,4 +1,4 @@
-import { CompanyUserRole, LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
+import { CompanyUserRole, RewardClaimStatus } from "@prisma/client";
 import { AlertTriangle, CheckCircle2, Gift, UserRound } from "lucide-react";
 import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase, redeemRewardClaim } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
@@ -9,7 +9,7 @@ import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { statusLabel } from "@/lib/format";
-import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
+import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
 
 export default async function CompanyScanPage({
   searchParams,
@@ -47,7 +47,7 @@ export default async function CompanyScanPage({
     : [];
   const scannedMembershipUsesGiftBox = Boolean(
     membership?.company.loyaltyProgram &&
-      (membership.company.loyaltyProgram.programType === LoyaltyProgramType.GIFT_BOX || membership.company.loyaltyProgram.isGiftBoxEnabled),
+      isGiftBoxProgram(membership.company.loyaltyProgram, membership.company.giftOptions),
   );
   const openedRewardClaim = membership && scannedMembershipUsesGiftBox
     ? await getDb().rewardClaim.findFirst({

@@ -2,7 +2,7 @@ import QRCode from "qrcode";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { apiError, ok } from "@/lib/api";
-import { buildRewardQrPayload } from "@/lib/loyalty";
+import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
 import { CompanyStatus, RewardClaimStatus } from "@prisma/client";
 
 export async function GET(
@@ -14,7 +14,7 @@ export async function GET(
   const card = await getDb().customerMembership.findFirst({
     where: { id: membershipId, userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
     include: {
-      company: { include: { loyaltyProgram: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -26,7 +26,8 @@ export async function GET(
     return apiError("Карта не найдена", 404);
   }
 
-  const activeRewardClaim = card.rewardAvailable
+  const isGiftBox = card.company.loyaltyProgram ? isGiftBoxProgram(card.company.loyaltyProgram, card.company.giftOptions) : false;
+  const activeRewardClaim = card.rewardAvailable && isGiftBox
     ? await getDb().rewardClaim.findFirst({
         where: {
           membershipId: card.id,

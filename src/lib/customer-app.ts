@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db";
 import { hasActiveAccess } from "@/lib/loyalty";
 
 export type ClientMembership = Prisma.CustomerMembershipGetPayload<{
-  include: { company: { include: { loyaltyProgram: true } } };
+  include: { company: { include: { loyaltyProgram: true, giftOptions: true } } };
 }>;
 
 export function rewardGoal(membership: ClientMembership) {
@@ -31,7 +31,7 @@ export function pickNearestGift(memberships: ClientMembership[]) {
 export async function getClientMemberships(userId: string) {
   return getDb().customerMembership.findMany({
     where: { userId, company: { status: { not: CompanyStatus.DELETED } } },
-    include: { company: { include: { loyaltyProgram: true } } },
+    include: { company: { include: { loyaltyProgram: true, giftOptions: true } } },
     orderBy: { updatedAt: "desc" },
   });
 }

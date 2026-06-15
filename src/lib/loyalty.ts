@@ -143,8 +143,15 @@ function chooseGift(options: GiftOption[]) {
   return active[0] ?? null;
 }
 
+export function isGiftBoxProgram(
+  program: Pick<LoyaltyProgram, "programType" | "isGiftBoxEnabled">,
+  giftOptions: Pick<GiftOption, "isActive">[] = [],
+) {
+  return program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled || giftOptions.some((gift) => gift.isActive);
+}
+
 function rewardTitle(program: LoyaltyProgram, giftOptions: GiftOption[]) {
-  if (program.programType === LoyaltyProgramType.GIFT_BOX) {
+  if (isGiftBoxProgram(program, giftOptions)) {
     const gift = chooseGift(giftOptions);
     return gift?.title ?? program.rewardTitle;
   }
@@ -175,7 +182,7 @@ export async function findMembershipForScan(companyId: string, token: string) {
     },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -209,7 +216,7 @@ async function findMembershipByGlobalToken(companyId: string, globalQrToken: str
     },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -233,7 +240,7 @@ async function findMembershipByDynamicToken(companyId: string, dynamicToken: str
     },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -357,7 +364,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
     const countBefore = membership.currentCount;
     const countAfter = countBefore + 1;
     const rewardAvailable = countAfter >= program.goalCount;
-    const isGiftBox = program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
+    const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
     const pendingReward = rewardAvailable && !isGiftBox ? rewardTitle(program, membership.company.giftOptions) : null;
 
     await tx.customerMembership.update({
@@ -437,7 +444,7 @@ export async function openRewardClaimForCustomer(userId: string, membershipId: s
     }
 
     const program = membership.company.loyaltyProgram;
-    const isGiftBox = program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
+    const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
     if (!isGiftBox) {
       throw new Error("Для этой компании не включена случайная коробка подарков");
     }
@@ -590,7 +597,7 @@ export async function grantReward(companyId: string, membershipId: string, cashi
     const membership = await tx.customerMembership.findFirst({
       where: { id: membershipId, companyId },
       include: {
-        company: { include: { loyaltyProgram: true } },
+        company: { include: { loyaltyProgram: true, giftOptions: true } },
       },
     });
 
@@ -612,7 +619,7 @@ export async function grantReward(companyId: string, membershipId: string, cashi
     }
 
     const program = membership.company.loyaltyProgram;
-    const isGiftBox = program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
+    const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
     if (isGiftBox) {
       throw new Error("Для выдачи подарка отсканируйте подарочный QR-код клиента");
     }

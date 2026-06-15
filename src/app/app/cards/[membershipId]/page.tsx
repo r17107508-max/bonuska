@@ -1,6 +1,6 @@
 import Link from "next/link";
 import QRCode from "qrcode";
-import { CompanyStatus, LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
+import { CompanyStatus, RewardClaimStatus } from "@prisma/client";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { leaveCustomerMembership } from "@/app/actions";
@@ -12,7 +12,7 @@ import { ProgressIcons } from "@/components/progress-cups";
 import { QrCard } from "@/components/qr-card";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { buildRewardQrPayload } from "@/lib/loyalty";
+import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
 
 export default async function ClientCardPage({
   params,
@@ -24,7 +24,7 @@ export default async function ClientCardPage({
   const membership = await getDb().customerMembership.findFirst({
     where: { id: membershipId, userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
     include: {
-      company: { include: { loyaltyProgram: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
       user: true,
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
@@ -38,7 +38,7 @@ export default async function ClientCardPage({
   }
 
   const program = membership.company.loyaltyProgram;
-  const isGiftBox = program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
+  const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
   const activeRewardClaim = isGiftBox && membership.rewardAvailable
     ? await getDb().rewardClaim.findFirst({
         where: {
