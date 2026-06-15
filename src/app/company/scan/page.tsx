@@ -1,5 +1,5 @@
-import { CompanyUserRole, RewardClaimStatus } from "@prisma/client";
-import { AlertTriangle, CheckCircle2, UserRound } from "lucide-react";
+import { CompanyUserRole, LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
+import { AlertTriangle, CheckCircle2, Gift, UserRound } from "lucide-react";
 import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase, redeemRewardClaim } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
@@ -45,6 +45,10 @@ export default async function CompanyScanPage({
         take: 8,
       })
     : [];
+  const scannedMembershipUsesGiftBox = Boolean(
+    membership?.company.loyaltyProgram &&
+      (membership.company.loyaltyProgram.programType === LoyaltyProgramType.GIFT_BOX || membership.company.loyaltyProgram.isGiftBoxEnabled),
+  );
 
   return (
     <AdminShell
@@ -59,16 +63,27 @@ export default async function CompanyScanPage({
 
       {active && rewardClaim && (
         <section className={`panel mb-5 border-2 p-5 ${rewardClaim.companyId === access.companyId && rewardClaim.status === RewardClaimStatus.OPENED ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-white"}`}>
-          <p className="text-sm font-semibold uppercase text-amber-800">QR подарка распознан</p>
+          <div className="flex items-start gap-3">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-amber-200 text-amber-900">
+              <Gift aria-hidden className="size-6" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold uppercase text-amber-800">Подарочный QR распознан</p>
+              <h2 className="mt-1 text-2xl font-semibold text-slate-950">Подарок клиента</h2>
+              <p className="mt-1 text-sm text-slate-700">Проверьте подарок и подтвердите выдачу только после передачи клиенту.</p>
+            </div>
+          </div>
           <div className="mt-3 grid gap-4 lg:grid-cols-[1fr_280px] lg:items-start">
             <div>
-              <h2 className="text-2xl font-semibold text-slate-950">{rewardClaim.user.name}</h2>
+              <h3 className="text-xl font-semibold text-slate-950">{rewardClaim.user.name}</h3>
               <div className="mt-2 space-y-1 text-sm text-slate-700">
                 <p><span className="font-semibold">Компания:</span> {rewardClaim.company.name}</p>
                 <p><span className="font-semibold">Подарок:</span> {rewardClaim.title ?? "пока не открыт"}</p>
+                {rewardClaim.description && <p><span className="font-semibold">Описание:</span> {rewardClaim.description}</p>}
                 <p><span className="font-semibold">Статус:</span> {rewardClaimStatusText(rewardClaim.status)}</p>
                 {rewardClaim.openedAt && <p><span className="font-semibold">Открыт:</span> {rewardClaim.openedAt.toLocaleString("ru-RU")}</p>}
                 {rewardClaim.redeemedAt && <p><span className="font-semibold">Выдан:</span> {rewardClaim.redeemedAt.toLocaleString("ru-RU")}</p>}
+                {rewardClaim.redeemedBy && <p><span className="font-semibold">Кассир:</span> {rewardClaim.redeemedBy.name}</p>}
               </div>
               {rewardClaim.companyId !== access.companyId && (
                 <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">Этот подарок не относится к вашей компании.</p>
@@ -108,7 +123,11 @@ export default async function CompanyScanPage({
               </p>
             </div>
             <div className="w-full sm:w-72">
-              {membership.rewardAvailable ? (
+              {membership.rewardAvailable && scannedMembershipUsesGiftBox ? (
+                <div className="rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-950">
+                  Попросите клиента открыть подарок и показать подарочный QR-код. По обычному QR видно только прогресс карты.
+                </div>
+              ) : membership.rewardAvailable ? (
                 <ConfirmSubmit
                   title="Выдать подарок?"
                   confirmText={`Подтвердите выдачу: ${membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}. После выдачи прогресс клиента сбросится.`}
@@ -255,7 +274,11 @@ export default async function CompanyScanPage({
                       <li>Повторное начисление одному клиенту временно блокируется.</li>
                     </ul>
                   </div>
-                  {membership.rewardAvailable ? (
+                  {membership.rewardAvailable && scannedMembershipUsesGiftBox ? (
+                    <div className="rounded-lg bg-amber-100 p-4 text-sm font-semibold text-amber-950">
+                      Попросите клиента нажать «Открыть подарок» в приложении и показать подарочный QR-код. После сканирования подарочного QR здесь появится конкретный подарок и кнопка выдачи.
+                    </div>
+                  ) : membership.rewardAvailable ? (
                     <ConfirmSubmit
                       title="Выдать подарок?"
                       confirmText={`Подтвердите выдачу: ${membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}. После выдачи прогресс клиента сбросится.`}

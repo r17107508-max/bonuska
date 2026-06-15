@@ -20,6 +20,10 @@ export default async function CompanyClientPage({
       user: true,
       company: { include: { loyaltyProgram: true } },
       transactions: { include: { cashier: true }, orderBy: { createdAt: "desc" } },
+      rewardClaims: {
+        include: { redeemedBy: { select: { id: true, name: true } } },
+        orderBy: [{ openedAt: "desc" }, { createdAt: "desc" }],
+      },
     },
   });
 
@@ -37,6 +41,31 @@ export default async function CompanyClientPage({
           <section>
             <h2 className="mb-3 text-xl font-semibold text-slate-950">История операций</h2>
             <HistoryList transactions={membership.transactions} />
+          </section>
+          <section className="panel p-5">
+            <h2 className="text-xl font-semibold text-slate-950">Подарки клиента</h2>
+            <div className="mt-4 divide-y divide-slate-200">
+              {membership.rewardClaims.map((claim) => (
+                <div key={claim.id} className="py-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-950">{claim.title ?? "Подарок еще не открыт"}</p>
+                      {claim.description && <p className="mt-1 text-slate-500">{claim.description}</p>}
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                      {rewardClaimStatusLabel(claim.status)}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-slate-600">
+                    Открыт: {claim.openedAt ? claim.openedAt.toLocaleString("ru-RU") : "—"}
+                    {" · "}
+                    Выдан: {claim.redeemedAt ? claim.redeemedAt.toLocaleString("ru-RU") : "—"}
+                  </p>
+                  {claim.redeemedBy && <p className="mt-1 text-slate-600">Кассир: {claim.redeemedBy.name}</p>}
+                </div>
+              ))}
+              {membership.rewardClaims.length === 0 && <p className="py-3 text-sm text-slate-500">Подарков пока нет.</p>}
+            </div>
           </section>
         </div>
         <aside className="space-y-4">
@@ -57,4 +86,16 @@ export default async function CompanyClientPage({
       </div>
     </AdminShell>
   );
+}
+
+function rewardClaimStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    AVAILABLE: "Не открыт",
+    OPENED: "Открыт",
+    REDEEMED: "Выдан",
+    EXPIRED: "Истек",
+    CANCELLED: "Отменен",
+  };
+
+  return labels[status] ?? status;
 }

@@ -46,6 +46,9 @@ export default async function ClientHistoryPage() {
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-700">Прогресс: {transaction.countAfter} из {goal}</p>
                 {transaction.rewardTitle && <p className="mt-1 text-sm text-amber-800">Подарок: {transaction.rewardTitle}</p>}
+                {transaction.type === "REWARD_OPENED" && (
+                  <p className="mt-1 text-sm font-semibold text-amber-900">Покажите QR подарка кассиру.</p>
+                )}
               </div>
             );
           })}
@@ -60,7 +63,8 @@ export default async function ClientHistoryPage() {
 function clientOperationLabel(type: LoyaltyTransactionType) {
   const labels: Record<LoyaltyTransactionType, string> = {
     PURCHASE: "начислена покупка",
-    REWARD_OPENED: "открыт подарок",
+    REWARD_OPENED: "вы открыли подарок",
+    REWARD_REDEEMED: "выдан подарок",
     REWARD_GRANTED: "выдан подарок",
     MANUAL_ADJUSTMENT: "ручное изменение",
   };

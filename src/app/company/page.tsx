@@ -28,7 +28,7 @@ export default async function CompanyDashboardPage() {
     getDb().customerMembership.count({ where: { companyId: access.companyId, lastActionAt: { gte: activeClientSince } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, createdAt: { gte: today } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, createdAt: { gte: monthStart } } }),
-    getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "REWARD_GRANTED" } }),
+    getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: { in: ["REWARD_REDEEMED", "REWARD_GRANTED"] } } }),
     getDb().companyUser.count({ where: { companyId: access.companyId, isActive: true } }),
     getDb().loyaltyTransaction.findMany({
       where: { companyId: access.companyId },

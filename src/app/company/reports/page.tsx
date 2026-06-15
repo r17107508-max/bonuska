@@ -35,6 +35,7 @@ export default async function CompanyReportsPage() {
     weekTransactions,
     suspiciousCount,
     suspiciousLogs,
+    rewardClaims,
   ] = await Promise.all([
     getDb().customerMembership.count({ where: { companyId: access.companyId } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, createdAt: { gte: weekStart } } }),
@@ -42,7 +43,7 @@ export default async function CompanyReportsPage() {
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: today } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: weekStart } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: monthStart } } }),
-    getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "REWARD_GRANTED", createdAt: { gte: monthStart } } }),
+    getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: { in: ["REWARD_REDEEMED", "REWARD_GRANTED"] }, createdAt: { gte: monthStart } } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, totalPurchases: { gt: 1 } } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, rewardAvailable: true } }),
     getDb().customerMembership.findMany({
@@ -58,7 +59,7 @@ export default async function CompanyReportsPage() {
       take: 10,
     }),
     getDb().loyaltyTransaction.findMany({
-      where: { companyId: access.companyId, type: { in: ["PURCHASE", "REWARD_GRANTED"] }, createdAt: { gte: monthStart } },
+      where: { companyId: access.companyId, type: { in: ["PURCHASE", "REWARD_OPENED", "REWARD_REDEEMED", "REWARD_GRANTED"] }, createdAt: { gte: monthStart } },
       include: { cashier: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     }),
@@ -72,6 +73,15 @@ export default async function CompanyReportsPage() {
       include: { actor: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
       take: 10,
+    }),
+    getDb().rewardClaim.findMany({
+      where: { companyId: access.companyId },
+      include: {
+        user: { select: { id: true, name: true, phone: true } },
+        redeemedBy: { select: { id: true, name: true } },
+      },
+      orderBy: [{ openedAt: "desc" }, { createdAt: "desc" }],
+      take: 30,
     }),
   ]);
   const activeClients7 = new Set(weekTransactions.map((transaction) => transaction.membershipId)).size;
@@ -88,7 +98,7 @@ export default async function CompanyReportsPage() {
       if (transaction.type === "PURCHASE") {
         current.purchases += 1;
       }
-      if (transaction.type === "REWARD_GRANTED") {
+      if (transaction.type === "REWARD_REDEEMED" || transaction.type === "REWARD_GRANTED") {
         current.rewards += 1;
       }
       map.set(transaction.cashierId, current);
@@ -120,6 +130,36 @@ export default async function CompanyReportsPage() {
         <Metric label="Подозрительных попыток" value={suspiciousCount} />
         <Metric label="Клиентов близко к подарку" value={nearRewardClients.length} />
       </div>
+
+      <section className="panel mt-6 p-5">
+        <h2 className="text-xl font-semibold text-slate-950">История подарков</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Здесь видно, какой подарок выпал клиенту, когда он был открыт и кто подтвердил выдачу.
+        </p>
+        <div className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+          {rewardClaims.map((claim) => (
+            <div key={claim.id} className="grid gap-3 p-4 text-sm lg:grid-cols-[1.1fr_1fr_1fr_1fr]">
+              <div>
+                <p className="font-semibold text-slate-950">{claim.user.name}</p>
+                <p className="text-slate-500">{claim.user.phone}</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800">{claim.title ?? "Подарок не открыт"}</p>
+                {claim.description && <p className="mt-1 text-slate-500">{claim.description}</p>}
+              </div>
+              <div className="text-slate-600">
+                <p>Открыт: {formatDateTime(claim.openedAt)}</p>
+                <p>Выдан: {formatDateTime(claim.redeemedAt)}</p>
+              </div>
+              <div className="text-slate-600 lg:text-right">
+                <p className="font-semibold">{rewardClaimStatusLabel(claim.status)}</p>
+                {claim.redeemedBy && <p className="mt-1">Кассир: {claim.redeemedBy.name}</p>}
+              </div>
+            </div>
+          ))}
+          {rewardClaims.length === 0 && <p className="p-4 text-sm text-slate-500">Открытых подарков пока нет.</p>}
+        </div>
+      </section>
 
       <section className="panel mt-6 p-5">
         <h2 className="text-xl font-semibold text-slate-950">Подозрительные операции</h2>
@@ -231,6 +271,18 @@ function parseSuspiciousMetadata(metadataJson: string | null) {
   } catch {
     return {};
   }
+}
+
+function rewardClaimStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    AVAILABLE: "Доступен, не открыт",
+    OPENED: "Открыт клиентом",
+    REDEEMED: "Выдан",
+    EXPIRED: "Истек",
+    CANCELLED: "Отменен",
+  };
+
+  return labels[status] ?? status;
 }
 
 function Metric({ label, value }: { label: string; value: number }) {

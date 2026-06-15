@@ -613,32 +613,16 @@ export async function grantReward(companyId: string, membershipId: string, cashi
 
     const program = membership.company.loyaltyProgram;
     const isGiftBox = program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
-    const openedClaim = isGiftBox
-      ? await tx.rewardClaim.findFirst({
-          where: { membershipId: membership.id, companyId, status: RewardClaimStatus.OPENED },
-          orderBy: { openedAt: "desc" },
-        })
-      : null;
-
-    if (isGiftBox && !openedClaim) {
-      const redeemedClaim = await tx.rewardClaim.findFirst({
-        where: { membershipId: membership.id, companyId, status: RewardClaimStatus.REDEEMED },
-        select: { id: true },
-      });
-
-      if (redeemedClaim) {
-        throw new Error("Этот подарок уже был выдан");
-      }
-
-      throw new Error("Клиент ещё не открыл подарок");
+    if (isGiftBox) {
+      throw new Error("Для выдачи подарка отсканируйте подарочный QR-код клиента");
     }
 
     await redeemMembershipRewardInTransaction(tx, {
       companyId,
       membership,
       cashierId,
-      claimId: openedClaim?.id ?? null,
-      rewardTitle: openedClaim?.title ?? membership.pendingReward ?? program.rewardTitle,
+      claimId: null,
+      rewardTitle: membership.pendingReward ?? program.rewardTitle,
     });
   });
 }
@@ -762,7 +746,7 @@ async function redeemMembershipRewardInTransaction(
       companyId,
       membershipId: membership.id,
       cashierId,
-      type: LoyaltyTransactionType.REWARD_GRANTED,
+      type: claimId ? LoyaltyTransactionType.REWARD_REDEEMED : LoyaltyTransactionType.REWARD_GRANTED,
       countBefore,
       countAfter: 0,
       rewardTitle,
@@ -773,7 +757,7 @@ async function redeemMembershipRewardInTransaction(
     data: {
       actorUserId: cashierId,
       companyId,
-      action: "LOYALTY_REWARD_GRANTED",
+      action: claimId ? "REWARD_CLAIM_REDEEMED" : "LOYALTY_REWARD_GRANTED",
       entityType: claimId ? "RewardClaim" : "CustomerMembership",
       entityId: claimId ?? membership.id,
       metadataJson: JSON.stringify({

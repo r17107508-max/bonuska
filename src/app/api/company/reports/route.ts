@@ -35,7 +35,7 @@ export async function GET() {
     getDb().loyaltyTransaction.count({ where: { companyId: access!.companyId, type: "PURCHASE", createdAt: { gte: today } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access!.companyId, type: "PURCHASE", createdAt: { gte: weekStart } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access!.companyId, type: "PURCHASE", createdAt: { gte: monthStart } } }),
-    getDb().loyaltyTransaction.count({ where: { companyId: access!.companyId, type: "REWARD_GRANTED", createdAt: { gte: monthStart } } }),
+    getDb().loyaltyTransaction.count({ where: { companyId: access!.companyId, type: { in: ["REWARD_REDEEMED", "REWARD_GRANTED"] }, createdAt: { gte: monthStart } } }),
     getDb().customerMembership.count({ where: { companyId: access!.companyId, totalPurchases: { gt: 1 } } }),
     getDb().customerMembership.count({ where: { companyId: access!.companyId, rewardAvailable: true } }),
     getDb().customerMembership.count({ where: { companyId: access!.companyId, rewardAvailable: false, currentCount: { gte: nearRewardStart } } }),

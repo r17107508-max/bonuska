@@ -84,6 +84,15 @@ textarea {
   height: 132px;
 }
 
+.gift-box-glow {
+  position: absolute;
+  inset: 20px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.55), rgba(251, 191, 36, 0));
+  opacity: 0;
+  transform: scale(0.75);
+}
+
 .gift-box-body,
 .gift-box-lid {
   position: absolute;
@@ -165,9 +174,37 @@ textarea {
   animation: gift-lid-open 900ms ease forwards;
 }
 
+.gift-box-animation.is-opening {
+  animation: gift-box-shake 720ms ease-in-out;
+}
+
+.gift-box-animation.is-opening .gift-box-glow,
+.gift-box-animation.is-opened .gift-box-glow {
+  animation: gift-glow 1000ms ease forwards;
+}
+
 .gift-box-animation.is-opening .gift-box-sparkles,
 .gift-box-animation.is-opened .gift-box-sparkles {
   animation: gift-sparkles 1100ms ease forwards;
+}
+
+@keyframes gift-box-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  18% {
+    transform: translateX(-6px) rotate(-3deg);
+  }
+  36% {
+    transform: translateX(6px) rotate(3deg);
+  }
+  54% {
+    transform: translateX(-4px) rotate(-2deg);
+  }
+  72% {
+    transform: translateX(4px) rotate(2deg);
+  }
 }
 
 @keyframes gift-lid-open {
@@ -193,5 +230,19 @@ textarea {
   100% {
     opacity: 1;
     transform: translateY(-18px) scale(1);
+  }
+}
+
+@keyframes gift-glow {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.7);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.35);
   }
 }

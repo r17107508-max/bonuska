@@ -38,6 +38,7 @@ enum LoyaltyProgramType {
 enum LoyaltyTransactionType {
   PURCHASE
   REWARD_OPENED
+  REWARD_REDEEMED
   REWARD_GRANTED
   MANUAL_ADJUSTMENT
 }
