@@ -96,7 +96,7 @@ export default async function ClientCardPage({
           current={membership.currentCount}
           goal={program.goalCount}
           rewardAvailable={membership.rewardAvailable}
-          rewardTitle={membership.pendingReward ?? program.rewardTitle}
+          rewardTitle={isGiftBox ? program.rewardTitle : membership.pendingReward ?? program.rewardTitle}
           rewardReadyHint={
             membership.rewardAvailable && isGiftBox
               ? initialRewardClaim

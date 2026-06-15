@@ -1,4 +1,5 @@
 import { Gift } from "lucide-react";
+import { LoyaltyProgramType } from "@prisma/client";
 import { ClientBrandHeader } from "@/components/client-brand-header";
 import { DynamicGlobalQrCard } from "@/components/dynamic-global-qr-card";
 import { requireUser } from "@/lib/auth";
@@ -25,6 +26,9 @@ export default async function ClientDashboardPage({
     getClientMemberships(user.id),
   ]);
   const nearest = pickNearestGift(memberships);
+  const nearestUsesGiftBox = nearest?.company.loyaltyProgram
+    ? nearest.company.loyaltyProgram.programType === LoyaltyProgramType.GIFT_BOX || nearest.company.loyaltyProgram.isGiftBoxEnabled
+    : false;
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 pb-28 pt-4">
@@ -48,7 +52,11 @@ export default async function ClientDashboardPage({
                     {nearest.company.name}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-700">
-                    {nearest.rewardAvailable ? "Подарок доступен" : `Осталось ${rewardLeft(nearest)}`}
+                    {nearest.rewardAvailable
+                      ? nearestUsesGiftBox
+                        ? "Откройте подарок в карте"
+                        : "Подарок доступен"
+                      : `Осталось ${rewardLeft(nearest)}`}
                   </p>
                 </>
               ) : (
