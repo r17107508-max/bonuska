@@ -7,7 +7,7 @@ export async function GET() {
   const user = await requireUser();
   const cards = await getDb().customerMembership.findMany({
     where: { userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
-    include: { company: { include: { loyaltyProgram: true } } },
+    include: { company: { include: { loyaltyProgram: true, giftOptions: true } } },
     orderBy: { updatedAt: "desc" },
   });
 
