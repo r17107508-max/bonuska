@@ -144,7 +144,7 @@ export default async function CompanyReportsPage() {
           {rewardClaims.map((claim) => (
             <div key={claim.id} className="grid gap-3 p-4 text-sm lg:grid-cols-[1.1fr_1fr_1fr_1fr]">
               <div>
-                <p className="font-semibold text-slate-950">{claim.user.name}</p>
+                <p className="font-semibold text-slate-950">{rewardClaimTimelineText(claim.user.name, claim.status, claim.title)}</p>
                 <p className="text-slate-500">{claim.user.phone}</p>
               </div>
               <div>
@@ -287,6 +287,20 @@ function rewardClaimStatusLabel(status: string) {
   };
 
   return labels[status] ?? status;
+}
+
+function rewardClaimTimelineText(customerName: string, status: string, title: string | null) {
+  const giftTitle = title ?? "подарок не открыт";
+
+  if (status === "REDEEMED") {
+    return `${customerName} — подарок выдан: ${giftTitle}`;
+  }
+
+  if (status === "OPENED") {
+    return `${customerName} — открыла подарок: ${giftTitle}`;
+  }
+
+  return `${customerName} — накопила подарок`;
 }
 
 function Metric({ label, value }: { label: string; value: number }) {

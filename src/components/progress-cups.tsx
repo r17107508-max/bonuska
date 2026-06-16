@@ -6,6 +6,7 @@ export function ProgressIcons({
   goal,
   rewardAvailable,
   rewardTitle,
+  rewardReadyTitle,
   rewardReadyHint,
 }: {
   icon: string;
@@ -13,6 +14,7 @@ export function ProgressIcons({
   goal: number;
   rewardAvailable: boolean;
   rewardTitle: string;
+  rewardReadyTitle?: string;
   rewardReadyHint?: string;
 }) {
   const safeGoal = Math.max(goal, 1);
@@ -63,7 +65,7 @@ export function ProgressIcons({
       <div className={`mt-5 rounded-lg p-4 ${rewardAvailable ? "bg-amber-50" : "bg-slate-100"}`}>
         {rewardAvailable ? (
           <>
-            <p className="text-lg font-semibold text-amber-950">Можно забрать подарок</p>
+            <p className="text-lg font-semibold text-amber-950">{rewardReadyTitle ?? "Можно забрать подарок"}</p>
             <p className="text-sm text-amber-800">
               {rewardReadyHint ?? "Покажите QR-код кассиру перед оплатой, чтобы он выдал подарок и сбросил прогресс."}
             </p>

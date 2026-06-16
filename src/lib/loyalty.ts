@@ -145,9 +145,9 @@ function chooseGift(options: GiftOption[]) {
 
 export function isGiftBoxProgram(
   program: Pick<LoyaltyProgram, "programType" | "isGiftBoxEnabled">,
-  giftOptions: Pick<GiftOption, "isActive">[] = [],
+  _giftOptions: Pick<GiftOption, "isActive">[] = [],
 ) {
-  return program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled || giftOptions.some((gift) => gift.isActive);
+  return program.programType === LoyaltyProgramType.GIFT_BOX || program.isGiftBoxEnabled;
 }
 
 function rewardTitle(program: LoyaltyProgram, giftOptions: GiftOption[]) {

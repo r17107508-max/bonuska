@@ -5,9 +5,11 @@ import { Gift, Loader2, PartyPopper, Sparkles, X } from "lucide-react";
 
 type RewardClaimView = {
   id: string;
+  rewardClaimId?: string;
   status: string;
   title: string | null;
   description: string | null;
+  rewardQrToken?: string;
   qrDataUrl: string | null;
 };
 
@@ -136,7 +138,7 @@ export function GiftOpenCard({
 
               {!loading && hasOpenedGift && (
                 <div className="mt-6">
-                  <p className="text-sm font-semibold uppercase text-amber-700">Ваш подарок</p>
+                  <p className="text-sm font-semibold uppercase text-amber-700">Поздравляем!</p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-950">{claim?.title}</h2>
                   {claim?.description && <p className="mt-2 text-sm text-slate-600">{claim.description}</p>}
                   <div className="mx-auto mt-5 flex max-w-64 items-center justify-center rounded-lg bg-white p-4 shadow-inner ring-1 ring-slate-200">

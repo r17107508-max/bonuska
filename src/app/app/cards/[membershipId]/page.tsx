@@ -81,8 +81,6 @@ export default async function ClientCardPage({
           </div>
         </header>
 
-        <QrCard token={membership.qrToken} color={program.themeColor} companyName={membership.company.name} />
-
         {membership.rewardAvailable && isGiftBox && (
           <GiftOpenCard
             membershipId={membership.id}
@@ -91,12 +89,15 @@ export default async function ClientCardPage({
           />
         )}
 
+        <QrCard token={membership.qrToken} color={program.themeColor} companyName={membership.company.name} />
+
         <ProgressIcons
           icon={program.icon}
           current={membership.currentCount}
           goal={program.goalCount}
           rewardAvailable={membership.rewardAvailable}
           rewardTitle={isGiftBox ? program.rewardTitle : membership.pendingReward ?? program.rewardTitle}
+          rewardReadyTitle={membership.rewardAvailable && isGiftBox ? "Подарок готов" : undefined}
           rewardReadyHint={
             membership.rewardAvailable && isGiftBox
               ? initialRewardClaim

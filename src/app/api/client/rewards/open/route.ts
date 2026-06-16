@@ -31,11 +31,13 @@ export async function POST(request: Request) {
     return ok({
       rewardClaim: {
         id: claim.id,
+        rewardClaimId: claim.id,
         status: claim.status,
         title: claim.title,
         description: claim.description,
         openedAt: claim.openedAt,
         token: claim.token,
+        rewardQrToken: claim.token,
         qrPayload,
         qrDataUrl,
       },

@@ -558,6 +558,23 @@ export async function saveCompanySettings(formData: FormData) {
   const access = await requireCompanyAdmin();
   const goalCount = Math.min(20, Math.max(3, numberValue(formData, "goalCount", 6)));
   const slug = slugify(text(formData, "slug")) || access.company.slug;
+  const programType = text(formData, "programType") as LoyaltyProgramType;
+  const gifts = text(formData, "giftOptions")
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (!Object.values(LoyaltyProgramType).includes(programType)) {
+    errorRedirect("/company/settings", "Выберите корректный тип программы");
+  }
+
+  if (programType === LoyaltyProgramType.CUSTOMER_LEVELS) {
+    errorRedirect("/company/settings", "Режим «Постоянный уровень клиента» пока в разработке");
+  }
+
+  if (programType === LoyaltyProgramType.GIFT_BOX && gifts.length === 0) {
+    errorRedirect("/company/settings", "Для режима «Коробка с подарком» нужно указать хотя бы один подарок");
+  }
 
   await getDb().company.update({
     where: { id: access.companyId },
@@ -574,22 +591,22 @@ export async function saveCompanySettings(formData: FormData) {
       loyaltyProgram: {
         upsert: {
           update: {
-            programType: text(formData, "programType") as LoyaltyProgramType,
+            programType,
             icon: text(formData, "icon") || "🎁",
             goalCount,
             rewardTitle: text(formData, "rewardTitle"),
             rewardDescription: text(formData, "rewardDescription"),
             themeColor: text(formData, "themeColor") || "#0f766e",
-            isGiftBoxEnabled: text(formData, "programType") === LoyaltyProgramType.GIFT_BOX,
+            isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
           },
           create: {
-            programType: text(formData, "programType") as LoyaltyProgramType,
+            programType,
             icon: text(formData, "icon") || "🎁",
             goalCount,
             rewardTitle: text(formData, "rewardTitle"),
             rewardDescription: text(formData, "rewardDescription"),
             themeColor: text(formData, "themeColor") || "#0f766e",
-            isGiftBoxEnabled: text(formData, "programType") === LoyaltyProgramType.GIFT_BOX,
+            isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
           },
         },
       },
@@ -603,11 +620,6 @@ export async function saveCompanySettings(formData: FormData) {
       },
     },
   });
-
-  const gifts = text(formData, "giftOptions")
-    .split("\n")
-    .map((item) => item.trim())
-    .filter(Boolean);
 
   await getDb().giftOption.deleteMany({ where: { companyId: access.companyId } });
   if (gifts.length > 0) {

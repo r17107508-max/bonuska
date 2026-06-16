@@ -290,6 +290,7 @@ export default async function CompanyScanPage({
                 goal={membership.company.loyaltyProgram.goalCount}
                 rewardAvailable={membership.rewardAvailable}
                 rewardTitle={scannedMembershipUsesGiftBox ? membership.company.loyaltyProgram.rewardTitle : membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}
+                rewardReadyTitle={membership.rewardAvailable && scannedMembershipUsesGiftBox ? "Подарок готов" : undefined}
                 rewardReadyHint={
                   membership.rewardAvailable && scannedMembershipUsesGiftBox
                     ? openedRewardClaim

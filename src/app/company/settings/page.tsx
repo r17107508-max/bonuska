@@ -5,6 +5,7 @@ import { AdminShell, companyNav } from "@/components/admin-shell";
 import { RegistrationQrPoster } from "@/components/registration-qr-poster";
 import { SubmitButton } from "@/components/buttons";
 import { FormField, SelectField, TextAreaField } from "@/components/form-field";
+import { ProgramTypeSettings } from "@/components/program-type-settings";
 import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { findLoyaltyTemplate, loyaltyTemplates } from "@/lib/loyalty-templates";
@@ -12,18 +13,11 @@ import { getCompanyRegistrationUrl } from "@/lib/request-url";
 
 const businessTypes = ["Кофейня", "Шаурмичная", "Пекарня", "Напитки", "Фастфуд", "Пиццерия", "Кондитерская", "Барбершоп", "Другое"];
 const icons = ["☕ кофе", "🌯 шаурма", "🥐 круассан", "🧋 напиток", "🍔 бургер", "🍕 пицца", "🍩 пончик", "🍦 мороженое", "⭐ звезда", "🎁 подарок"];
-const programTypes = [
-  { value: "CLASSIC_REWARD", label: "Классический подарок" },
-  { value: "COLLECT_AND_REWARD", label: "Накопи и получи подарок" },
-  { value: "GIFT_BOX", label: "Коробка с подарком" },
-  { value: "DISCOUNT_AFTER_N", label: "Скидка после N покупок" },
-  { value: "CUSTOMER_LEVELS", label: "Постоянный уровень клиента" },
-];
 
 export default async function CompanySettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ success?: string; template?: string }>;
+  searchParams: Promise<{ success?: string; error?: string; template?: string }>;
 }) {
   const access = await requireCompanyAdmin();
   const params = await searchParams;
@@ -49,6 +43,7 @@ export default async function CompanySettingsPage({
   return (
     <AdminShell title="Настройки акции" subtitle="Ссылка для клиентов, QR-плакат, шаблон программы лояльности и подарок." nav={companyNav}>
       {params.success && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">Настройки сохранены.</p>}
+      {params.error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">{params.error}</p>}
 
       {access.company.onboardingChecklistHidden && (
         <form action={showCompanyOnboardingChecklist} className="mb-6 rounded-lg bg-slate-50 p-4">
@@ -107,17 +102,14 @@ export default async function CompanySettingsPage({
           <FormField label="Город" name="city" defaultValue={access.company.city} />
           <FormField label="Адрес" name="address" defaultValue={access.company.address} required={false} />
           <FormField label="Количество покупок до подарка" name="goalCount" type="number" defaultValue={defaults.goalCount} />
-          <SelectField label="Тип программы" name="programType" defaultValue={program?.programType ?? "CLASSIC_REWARD"} options={programTypes} />
-          <FormField label="Название подарка" name="rewardTitle" defaultValue={defaults.rewardTitle} />
         </div>
+        <ProgramTypeSettings
+          defaultProgramType={program?.programType ?? "CLASSIC_REWARD"}
+          giftOptionsDefaultValue={giftOptions.length > 0 ? giftOptions.map((gift) => gift.title).join("\n") : ""}
+        />
+        <FormField label="Название подарка" name="rewardTitle" defaultValue={defaults.rewardTitle} />
         <TextAreaField label="Описание компании" name="description" defaultValue={access.company.description} rows={3} required={false} />
         <TextAreaField label="Текст для клиента" name="rewardDescription" defaultValue={defaults.rewardDescription} rows={3} />
-        <TextAreaField
-          label="Подарки для коробки, по одному в строке"
-          name="giftOptions"
-          rows={5}
-          defaultValue={giftOptions.length > 0 ? giftOptions.map((gift) => gift.title).join("\n") : ""}
-        />
         <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
           <p className="font-semibold">Ссылка для клиентов: {clientUrl}</p>
           <p className="mt-1">После изменения slug сохраните настройки, чтобы QR обновился под новую ссылку.</p>
