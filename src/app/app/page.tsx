@@ -1,11 +1,14 @@
+import QRCode from "qrcode";
+import { RewardClaimStatus } from "@prisma/client";
 import { Gift } from "lucide-react";
 import { ClientBrandHeader } from "@/components/client-brand-header";
 import { DynamicGlobalQrCard } from "@/components/dynamic-global-qr-card";
+import { GiftOpenCard } from "@/components/gift-open-card";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { createDynamicCustomerQr } from "@/lib/dynamic-qr";
 import { getClientMemberships, pickNearestGift, rewardLeft } from "@/lib/customer-app";
-import { ensureGlobalQrToken, isGiftBoxProgram } from "@/lib/loyalty";
+import { buildRewardQrPayload, ensureGlobalQrToken, isGiftBoxProgram } from "@/lib/loyalty";
 
 export default async function ClientDashboardPage({
   searchParams,
@@ -28,6 +31,30 @@ export default async function ClientDashboardPage({
   const nearestUsesGiftBox = nearest?.company.loyaltyProgram
     ? isGiftBoxProgram(nearest.company.loyaltyProgram, nearest.company.giftOptions)
     : false;
+  const nearestRewardClaim = nearest?.rewardAvailable && nearestUsesGiftBox
+    ? await getDb().rewardClaim.findFirst({
+        where: {
+          membershipId: nearest.id,
+          status: { in: [RewardClaimStatus.OPENED, RewardClaimStatus.AVAILABLE] },
+        },
+        orderBy: [{ openedAt: "desc" }, { createdAt: "asc" }],
+      })
+    : null;
+  const nearestInitialRewardClaim = nearestRewardClaim?.status === RewardClaimStatus.OPENED
+    ? {
+        id: nearestRewardClaim.id,
+        rewardClaimId: nearestRewardClaim.id,
+        status: nearestRewardClaim.status,
+        title: nearestRewardClaim.title,
+        description: nearestRewardClaim.description,
+        rewardQrToken: nearestRewardClaim.token,
+        qrDataUrl: await QRCode.toDataURL(buildRewardQrPayload(nearestRewardClaim.token), {
+          margin: 1,
+          width: 360,
+          color: { dark: "#92400e", light: "#ffffff" },
+        }),
+      }
+    : null;
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 pb-28 pt-4">
@@ -37,6 +64,14 @@ export default async function ClientDashboardPage({
         {params.error && <p className="rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-800">{params.error}</p>}
 
         <DynamicGlobalQrCard initialPayload={dynamicQr.payload} initialExpiresAt={dynamicQr.expiresAt} />
+
+        {nearest?.rewardAvailable && nearestUsesGiftBox && (
+          <GiftOpenCard
+            membershipId={nearest.id}
+            companyName={nearest.company.name}
+            initialClaim={nearestInitialRewardClaim}
+          />
+        )}
 
         <section className={`panel p-4 ${nearest?.rewardAvailable ? "border-amber-300 bg-amber-50" : ""}`}>
           <div className="flex items-start gap-3">
