@@ -3,7 +3,8 @@ import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { apiError, ok } from "@/lib/api";
 import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
-import { CompanyStatus, RewardClaimStatus } from "@prisma/client";
+import { calculateLoyaltyLevel } from "@/lib/loyalty-levels";
+import { CompanyStatus, LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
 
 export async function GET(
   _request: Request,
@@ -14,7 +15,7 @@ export async function GET(
   const card = await getDb().customerMembership.findFirst({
     where: { id: membershipId, userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
     include: {
-      company: { include: { loyaltyProgram: true, giftOptions: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -26,8 +27,9 @@ export async function GET(
     return apiError("Карта не найдена", 404);
   }
 
+  const isCustomerLevels = card.company.loyaltyProgram?.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
   const isGiftBox = card.company.loyaltyProgram ? isGiftBoxProgram(card.company.loyaltyProgram, card.company.giftOptions) : false;
-  const activeRewardClaim = card.rewardAvailable && isGiftBox
+  const activeRewardClaim = !isCustomerLevels && card.rewardAvailable && isGiftBox
     ? await getDb().rewardClaim.findFirst({
         where: {
           membershipId: card.id,
@@ -52,5 +54,9 @@ export async function GET(
       }
     : null;
 
-  return ok({ card, rewardClaim });
+  return ok({
+    card,
+    rewardClaim,
+    loyaltyLevel: isCustomerLevels ? calculateLoyaltyLevel(card.totalPurchases, card.company.loyaltyLevels) : null,
+  });
 }

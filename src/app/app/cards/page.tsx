@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { LoyaltyProgramType } from "@prisma/client";
 import { Gift, WalletCards } from "lucide-react";
 import { ClientBrandHeader } from "@/components/client-brand-header";
 import { requireUser } from "@/lib/auth";
 import { getClientMemberships, rewardGoal, rewardLeft, type ClientMembership } from "@/lib/customer-app";
 import { isGiftBoxProgram } from "@/lib/loyalty";
+import { calculateLoyaltyLevel } from "@/lib/loyalty-levels";
 
 export default async function ClientCardsPage() {
   const user = await requireUser("/company/login");
@@ -44,10 +46,12 @@ export default async function ClientCardsPage() {
 
 function MembershipCard({ membership }: { membership: ClientMembership }) {
   const program = membership.company.loyaltyProgram;
+  const isCustomerLevels = program?.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
   const goal = rewardGoal(membership);
   const left = rewardLeft(membership);
   const progress = Math.min(100, Math.round((membership.currentCount / goal) * 100));
   const isGiftBox = program ? isGiftBoxProgram(program, membership.company.giftOptions) : false;
+  const levelProgress = isCustomerLevels ? calculateLoyaltyLevel(membership.totalPurchases, membership.company.loyaltyLevels) : null;
 
   return (
     <Link href={`/app/cards/${membership.id}`} className="panel block p-4 transition active:scale-[0.99]">
@@ -59,24 +63,35 @@ function MembershipCard({ membership }: { membership: ClientMembership }) {
           </p>
           <p className="mt-1 text-sm text-slate-500">{membership.company.businessType}</p>
         </div>
-        {membership.rewardAvailable && (
+        {!isCustomerLevels && membership.rewardAvailable && (
           <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">
             Доступен
+          </span>
+        )}
+        {isCustomerLevels && levelProgress?.current && (
+          <span className="shrink-0 rounded-full bg-teal-100 px-3 py-1 text-xs font-bold text-teal-900">
+            {levelProgress.current.name} {levelProgress.current.icon}
           </span>
         )}
       </div>
 
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-        <div className={`h-full rounded-full ${membership.rewardAvailable ? "bg-amber-500" : "bg-teal-700"}`} style={{ width: `${progress}%` }} />
+        <div className={`h-full rounded-full ${membership.rewardAvailable && !isCustomerLevels ? "bg-amber-500" : "bg-teal-700"}`} style={{ width: `${isCustomerLevels ? levelProgress?.progressPercent ?? 0 : progress}%` }} />
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3 text-sm">
         <span className="font-semibold text-slate-700">
-          {membership.currentCount} из {goal}. Осталось {left}
+          {isCustomerLevels
+            ? `Всего покупок: ${membership.totalPurchases}`
+            : `${membership.currentCount} из ${goal}. Осталось ${left}`}
         </span>
-        <span className={`inline-flex items-center gap-1 font-semibold ${membership.rewardAvailable ? "text-amber-800" : "text-slate-500"}`}>
+        <span className={`inline-flex items-center gap-1 font-semibold ${membership.rewardAvailable && !isCustomerLevels ? "text-amber-800" : "text-slate-500"}`}>
           <Gift aria-hidden className="size-4" />
-          {membership.rewardAvailable && isGiftBox
+          {isCustomerLevels
+            ? levelProgress?.next
+              ? `До ${levelProgress.next.name}: ${levelProgress.remainingToNext}`
+              : "Максимальный уровень"
+            : membership.rewardAvailable && isGiftBox
             ? "Открыть подарок"
             : membership.rewardAvailable
               ? "Подарок доступен"

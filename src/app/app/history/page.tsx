@@ -44,8 +44,14 @@ export default async function ClientHistoryPage() {
                 <p className="mt-2 font-semibold text-slate-950">
                   {transaction.company.name} — {clientOperationLabel(transaction.type)}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-slate-700">Прогресс: {transaction.countAfter} из {goal}</p>
-                {transaction.rewardTitle && <p className="mt-1 text-sm text-amber-800">Подарок: {transaction.rewardTitle}</p>}
+                <p className="mt-1 text-sm font-semibold text-slate-700">
+                  {transaction.type === "LEVEL_UP" ? `Покупок всего: ${transaction.countAfter}` : `Прогресс: ${transaction.countAfter} из ${goal}`}
+                </p>
+                {transaction.rewardTitle && (
+                  <p className="mt-1 text-sm text-amber-800">
+                    {transaction.type === "LEVEL_UP" ? `Уровень: ${transaction.rewardTitle}` : `Подарок: ${transaction.rewardTitle}`}
+                  </p>
+                )}
                 {transaction.type === "REWARD_OPENED" && (
                   <p className="mt-1 text-sm font-semibold text-amber-900">Покажите QR подарка кассиру.</p>
                 )}
@@ -63,6 +69,7 @@ export default async function ClientHistoryPage() {
 function clientOperationLabel(type: LoyaltyTransactionType) {
   const labels: Record<LoyaltyTransactionType, string> = {
     PURCHASE: "начислена покупка",
+    LEVEL_UP: "достигнут новый уровень",
     REWARD_OPENED: "вы открыли подарок",
     REWARD_REDEEMED: "выдан подарок",
     REWARD_GRANTED: "выдан подарок",

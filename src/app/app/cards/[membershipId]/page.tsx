@@ -1,10 +1,11 @@
 import Link from "next/link";
 import QRCode from "qrcode";
-import { CompanyStatus, RewardClaimStatus } from "@prisma/client";
+import { CompanyStatus, LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { leaveCustomerMembership } from "@/app/actions";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { CustomerLevelProgress } from "@/components/customer-level-progress";
 import { GiftOpenCard } from "@/components/gift-open-card";
 import { HistoryList } from "@/components/history-list";
 import { InstallPwaButton } from "@/components/install-pwa-button";
@@ -24,7 +25,7 @@ export default async function ClientCardPage({
   const membership = await getDb().customerMembership.findFirst({
     where: { id: membershipId, userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
     include: {
-      company: { include: { loyaltyProgram: true, giftOptions: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
       user: true,
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
@@ -38,8 +39,9 @@ export default async function ClientCardPage({
   }
 
   const program = membership.company.loyaltyProgram;
+  const isCustomerLevels = program.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
   const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
-  const activeRewardClaim = isGiftBox && membership.rewardAvailable
+  const activeRewardClaim = !isCustomerLevels && isGiftBox && membership.rewardAvailable
     ? await getDb().rewardClaim.findFirst({
         where: {
           membershipId: membership.id,
@@ -81,7 +83,7 @@ export default async function ClientCardPage({
           </div>
         </header>
 
-        {membership.rewardAvailable && isGiftBox && (
+        {!isCustomerLevels && membership.rewardAvailable && isGiftBox && (
           <GiftOpenCard
             membershipId={membership.id}
             companyName={membership.company.name}
@@ -91,21 +93,25 @@ export default async function ClientCardPage({
 
         <QrCard token={membership.qrToken} color={program.themeColor} companyName={membership.company.name} />
 
-        <ProgressIcons
-          icon={program.icon}
-          current={membership.currentCount}
-          goal={program.goalCount}
-          rewardAvailable={membership.rewardAvailable}
-          rewardTitle={isGiftBox ? program.rewardTitle : membership.pendingReward ?? program.rewardTitle}
-          rewardReadyTitle={membership.rewardAvailable && isGiftBox ? "Подарок готов" : undefined}
-          rewardReadyHint={
-            membership.rewardAvailable && isGiftBox
-              ? initialRewardClaim
-                ? "Покажите QR подарка кассиру, чтобы получить подарок."
-                : "Откройте коробку, узнайте подарок и покажите отдельный QR кассиру."
-              : undefined
-          }
-        />
+        {isCustomerLevels ? (
+          <CustomerLevelProgress totalPurchases={membership.totalPurchases} levels={membership.company.loyaltyLevels} />
+        ) : (
+          <ProgressIcons
+            icon={program.icon}
+            current={membership.currentCount}
+            goal={program.goalCount}
+            rewardAvailable={membership.rewardAvailable}
+            rewardTitle={isGiftBox ? program.rewardTitle : membership.pendingReward ?? program.rewardTitle}
+            rewardReadyTitle={membership.rewardAvailable && isGiftBox ? "Подарок готов" : undefined}
+            rewardReadyHint={
+              membership.rewardAvailable && isGiftBox
+                ? initialRewardClaim
+                  ? "Покажите QR подарка кассиру, чтобы получить подарок."
+                  : "Откройте коробку, узнайте подарок и покажите отдельный QR кассиру."
+                : undefined
+            }
+          />
+        )}
 
         <InstallPwaButton />
 

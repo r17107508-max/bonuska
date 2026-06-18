@@ -1,9 +1,9 @@
-import { CompanyStatus, Prisma } from "@prisma/client";
+import { CompanyStatus, LoyaltyProgramType, Prisma } from "@prisma/client";
 import { getDb } from "@/lib/db";
 import { hasActiveAccess } from "@/lib/loyalty";
 
 export type ClientMembership = Prisma.CustomerMembershipGetPayload<{
-  include: { company: { include: { loyaltyProgram: true, giftOptions: true } } };
+  include: { company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } } };
 }>;
 
 export function rewardGoal(membership: ClientMembership) {
@@ -21,6 +21,7 @@ export function rewardLeft(membership: ClientMembership) {
 export function pickNearestGift(memberships: ClientMembership[]) {
   return [...memberships]
     .filter((membership) => membership.company.loyaltyProgram)
+    .filter((membership) => membership.company.loyaltyProgram?.programType !== LoyaltyProgramType.CUSTOMER_LEVELS)
     .sort((a, b) => {
       if (a.rewardAvailable && !b.rewardAvailable) return -1;
       if (!a.rewardAvailable && b.rewardAvailable) return 1;
@@ -31,7 +32,7 @@ export function pickNearestGift(memberships: ClientMembership[]) {
 export async function getClientMemberships(userId: string) {
   return getDb().customerMembership.findMany({
     where: { userId, company: { status: { not: CompanyStatus.DELETED } } },
-    include: { company: { include: { loyaltyProgram: true, giftOptions: true } } },
+    include: { company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } } },
     orderBy: { updatedAt: "desc" },
   });
 }

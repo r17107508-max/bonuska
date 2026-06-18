@@ -12,6 +12,7 @@ import {
 } from "@prisma/client";
 import { getDb } from "@/lib/db";
 import { verifyDynamicCustomerQr } from "@/lib/dynamic-qr";
+import { calculateLoyaltyLevel, ensureDefaultLoyaltyLevels } from "@/lib/loyalty-levels";
 
 export const REPEAT_GUARD_SECONDS = 30;
 export const DAILY_PURCHASE_LIMIT_PER_CUSTOMER = 5;
@@ -182,7 +183,7 @@ export async function findMembershipForScan(companyId: string, token: string) {
     },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true, giftOptions: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -216,7 +217,7 @@ async function findMembershipByGlobalToken(companyId: string, globalQrToken: str
     },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true, giftOptions: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -240,7 +241,7 @@ async function findMembershipByDynamicToken(companyId: string, dynamicToken: str
     },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true, giftOptions: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -320,7 +321,8 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
     const membership = await tx.customerMembership.findFirst({
       where: { id: membershipId, companyId },
       include: {
-        company: { include: { loyaltyProgram: true, giftOptions: true } },
+        user: true,
+        company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
       },
     });
 
@@ -337,7 +339,10 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       throw new Error(SELF_OPERATION_MESSAGE);
     }
 
-    if (membership.rewardAvailable) {
+    const program = membership.company.loyaltyProgram;
+    const isCustomerLevels = program.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
+
+    if (!isCustomerLevels && membership.rewardAvailable) {
       throw new Error("Сначала выдайте доступный подарок");
     }
 
@@ -360,7 +365,87 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       throw new Error(DAILY_LIMIT_MESSAGE);
     }
 
-    const program = membership.company.loyaltyProgram;
+    if (isCustomerLevels) {
+      const now = new Date();
+      const levels = await ensureDefaultLoyaltyLevels(tx, companyId);
+      const totalBefore = membership.totalPurchases;
+      const totalAfter = totalBefore + 1;
+      const previousLevel = calculateLoyaltyLevel(totalBefore, levels).current;
+      const levelProgress = calculateLoyaltyLevel(totalAfter, levels);
+      const currentLevel = levelProgress.current;
+      const reachedNewLevel = Boolean(
+        currentLevel &&
+          currentLevel.minPurchases > 0 &&
+          (!previousLevel || previousLevel.id !== currentLevel.id),
+      );
+
+      await tx.customerMembership.update({
+        where: { id: membership.id },
+        data: {
+          currentCount: totalAfter,
+          totalPurchases: totalAfter,
+          rewardAvailable: false,
+          pendingReward: null,
+          levelId: currentLevel?.id ?? null,
+          currentLevelName: currentLevel?.name ?? null,
+          levelReachedAt: reachedNewLevel ? now : membership.levelReachedAt,
+          lastActionAt: now,
+        },
+      });
+
+      await tx.loyaltyTransaction.create({
+        data: {
+          companyId,
+          membershipId,
+          cashierId,
+          type: LoyaltyTransactionType.PURCHASE,
+          countBefore: totalBefore,
+          countAfter: totalAfter,
+        },
+      });
+
+      if (reachedNewLevel && currentLevel) {
+        await tx.loyaltyTransaction.create({
+          data: {
+            companyId,
+            membershipId,
+            cashierId,
+            type: LoyaltyTransactionType.LEVEL_UP,
+            countBefore: totalBefore,
+            countAfter: totalAfter,
+            rewardTitle: `${currentLevel.name}${currentLevel.icon ? ` ${currentLevel.icon}` : ""}`,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: cashierId,
+          companyId,
+          action: reachedNewLevel ? "CUSTOMER_LEVEL_REACHED" : "LOYALTY_PURCHASE",
+          entityType: "CustomerMembership",
+          entityId: membershipId,
+          metadataJson: JSON.stringify({
+            countBefore: totalBefore,
+            countAfter: totalAfter,
+            totalPurchases: totalAfter,
+            levelId: currentLevel?.id ?? null,
+            levelName: currentLevel?.name ?? null,
+            customerName: membership.user.name,
+            companyName: membership.company.name,
+          }),
+        },
+      });
+
+      return {
+        totalPurchases: totalAfter,
+        level: currentLevel,
+        levelUp: reachedNewLevel ? currentLevel : null,
+        nextLevel: levelProgress.next,
+        remainingToNext: levelProgress.remainingToNext,
+      };
+    }
+
     const countBefore = membership.currentCount;
     const countAfter = countBefore + 1;
     const rewardAvailable = countAfter >= program.goalCount;
@@ -422,6 +507,8 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
         metadataJson: JSON.stringify({ countBefore, countAfter, rewardAvailable }),
       },
     });
+
+    return { rewardAvailable, levelUp: null };
   });
 }
 

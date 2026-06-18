@@ -1,4 +1,5 @@
 import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan } from "@/lib/loyalty";
+import { calculateLoyaltyLevel } from "@/lib/loyalty-levels";
 
 export async function resolveCompanyScan(companyId: string, token: string) {
   const rewardClaim = token ? await findRewardClaimForScan(token) : null;
@@ -13,7 +14,13 @@ export async function resolveCompanyScan(companyId: string, token: string) {
   const membership = token ? await findMembershipForScan(companyId, token) : null;
 
   if (membership) {
-    return { status: "membership_found" as const, membership };
+    return {
+      status: "membership_found" as const,
+      membership,
+      loyaltyLevel: membership.company.loyaltyProgram?.programType === "CUSTOMER_LEVELS"
+        ? calculateLoyaltyLevel(membership.totalPurchases, membership.company.loyaltyLevels)
+        : null,
+    };
   }
 
   const user = token ? await findCustomerForGlobalScan(companyId, token) : null;

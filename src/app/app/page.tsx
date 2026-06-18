@@ -1,5 +1,5 @@
 import QRCode from "qrcode";
-import { RewardClaimStatus } from "@prisma/client";
+import { LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
 import { Gift } from "lucide-react";
 import { ClientBrandHeader } from "@/components/client-brand-header";
 import { DynamicGlobalQrCard } from "@/components/dynamic-global-qr-card";
@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import { createDynamicCustomerQr } from "@/lib/dynamic-qr";
 import { getClientMemberships, pickNearestGift, rewardLeft } from "@/lib/customer-app";
 import { buildRewardQrPayload, ensureGlobalQrToken, isGiftBoxProgram } from "@/lib/loyalty";
+import { calculateLoyaltyLevel } from "@/lib/loyalty-levels";
 
 export default async function ClientDashboardPage({
   searchParams,
@@ -28,6 +29,10 @@ export default async function ClientDashboardPage({
     getClientMemberships(user.id),
   ]);
   const nearest = pickNearestGift(memberships);
+  const nearestLevelMembership = memberships.find((membership) => membership.company.loyaltyProgram?.programType === LoyaltyProgramType.CUSTOMER_LEVELS) ?? null;
+  const nearestLevelProgress = nearestLevelMembership
+    ? calculateLoyaltyLevel(nearestLevelMembership.totalPurchases, nearestLevelMembership.company.loyaltyLevels)
+    : null;
   const nearestUsesGiftBox = nearest?.company.loyaltyProgram
     ? isGiftBoxProgram(nearest.company.loyaltyProgram, nearest.company.giftOptions)
     : false;
@@ -95,12 +100,36 @@ export default async function ClientDashboardPage({
                 </>
               ) : (
                 <p className="mt-1 text-sm leading-6 text-slate-600">
-                  Пока нет активных карт. Найдите партнёра и начните копить плюшки.
+                  {nearestLevelMembership
+                    ? "Подарочных карт пока нет. Ваш статус показан ниже."
+                    : "Пока нет активных карт. Найдите партнёра и начните копить плюшки."}
                 </p>
               )}
             </div>
           </div>
         </section>
+
+        {nearestLevelMembership && nearestLevelProgress?.current && (
+          <section className="panel p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-2xl">
+                {nearestLevelProgress.current.icon ?? "⭐"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold uppercase text-slate-500">Ваш статус</p>
+                <p className="mt-1 text-lg font-semibold text-slate-950">{nearestLevelMembership.company.name}</p>
+                <p className="mt-1 text-sm font-semibold text-slate-700">
+                  {nearestLevelProgress.current.name} · покупок всего: {nearestLevelMembership.totalPurchases}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {nearestLevelProgress.next
+                    ? `До ${nearestLevelProgress.next.name} осталось ${nearestLevelProgress.remainingToNext} покупок`
+                    : "Вы на максимальном уровне"}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
       </section>
     </main>
   );

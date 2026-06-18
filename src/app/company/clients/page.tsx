@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { LoyaltyProgramType } from "@prisma/client";
 import { AdminShell, companyNav } from "@/components/admin-shell";
 import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
+import { calculateLoyaltyLevel } from "@/lib/loyalty-levels";
 
 export default async function CompanyClientsPage({
   searchParams,
@@ -12,7 +14,8 @@ export default async function CompanyClientsPage({
   const access = await requireCompanyAdmin();
   const params = await searchParams;
   const q = params.q?.trim();
-  const clients = await getDb().customerMembership.findMany({
+  const [clients, loyaltyLevels] = await Promise.all([
+    getDb().customerMembership.findMany({
     where: {
       companyId: access.companyId,
       ...(q
@@ -31,7 +34,13 @@ export default async function CompanyClientsPage({
       transactions: { orderBy: { createdAt: "desc" }, take: 1 },
     },
     orderBy: { updatedAt: "desc" },
-  });
+    }),
+    getDb().loyaltyLevel.findMany({
+      where: { companyId: access.companyId },
+      orderBy: [{ minPurchases: "asc" }, { sortOrder: "asc" }],
+    }),
+  ]);
+  const isCustomerLevels = access.company.loyaltyProgram?.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
 
   return (
     <AdminShell title="Клиенты" subtitle="Поиск по имени или телефону, прогресс и последняя операция." nav={companyNav}>
@@ -58,7 +67,11 @@ export default async function CompanyClientsPage({
                 <tr key={client.id} className="bg-white">
                   <td className="px-4 py-3 font-semibold text-slate-950">{client.user.name}</td>
                   <td className="px-4 py-3 text-slate-600">{client.user.phone}</td>
-                  <td className="px-4 py-3 text-slate-600">{client.currentCount}{client.rewardAvailable ? " · подарок доступен" : ""}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {isCustomerLevels
+                      ? levelText(client.totalPurchases, loyaltyLevels)
+                      : `${client.currentCount}${client.rewardAvailable ? " · подарок доступен" : ""}`}
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{client.totalPurchases}</td>
                   <td className="px-4 py-3 text-slate-600">{client.totalRewards}</td>
                   <td className="px-4 py-3 text-slate-600">{formatDateTime(client.transactions[0]?.createdAt)}</td>
@@ -72,4 +85,13 @@ export default async function CompanyClientsPage({
       </div>
     </AdminShell>
   );
+}
+
+function levelText(totalPurchases: number, levels: Parameters<typeof calculateLoyaltyLevel>[1]) {
+  const progress = calculateLoyaltyLevel(totalPurchases, levels);
+  if (!progress.current) {
+    return "Уровни не настроены";
+  }
+
+  return `${progress.current.name}${progress.current.icon ? ` ${progress.current.icon}` : ""}`;
 }

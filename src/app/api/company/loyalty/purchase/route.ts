@@ -7,8 +7,8 @@ export async function POST(request: Request) {
   const body = await request.json();
   const membershipId = String(body.membershipId ?? "");
   try {
-    await addPurchase(access!.companyId, membershipId, access!.userId);
-    return ok();
+    const result = await addPurchase(access!.companyId, membershipId, access!.userId);
+    return ok({ ok: true, ...result });
   } catch (err) {
     const suspiciousReason = getSuspiciousLoyaltyReason(err);
     if (suspiciousReason) {

@@ -37,6 +37,7 @@ enum LoyaltyProgramType {
 
 enum LoyaltyTransactionType {
   PURCHASE
+  LEVEL_UP
   REWARD_OPENED
   REWARD_REDEEMED
   REWARD_GRANTED
@@ -106,6 +107,7 @@ model Company {
   users                CompanyUser[]
   loyaltyProgram       LoyaltyProgram?
   memberships          CustomerMembership[]
+  loyaltyLevels        LoyaltyLevel[]
   transactions         LoyaltyTransaction[]
   giftOptions          GiftOption[]
   rewardClaims         RewardClaim[]
@@ -150,6 +152,26 @@ model LoyaltyProgram {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
+model LoyaltyLevel {
+  id           String   @id @default(cuid())
+  companyId    String
+  name         String
+  icon         String?
+  color        String?
+  minPurchases Int
+  benefit      String?
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  memberships CustomerMembership[]
+
+  @@unique([companyId, minPurchases])
+  @@index([companyId, isActive, minPurchases])
+}
+
 model CustomerMembership {
   id              String    @id @default(cuid())
   companyId       String
@@ -158,6 +180,9 @@ model CustomerMembership {
   currentCount    Int       @default(0)
   totalPurchases  Int       @default(0)
   totalRewards    Int       @default(0)
+  levelId         String?
+  currentLevelName String?
+  levelReachedAt  DateTime?
   rewardAvailable Boolean   @default(false)
   pendingReward   String?
   lastActionAt    DateTime?
@@ -166,6 +191,7 @@ model CustomerMembership {
 
   company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level        LoyaltyLevel?        @relation(fields: [levelId], references: [id], onDelete: SetNull)
   transactions LoyaltyTransaction[]
   rewardClaims RewardClaim[]
 

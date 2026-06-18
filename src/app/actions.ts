@@ -31,6 +31,7 @@ import {
   redeemRewardClaimByToken,
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
+import { defaultLoyaltyLevels, parseLoyaltyLevelsJson, replaceCompanyLoyaltyLevels } from "@/lib/loyalty-levels";
 import { notifyCompanyApplicationReceived, notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
 
@@ -568,65 +569,80 @@ export async function saveCompanySettings(formData: FormData) {
     errorRedirect("/company/settings", "Выберите корректный тип программы");
   }
 
-  if (programType === LoyaltyProgramType.CUSTOMER_LEVELS) {
-    errorRedirect("/company/settings", "Режим «Постоянный уровень клиента» пока в разработке");
-  }
-
   if (programType === LoyaltyProgramType.GIFT_BOX && gifts.length === 0) {
     errorRedirect("/company/settings", "Для режима «Коробка с подарком» нужно указать хотя бы один подарок");
   }
 
-  await getDb().company.update({
-    where: { id: access.companyId },
-    data: {
-      name: text(formData, "name"),
-      description: text(formData, "description"),
-      slug,
-      businessType: text(formData, "businessType"),
-      icon: text(formData, "icon") || "🎁",
-      themeColor: text(formData, "themeColor") || "#0f766e",
-      city: text(formData, "city") || access.company.city,
-      address: text(formData, "address"),
-      ownerPhone: text(formData, "phone") || access.company.ownerPhone,
-      loyaltyProgram: {
-        upsert: {
-          update: {
-            programType,
-            icon: text(formData, "icon") || "🎁",
-            goalCount,
-            rewardTitle: text(formData, "rewardTitle"),
-            rewardDescription: text(formData, "rewardDescription"),
-            themeColor: text(formData, "themeColor") || "#0f766e",
-            isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
-          },
-          create: {
-            programType,
-            icon: text(formData, "icon") || "🎁",
-            goalCount,
-            rewardTitle: text(formData, "rewardTitle"),
-            rewardDescription: text(formData, "rewardDescription"),
-            themeColor: text(formData, "themeColor") || "#0f766e",
-            isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
-          },
-        },
-      },
-      auditLogs: {
-        create: {
-          actorUserId: access.userId,
-          action: "COMPANY_SETTINGS_UPDATED",
-          entityType: "Company",
-          entityId: access.companyId,
-        },
-      },
-    },
-  });
-
-  await getDb().giftOption.deleteMany({ where: { companyId: access.companyId } });
-  if (gifts.length > 0) {
-    await getDb().giftOption.createMany({
-      data: gifts.map((title) => ({ companyId: access.companyId, title })),
-    });
+  let loyaltyLevels = defaultLoyaltyLevels;
+  if (programType === LoyaltyProgramType.CUSTOMER_LEVELS) {
+    try {
+      loyaltyLevels = parseLoyaltyLevelsJson(text(formData, "loyaltyLevelsJson") || JSON.stringify(defaultLoyaltyLevels));
+    } catch (error) {
+      errorRedirect("/company/settings", error instanceof Error ? error.message : "Проверьте настройки уровней");
+    }
   }
+
+  await getDb().$transaction(async (tx) => {
+    await tx.company.update({
+      where: { id: access.companyId },
+      data: {
+        name: text(formData, "name"),
+        description: text(formData, "description"),
+        slug,
+        businessType: text(formData, "businessType"),
+        icon: text(formData, "icon") || "🎁",
+        themeColor: text(formData, "themeColor") || "#0f766e",
+        city: text(formData, "city") || access.company.city,
+        address: text(formData, "address"),
+        ownerPhone: text(formData, "phone") || access.company.ownerPhone,
+        loyaltyProgram: {
+          upsert: {
+            update: {
+              programType,
+              icon: text(formData, "icon") || "🎁",
+              goalCount,
+              rewardTitle: text(formData, "rewardTitle"),
+              rewardDescription: text(formData, "rewardDescription"),
+              themeColor: text(formData, "themeColor") || "#0f766e",
+              isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
+            },
+            create: {
+              programType,
+              icon: text(formData, "icon") || "🎁",
+              goalCount,
+              rewardTitle: text(formData, "rewardTitle"),
+              rewardDescription: text(formData, "rewardDescription"),
+              themeColor: text(formData, "themeColor") || "#0f766e",
+              isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
+            },
+          },
+        },
+        auditLogs: {
+          create: {
+            actorUserId: access.userId,
+            action: "COMPANY_SETTINGS_UPDATED",
+            entityType: "Company",
+            entityId: access.companyId,
+          },
+        },
+      },
+    });
+
+    if (programType === LoyaltyProgramType.CUSTOMER_LEVELS) {
+      await replaceCompanyLoyaltyLevels(tx, access.companyId, loyaltyLevels);
+      await tx.customerMembership.updateMany({
+        where: { companyId: access.companyId },
+        data: { rewardAvailable: false, pendingReward: null },
+      });
+    }
+
+    await tx.giftOption.deleteMany({ where: { companyId: access.companyId } });
+    if (gifts.length > 0) {
+      await tx.giftOption.createMany({
+        data: gifts.map((title) => ({ companyId: access.companyId, title })),
+      });
+    }
+  });
 
   redirect("/company/settings?success=1");
 }
@@ -809,8 +825,10 @@ export async function confirmPurchase(formData: FormData) {
   const access = await requireCompanyUser();
   const membershipId = text(formData, "membershipId");
   const token = text(formData, "token");
+  let successMessage = "Начислено";
   try {
-    await addPurchase(access.companyId, membershipId, access.userId);
+    const result = await addPurchase(access.companyId, membershipId, access.userId);
+    successMessage = result.levelUp ? `🎉 Клиент достиг нового уровня: ${result.levelUp.name}` : "Начислено";
   } catch (error) {
     const suspiciousReason = getSuspiciousLoyaltyReason(error);
     if (suspiciousReason) {
@@ -827,7 +845,7 @@ export async function confirmPurchase(formData: FormData) {
     errorRedirect(`/company/scan?token=${encodeURIComponent(token)}`, error instanceof Error ? error.message : "Не удалось начислить покупку");
   }
   revalidatePath("/company");
-  redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent("Начислено")}`);
+  redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent(successMessage)}`);
 }
 
 export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) {

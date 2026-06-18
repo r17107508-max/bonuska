@@ -1,8 +1,9 @@
-import { CompanyUserRole, RewardClaimStatus } from "@prisma/client";
+import { CompanyUserRole, LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
 import { AlertTriangle, CheckCircle2, Gift, UserRound } from "lucide-react";
 import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase, redeemRewardClaim } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { CustomerLevelProgress } from "@/components/customer-level-progress";
 import { QrScanner } from "@/components/scanner";
 import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
@@ -10,6 +11,7 @@ import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { statusLabel } from "@/lib/format";
 import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
+import { calculateLoyaltyLevel } from "@/lib/loyalty-levels";
 
 export default async function CompanyScanPage({
   searchParams,
@@ -39,7 +41,7 @@ export default async function CompanyScanPage({
         },
         include: {
           user: true,
-          company: { include: { loyaltyProgram: true } },
+          company: { include: { loyaltyProgram: true, loyaltyLevels: true } },
         },
         orderBy: { updatedAt: "desc" },
         take: 8,
@@ -49,7 +51,11 @@ export default async function CompanyScanPage({
     membership?.company.loyaltyProgram &&
       isGiftBoxProgram(membership.company.loyaltyProgram, membership.company.giftOptions),
   );
-  const openedRewardClaim = membership && scannedMembershipUsesGiftBox
+  const scannedMembershipUsesLevels = membership?.company.loyaltyProgram?.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
+  const scannedLevelProgress = scannedMembershipUsesLevels && membership
+    ? calculateLoyaltyLevel(membership.totalPurchases, membership.company.loyaltyLevels)
+    : null;
+  const openedRewardClaim = membership && !scannedMembershipUsesLevels && scannedMembershipUsesGiftBox
     ? await getDb().rewardClaim.findFirst({
         where: {
           companyId: access.companyId,
@@ -126,12 +132,26 @@ export default async function CompanyScanPage({
             <div>
               <h2 className="text-2xl font-semibold text-slate-950">{membership.user.name}</h2>
               <p className="text-sm text-slate-700">
-                {membership.currentCount} из {membership.company.loyaltyProgram.goalCount}
-                {membership.rewardAvailable ? " · подарок доступен" : " · можно начислить покупку"}
+                {scannedMembershipUsesLevels
+                  ? `Уровень: ${scannedLevelProgress?.current?.name ?? "не настроен"} ${scannedLevelProgress?.current?.icon ?? ""} · покупок всего: ${membership.totalPurchases}`
+                  : `${membership.currentCount} из ${membership.company.loyaltyProgram.goalCount}${membership.rewardAvailable ? " · подарок доступен" : " · можно начислить покупку"}`}
               </p>
+              {scannedMembershipUsesLevels && scannedLevelProgress?.current?.benefit && (
+                <p className="mt-1 text-sm font-semibold text-teal-900">Привилегия: {scannedLevelProgress.current.benefit}</p>
+              )}
             </div>
             <div className="w-full sm:w-72">
-              {membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
+              {scannedMembershipUsesLevels ? (
+                <form action={confirmPurchase}>
+                  <input type="hidden" name="membershipId" value={membership.id} />
+                  <input type="hidden" name="token" value={token} />
+                  <ConfirmSubmit
+                    title="Начислить покупку?"
+                    confirmText="Покупка увеличит общий счетчик клиента в этой компании и может повысить его уровень."
+                    buttonText="Начислить покупку"
+                  />
+                </form>
+              ) : membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
                 <div className="rounded-lg bg-amber-100 p-3 text-sm text-amber-950">
                   <p className="font-semibold">🎁 У клиента есть открытый подарок</p>
                   <p className="mt-1 font-semibold">{openedRewardClaim.title ?? "Подарок"}</p>
@@ -284,21 +304,25 @@ export default async function CompanyScanPage({
                 </div>
               </div>
 
-              <ProgressIcons
-                icon={membership.company.loyaltyProgram.icon}
-                current={membership.currentCount}
-                goal={membership.company.loyaltyProgram.goalCount}
-                rewardAvailable={membership.rewardAvailable}
-                rewardTitle={scannedMembershipUsesGiftBox ? membership.company.loyaltyProgram.rewardTitle : membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}
-                rewardReadyTitle={membership.rewardAvailable && scannedMembershipUsesGiftBox ? "Подарок готов" : undefined}
-                rewardReadyHint={
-                  membership.rewardAvailable && scannedMembershipUsesGiftBox
-                    ? openedRewardClaim
-                      ? `Открытый подарок: ${openedRewardClaim.title ?? "Подарок"}. Выдайте его после проверки.`
-                      : "Клиент должен открыть коробку в приложении. После этого здесь появится конкретный подарок."
-                    : undefined
-                }
-              />
+              {scannedMembershipUsesLevels ? (
+                <CustomerLevelProgress totalPurchases={membership.totalPurchases} levels={membership.company.loyaltyLevels} compact />
+              ) : (
+                <ProgressIcons
+                  icon={membership.company.loyaltyProgram.icon}
+                  current={membership.currentCount}
+                  goal={membership.company.loyaltyProgram.goalCount}
+                  rewardAvailable={membership.rewardAvailable}
+                  rewardTitle={scannedMembershipUsesGiftBox ? membership.company.loyaltyProgram.rewardTitle : membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}
+                  rewardReadyTitle={membership.rewardAvailable && scannedMembershipUsesGiftBox ? "Подарок готов" : undefined}
+                  rewardReadyHint={
+                    membership.rewardAvailable && scannedMembershipUsesGiftBox
+                      ? openedRewardClaim
+                        ? `Открытый подарок: ${openedRewardClaim.title ?? "Подарок"}. Выдайте его после проверки.`
+                        : "Клиент должен открыть коробку в приложении. После этого здесь появится конкретный подарок."
+                      : undefined
+                  }
+                />
+              )}
 
               {active && (
                 <section className="panel p-5">
@@ -310,7 +334,17 @@ export default async function CompanyScanPage({
                       <li>Повторное начисление одному клиенту временно блокируется.</li>
                     </ul>
                   </div>
-                  {membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
+                  {scannedMembershipUsesLevels ? (
+                    <form action={confirmPurchase}>
+                      <input type="hidden" name="membershipId" value={membership.id} />
+                      <input type="hidden" name="token" value={token} />
+                      <ConfirmSubmit
+                        title="Начислить покупку?"
+                        confirmText="Покупка увеличит общий счетчик клиента в этой компании и может повысить его уровень."
+                        buttonText="Начислить покупку"
+                      />
+                    </form>
+                  ) : membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
                     <div className="rounded-lg bg-amber-100 p-4 text-sm text-amber-950">
                       <p className="text-base font-semibold">🎁 У клиента есть открытый подарок</p>
                       <p className="mt-2 text-lg font-semibold text-slate-950">{openedRewardClaim.title ?? "Подарок"}</p>
