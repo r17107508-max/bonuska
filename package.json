@@ -5,6 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "cap:sync": "cap sync",
+    "cap:sync:android": "cap sync android",
+    "cap:sync:ios": "cap sync ios",
+    "android:aab": "cd android && gradlew.bat bundleRelease",
+    "android:apk": "cd android && gradlew.bat assembleRelease",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -16,6 +21,9 @@
     "setup": "npm run db:init"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
     "@prisma/client": "^6.19.3",
     "@types/nodemailer": "^8.0.1",
     "bcryptjs": "^3.0.3",
@@ -30,6 +38,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/qrcode": "^1.5.6",
