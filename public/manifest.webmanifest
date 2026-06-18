@@ -34,8 +34,8 @@
     },
     {
       "src": "/icon.svg",
-      "type": "image/svg+xml",
       "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     }
   ]
