@@ -1,4 +1,4 @@
-const CACHE_NAME = "proplushka-cache-recovery-v1";
+const CACHE_NAME = "proplushka-cache-recovery-v2";
 const APP_SHELL = [
   "/manifest.json",
   "/manifest.webmanifest",
@@ -31,6 +31,12 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
     return;
@@ -48,7 +54,6 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (
-    url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
     url.pathname === "/icon.svg" ||
     url.pathname === "/icon-192.png" ||
