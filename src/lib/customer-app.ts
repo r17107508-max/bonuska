@@ -1,9 +1,9 @@
-import { CompanyStatus, LoyaltyProgramType, Prisma } from "@prisma/client";
+import { CompanyStatus, Prisma } from "@prisma/client";
 import { getDb } from "@/lib/db";
 import { hasActiveAccess } from "@/lib/loyalty";
 
 export type ClientMembership = Prisma.CustomerMembershipGetPayload<{
-  include: { company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } } };
+  include: { company: { include: { loyaltyProgram: true, giftOptions: true } } };
 }>;
 
 export type ClientDashboardMembership = Prisma.CustomerMembershipGetPayload<{
@@ -20,20 +20,6 @@ export type ClientDashboardMembership = Prisma.CustomerMembershipGetPayload<{
         giftOptions: {
           where: { isActive: true };
           select: { isActive: true };
-        };
-        loyaltyLevels: {
-          where: { isActive: true };
-          orderBy: [{ minPurchases: "asc" }, { sortOrder: "asc" }];
-          select: {
-            id: true;
-            name: true;
-            icon: true;
-            color: true;
-            minPurchases: true;
-            benefit: true;
-            isActive: true;
-            sortOrder: true;
-          };
         };
       };
     };
@@ -61,7 +47,6 @@ export function rewardLeft(membership: RewardProgressMembership) {
 export function pickNearestGift(memberships: (ClientMembership | ClientDashboardMembership)[]) {
   return [...memberships]
     .filter((membership) => membership.company.loyaltyProgram)
-    .filter((membership) => membership.company.loyaltyProgram?.programType !== LoyaltyProgramType.CUSTOMER_LEVELS)
     .sort((a, b) => {
       if (a.rewardAvailable && !b.rewardAvailable) return -1;
       if (!a.rewardAvailable && b.rewardAvailable) return 1;
@@ -72,7 +57,7 @@ export function pickNearestGift(memberships: (ClientMembership | ClientDashboard
 export async function getClientMemberships(userId: string) {
   return getDb().customerMembership.findMany({
     where: { userId, company: { status: { not: CompanyStatus.DELETED } } },
-    include: { company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } } },
+    include: { company: { include: { loyaltyProgram: true, giftOptions: true } } },
     orderBy: { updatedAt: "desc" },
   });
 }
@@ -93,20 +78,6 @@ export async function getClientDashboardMemberships(userId: string) {
           giftOptions: {
             where: { isActive: true },
             select: { isActive: true },
-          },
-          loyaltyLevels: {
-            where: { isActive: true },
-            orderBy: [{ minPurchases: "asc" }, { sortOrder: "asc" }],
-            select: {
-              id: true,
-              name: true,
-              icon: true,
-              color: true,
-              minPurchases: true,
-              benefit: true,
-              isActive: true,
-              sortOrder: true,
-            },
           },
         },
       },

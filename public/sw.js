@@ -1,4 +1,4 @@
-const CACHE_NAME = "proplushka-cache-v5";
+const CACHE_NAME = "proplushka-cache-recovery-v1";
 const APP_SHELL = [
   "/manifest.json",
   "/manifest.webmanifest",

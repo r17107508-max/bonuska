@@ -8,7 +8,6 @@ import { FormField, SelectField, TextAreaField } from "@/components/form-field";
 import { ProgramTypeSettings } from "@/components/program-type-settings";
 import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { levelsForEditor } from "@/lib/loyalty-levels";
 import { findLoyaltyTemplate, loyaltyTemplates } from "@/lib/loyalty-templates";
 import { getCompanyRegistrationUrl } from "@/lib/request-url";
 
@@ -25,10 +24,7 @@ export default async function CompanySettingsPage({
   const program = access.company.loyaltyProgram;
   const selectedTemplate = findLoyaltyTemplate(params.template);
   const clientUrl = await getCompanyRegistrationUrl(access.company.slug);
-  const [giftOptions, loyaltyLevels] = await Promise.all([
-    getCompanyGiftOptions(access.companyId),
-    getCompanyLoyaltyLevels(access.companyId),
-  ]);
+  const giftOptions = await getCompanyGiftOptions(access.companyId);
   const qrDataUrl = await QRCode.toDataURL(clientUrl, {
     width: 420,
     margin: 1,
@@ -110,7 +106,7 @@ export default async function CompanySettingsPage({
         <ProgramTypeSettings
           defaultProgramType={program?.programType ?? "CLASSIC_REWARD"}
           giftOptionsDefaultValue={giftOptions.length > 0 ? giftOptions.map((gift) => gift.title).join("\n") : ""}
-          loyaltyLevelsDefaultValue={levelsForEditor(loyaltyLevels)}
+          loyaltyLevelsDefaultValue={[]}
         />
         <FormField label="Название подарка" name="rewardTitle" defaultValue={defaults.rewardTitle} />
         <TextAreaField label="Описание компании" name="description" defaultValue={access.company.description} rows={3} required={false} />
@@ -130,12 +126,5 @@ async function getCompanyGiftOptions(companyId: string) {
     where: { companyId },
     orderBy: { createdAt: "asc" },
     select: { title: true },
-  });
-}
-
-async function getCompanyLoyaltyLevels(companyId: string) {
-  return getDb().loyaltyLevel.findMany({
-    where: { companyId },
-    orderBy: [{ minPurchases: "asc" }, { sortOrder: "asc" }],
   });
 }

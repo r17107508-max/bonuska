@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
-import { LoyaltyProgramType } from "@prisma/client";
 import { deleteClient } from "@/app/actions";
 import { AdminShell, companyNav } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
-import { CustomerLevelProgress } from "@/components/customer-level-progress";
 import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyAdmin } from "@/lib/auth";
@@ -20,7 +18,7 @@ export default async function CompanyClientPage({
     where: { id, companyId: access.companyId },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true, loyaltyLevels: true } },
+      company: { include: { loyaltyProgram: true } },
       transactions: { include: { cashier: true }, orderBy: { createdAt: "desc" } },
       rewardClaims: {
         include: { redeemedBy: { select: { id: true, name: true } } },
@@ -34,64 +32,41 @@ export default async function CompanyClientPage({
   }
 
   const program = membership.company.loyaltyProgram;
-  const isCustomerLevels = program.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
-  const levelHistory = membership.transactions.filter((transaction) => transaction.type === "LEVEL_UP");
 
   return (
     <AdminShell title={membership.user.name} subtitle="Карточка клиента, прогресс, QR-токен и история операций." nav={companyNav}>
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
-          {isCustomerLevels ? (
-            <CustomerLevelProgress totalPurchases={membership.totalPurchases} levels={membership.company.loyaltyLevels} />
-          ) : (
-            <ProgressIcons icon={program.icon} current={membership.currentCount} goal={program.goalCount} rewardAvailable={membership.rewardAvailable} rewardTitle={membership.pendingReward ?? program.rewardTitle} />
-          )}
+          <ProgressIcons icon={program.icon} current={membership.currentCount} goal={program.goalCount} rewardAvailable={membership.rewardAvailable} rewardTitle={membership.pendingReward ?? program.rewardTitle} />
           <section>
             <h2 className="mb-3 text-xl font-semibold text-slate-950">История операций</h2>
             <HistoryList transactions={membership.transactions} />
           </section>
-          {isCustomerLevels ? (
-            <section className="panel p-5">
-              <h2 className="text-xl font-semibold text-slate-950">История повышения уровней</h2>
-              <div className="mt-4 divide-y divide-slate-200">
-                {levelHistory.map((transaction) => (
-                  <div key={transaction.id} className="py-3 text-sm">
-                    <p className="font-semibold text-slate-950">{membership.user.name} достиг уровня {transaction.rewardTitle}</p>
-                    <p className="mt-1 text-slate-600">
-                      {transaction.countAfter} покупок · {transaction.createdAt.toLocaleString("ru-RU")}
-                    </p>
-                  </div>
-                ))}
-                {levelHistory.length === 0 && <p className="py-3 text-sm text-slate-500">Повышений уровня пока нет.</p>}
-              </div>
-            </section>
-          ) : (
-            <section className="panel p-5">
-              <h2 className="text-xl font-semibold text-slate-950">Подарки клиента</h2>
-              <div className="mt-4 divide-y divide-slate-200">
-                {membership.rewardClaims.map((claim) => (
-                  <div key={claim.id} className="py-3 text-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-slate-950">{claim.title ?? "Подарок еще не открыт"}</p>
-                        {claim.description && <p className="mt-1 text-slate-500">{claim.description}</p>}
-                      </div>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
-                        {rewardClaimStatusLabel(claim.status)}
-                      </span>
+          <section className="panel p-5">
+            <h2 className="text-xl font-semibold text-slate-950">Подарки клиента</h2>
+            <div className="mt-4 divide-y divide-slate-200">
+              {membership.rewardClaims.map((claim) => (
+                <div key={claim.id} className="py-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-950">{claim.title ?? "Подарок еще не открыт"}</p>
+                      {claim.description && <p className="mt-1 text-slate-500">{claim.description}</p>}
                     </div>
-                    <p className="mt-2 text-slate-600">
-                      Открыт: {claim.openedAt ? claim.openedAt.toLocaleString("ru-RU") : "—"}
-                      {" · "}
-                      Выдан: {claim.redeemedAt ? claim.redeemedAt.toLocaleString("ru-RU") : "—"}
-                    </p>
-                    {claim.redeemedBy && <p className="mt-1 text-slate-600">Кассир: {claim.redeemedBy.name}</p>}
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                      {rewardClaimStatusLabel(claim.status)}
+                    </span>
                   </div>
-                ))}
-                {membership.rewardClaims.length === 0 && <p className="py-3 text-sm text-slate-500">Подарков пока нет.</p>}
-              </div>
-            </section>
-          )}
+                  <p className="mt-2 text-slate-600">
+                    Открыт: {claim.openedAt ? claim.openedAt.toLocaleString("ru-RU") : "—"}
+                    {" · "}
+                    Выдан: {claim.redeemedAt ? claim.redeemedAt.toLocaleString("ru-RU") : "—"}
+                  </p>
+                  {claim.redeemedBy && <p className="mt-1 text-slate-600">Кассир: {claim.redeemedBy.name}</p>}
+                </div>
+              ))}
+              {membership.rewardClaims.length === 0 && <p className="py-3 text-sm text-slate-500">Подарков пока нет.</p>}
+            </div>
+          </section>
         </div>
         <aside className="space-y-4">
           <section className="panel p-5">
@@ -99,8 +74,6 @@ export default async function CompanyClientPage({
             <div className="mt-4 space-y-3 text-sm">
               <p><span className="font-semibold">Телефон:</span> {membership.user.phone}</p>
               <p><span className="font-semibold">Всего покупок:</span> {membership.totalPurchases}</p>
-              {isCustomerLevels && <p><span className="font-semibold">Уровень:</span> {membership.currentLevelName ?? "Новичок"}</p>}
-              {isCustomerLevels && <p><span className="font-semibold">Дата достижения:</span> {membership.levelReachedAt ? membership.levelReachedAt.toLocaleString("ru-RU") : "—"}</p>}
               <p><span className="font-semibold">Подарков:</span> {membership.totalRewards}</p>
               <p className="break-all"><span className="font-semibold">QR-токен:</span> tega:{membership.qrToken}</p>
             </div>

@@ -1,4 +1,10 @@
-import type { LoyaltyLevel, Prisma } from "@prisma/client";
+import { LoyaltyProgramType, type LoyaltyLevel, type LoyaltyProgram, type Prisma } from "@prisma/client";
+
+export const CUSTOMER_LEVELS_RUNTIME_ENABLED = false;
+
+export function isCustomerLevelsProgram(program?: Pick<LoyaltyProgram, "programType"> | null) {
+  return CUSTOMER_LEVELS_RUNTIME_ENABLED && program?.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
+}
 
 export type LoyaltyLevelInput = {
   id?: string;

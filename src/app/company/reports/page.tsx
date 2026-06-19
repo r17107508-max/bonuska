@@ -1,9 +1,8 @@
-import { LoyaltyProgramType, type AuditLog, type User } from "@prisma/client";
+import { type AuditLog, type User } from "@prisma/client";
 import { AdminShell, companyNav } from "@/components/admin-shell";
 import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
-import { calculateLoyaltyLevel } from "@/lib/loyalty-levels";
 
 type SuspiciousLog = AuditLog & {
   actor: Pick<User, "id" | "name"> | null;
@@ -18,7 +17,6 @@ export default async function CompanyReportsPage() {
   weekStart.setDate(weekStart.getDate() - 7);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const program = access.company.loyaltyProgram;
-  const isCustomerLevels = program?.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
   const nearRewardStart = Math.max((program?.goalCount ?? 6) - 1, 1);
 
   const [
@@ -38,8 +36,6 @@ export default async function CompanyReportsPage() {
     suspiciousCount,
     suspiciousLogs,
     rewardClaims,
-    loyaltyLevels,
-    allClientsForLevels,
   ] = await Promise.all([
     getDb().customerMembership.count({ where: { companyId: access.companyId } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, createdAt: { gte: weekStart } } }),
@@ -66,6 +62,7 @@ export default async function CompanyReportsPage() {
       where: { companyId: access.companyId, type: { in: ["PURCHASE", "REWARD_OPENED", "REWARD_REDEEMED", "REWARD_GRANTED"] }, createdAt: { gte: monthStart } },
       include: { cashier: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
+      take: 200,
     }),
     getDb().loyaltyTransaction.findMany({
       where: { companyId: access.companyId, createdAt: { gte: weekStart } },
@@ -86,14 +83,6 @@ export default async function CompanyReportsPage() {
       },
       orderBy: [{ openedAt: "desc" }, { createdAt: "desc" }],
       take: 30,
-    }),
-    getDb().loyaltyLevel.findMany({
-      where: { companyId: access.companyId, isActive: true },
-      orderBy: [{ minPurchases: "asc" }, { sortOrder: "asc" }],
-    }),
-    getDb().customerMembership.findMany({
-      where: { companyId: access.companyId },
-      select: { id: true, totalPurchases: true },
     }),
   ]);
   const activeClients7 = new Set(weekTransactions.map((transaction) => transaction.membershipId)).size;
@@ -123,11 +112,6 @@ export default async function CompanyReportsPage() {
   )
     .map(([, value]) => value)
     .sort((a, b) => b.total - a.total);
-  const levelStats = loyaltyLevels.map((level) => ({
-    level,
-    count: allClientsForLevels.filter((client) => calculateLoyaltyLevel(client.totalPurchases, loyaltyLevels).current?.id === level.id).length,
-  }));
-
   return (
     <AdminShell title="Отчеты" subtitle="Клиенты, покупки, подарки, кассиры и подозрительные операции." nav={companyNav}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -148,24 +132,8 @@ export default async function CompanyReportsPage() {
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Metric label="Подозрительных попыток" value={suspiciousCount} />
-        <Metric label={isCustomerLevels ? "Уровней активно" : "Клиентов близко к подарку"} value={isCustomerLevels ? loyaltyLevels.length : nearRewardClients.length} />
+        <Metric label="Клиентов близко к подарку" value={nearRewardClients.length} />
       </div>
-
-      {isCustomerLevels && (
-        <section className="panel mt-6 p-5">
-          <h2 className="text-xl font-semibold text-slate-950">Клиенты по уровням</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {levelStats.map(({ level, count }) => (
-              <div key={level.id} className="rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-2xl">{level.icon ?? "⭐"}</p>
-                <p className="mt-2 font-semibold text-slate-950">{level.name}</p>
-                <p className="mt-1 text-sm text-slate-500">от {level.minPurchases} покупок</p>
-                <p className="mt-3 text-2xl font-semibold text-teal-700">{count}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section className="panel mt-6 p-5">
         <h2 className="text-xl font-semibold text-slate-950">История подарков</h2>
@@ -211,7 +179,7 @@ export default async function CompanyReportsPage() {
       </section>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        {!isCustomerLevels && <section className="panel p-5">
+        <section className="panel p-5">
           <h2 className="text-xl font-semibold text-slate-950">Клиенты близко к подарку</h2>
           <div className="mt-4 divide-y divide-slate-200">
             {nearRewardClients.map((client) => (
@@ -225,7 +193,7 @@ export default async function CompanyReportsPage() {
             ))}
             {nearRewardClients.length === 0 && <p className="py-3 text-sm text-slate-500">Пока нет клиентов в шаге от подарка.</p>}
           </div>
-        </section>}
+        </section>
 
         <section className="panel p-5">
           <h2 className="text-xl font-semibold text-slate-950">Кассиры за месяц</h2>
@@ -248,15 +216,10 @@ export default async function CompanyReportsPage() {
         <div className="mt-4 divide-y divide-slate-200">
           {topClients.map((client) => (
             <div key={client.id} className="flex items-center justify-between py-3">
-              <span>
-                <span className="font-semibold">{client.user.name}</span>
-                <span className="ml-2 text-sm text-slate-500">{client.user.phone}</span>
-                {isCustomerLevels && (
-                  <span className="ml-2 text-sm font-semibold text-teal-700">
-                    {calculateLoyaltyLevel(client.totalPurchases, loyaltyLevels).current?.name ?? "без уровня"}
-                  </span>
-                )}
-              </span>
+                <span>
+                  <span className="font-semibold">{client.user.name}</span>
+                  <span className="ml-2 text-sm text-slate-500">{client.user.phone}</span>
+                </span>
               <span className="font-semibold text-teal-700">{client.totalPurchases}</span>
             </div>
           ))}

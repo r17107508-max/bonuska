@@ -12,7 +12,7 @@ import {
 } from "@prisma/client";
 import { getDb } from "@/lib/db";
 import { verifyDynamicCustomerQr } from "@/lib/dynamic-qr";
-import { calculateLoyaltyLevel, ensureDefaultLoyaltyLevels } from "@/lib/loyalty-levels";
+import { calculateLoyaltyLevel, ensureDefaultLoyaltyLevels, isCustomerLevelsProgram } from "@/lib/loyalty-levels";
 
 export const REPEAT_GUARD_SECONDS = 30;
 export const DAILY_PURCHASE_LIMIT_PER_CUSTOMER = 5;
@@ -183,7 +183,7 @@ export async function findMembershipForScan(companyId: string, token: string) {
     },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -217,7 +217,7 @@ async function findMembershipByGlobalToken(companyId: string, globalQrToken: str
     },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -241,7 +241,7 @@ async function findMembershipByDynamicToken(companyId: string, dynamicToken: str
     },
     include: {
       user: true,
-      company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
       transactions: {
         include: { cashier: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
@@ -322,7 +322,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       where: { id: membershipId, companyId },
       include: {
         user: true,
-        company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } },
+        company: { include: { loyaltyProgram: true, giftOptions: true } },
       },
     });
 
@@ -340,7 +340,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
     }
 
     const program = membership.company.loyaltyProgram;
-    const isCustomerLevels = program.programType === LoyaltyProgramType.CUSTOMER_LEVELS;
+    const isCustomerLevels = isCustomerLevelsProgram(program);
 
     if (!isCustomerLevels && membership.rewardAvailable) {
       throw new Error("Сначала выдайте доступный подарок");

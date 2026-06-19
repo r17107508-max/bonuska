@@ -31,7 +31,6 @@ import {
   redeemRewardClaimByToken,
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
-import { defaultLoyaltyLevels, parseLoyaltyLevelsJson, replaceCompanyLoyaltyLevels } from "@/lib/loyalty-levels";
 import { notifyCompanyApplicationReceived, notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
 
@@ -569,17 +568,12 @@ export async function saveCompanySettings(formData: FormData) {
     errorRedirect("/company/settings", "Выберите корректный тип программы");
   }
 
-  if (programType === LoyaltyProgramType.GIFT_BOX && gifts.length === 0) {
-    errorRedirect("/company/settings", "Для режима «Коробка с подарком» нужно указать хотя бы один подарок");
+  if (programType === LoyaltyProgramType.CUSTOMER_LEVELS) {
+    errorRedirect("/company/settings", "Режим «Постоянный уровень клиента» временно отключен для восстановления стабильной работы");
   }
 
-  let loyaltyLevels = defaultLoyaltyLevels;
-  if (programType === LoyaltyProgramType.CUSTOMER_LEVELS) {
-    try {
-      loyaltyLevels = parseLoyaltyLevelsJson(text(formData, "loyaltyLevelsJson") || JSON.stringify(defaultLoyaltyLevels));
-    } catch (error) {
-      errorRedirect("/company/settings", error instanceof Error ? error.message : "Проверьте настройки уровней");
-    }
+  if (programType === LoyaltyProgramType.GIFT_BOX && gifts.length === 0) {
+    errorRedirect("/company/settings", "Для режима «Коробка с подарком» нужно указать хотя бы один подарок");
   }
 
   await getDb().$transaction(async (tx) => {
@@ -627,14 +621,6 @@ export async function saveCompanySettings(formData: FormData) {
         },
       },
     });
-
-    if (programType === LoyaltyProgramType.CUSTOMER_LEVELS) {
-      await replaceCompanyLoyaltyLevels(tx, access.companyId, loyaltyLevels);
-      await tx.customerMembership.updateMany({
-        where: { companyId: access.companyId },
-        data: { rewardAvailable: false, pendingReward: null },
-      });
-    }
 
     await tx.giftOption.deleteMany({ where: { companyId: access.companyId } });
     if (gifts.length > 0) {
