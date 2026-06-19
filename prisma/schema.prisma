@@ -197,6 +197,7 @@ model CustomerMembership {
 
   @@unique([companyId, userId])
   @@index([companyId, qrToken])
+  @@index([userId, updatedAt])
 }
 
 model LoyaltyTransaction {

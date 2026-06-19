@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 export default async function Home() {
   const [currentUser, companies] = await Promise.all([
     getCurrentUser(),
-    getActivePartnerCompanies(),
+    getActivePartnerCompanies(null, 12),
   ]);
 
   if (currentUser) {

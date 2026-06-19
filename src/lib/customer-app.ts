@@ -6,11 +6,51 @@ export type ClientMembership = Prisma.CustomerMembershipGetPayload<{
   include: { company: { include: { loyaltyProgram: true, giftOptions: true, loyaltyLevels: true } } };
 }>;
 
-export function rewardGoal(membership: ClientMembership) {
+export type ClientDashboardMembership = Prisma.CustomerMembershipGetPayload<{
+  select: {
+    id: true;
+    currentCount: true;
+    totalPurchases: true;
+    rewardAvailable: true;
+    company: {
+      select: {
+        id: true;
+        name: true;
+        loyaltyProgram: true;
+        giftOptions: {
+          where: { isActive: true };
+          select: { isActive: true };
+        };
+        loyaltyLevels: {
+          where: { isActive: true };
+          orderBy: [{ minPurchases: "asc" }, { sortOrder: "asc" }];
+          select: {
+            id: true;
+            name: true;
+            icon: true;
+            color: true;
+            minPurchases: true;
+            benefit: true;
+            isActive: true;
+            sortOrder: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+type RewardProgressMembership = Pick<ClientMembership, "currentCount" | "rewardAvailable"> & {
+  company: {
+    loyaltyProgram: Pick<NonNullable<ClientMembership["company"]["loyaltyProgram"]>, "goalCount"> | null;
+  };
+};
+
+export function rewardGoal(membership: RewardProgressMembership) {
   return membership.company.loyaltyProgram?.goalCount ?? 1;
 }
 
-export function rewardLeft(membership: ClientMembership) {
+export function rewardLeft(membership: RewardProgressMembership) {
   if (membership.rewardAvailable) {
     return 0;
   }
@@ -18,7 +58,7 @@ export function rewardLeft(membership: ClientMembership) {
   return Math.max(rewardGoal(membership) - membership.currentCount, 0);
 }
 
-export function pickNearestGift(memberships: ClientMembership[]) {
+export function pickNearestGift(memberships: (ClientMembership | ClientDashboardMembership)[]) {
   return [...memberships]
     .filter((membership) => membership.company.loyaltyProgram)
     .filter((membership) => membership.company.loyaltyProgram?.programType !== LoyaltyProgramType.CUSTOMER_LEVELS)
@@ -37,7 +77,46 @@ export async function getClientMemberships(userId: string) {
   });
 }
 
-export async function getActivePartnerCompanies(city?: string | null) {
+export async function getClientDashboardMemberships(userId: string) {
+  return getDb().customerMembership.findMany({
+    where: { userId, company: { status: { not: CompanyStatus.DELETED } } },
+    select: {
+      id: true,
+      currentCount: true,
+      totalPurchases: true,
+      rewardAvailable: true,
+      company: {
+        select: {
+          id: true,
+          name: true,
+          loyaltyProgram: true,
+          giftOptions: {
+            where: { isActive: true },
+            select: { isActive: true },
+          },
+          loyaltyLevels: {
+            where: { isActive: true },
+            orderBy: [{ minPurchases: "asc" }, { sortOrder: "asc" }],
+            select: {
+              id: true,
+              name: true,
+              icon: true,
+              color: true,
+              minPurchases: true,
+              benefit: true,
+              isActive: true,
+              sortOrder: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 24,
+  });
+}
+
+export async function getActivePartnerCompanies(city?: string | null, take?: number) {
   const companies = await getDb().company.findMany({
     where: {
       isBlocked: false,
@@ -47,6 +126,7 @@ export async function getActivePartnerCompanies(city?: string | null) {
     },
     include: { loyaltyProgram: true },
     orderBy: [{ city: "asc" }, { name: "asc" }],
+    ...(take ? { take } : {}),
   });
 
   return companies.filter((company) => hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil));

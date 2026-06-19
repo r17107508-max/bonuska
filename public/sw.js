@@ -1,4 +1,4 @@
-const CACHE_NAME = "proplushka-cache-v4";
+const CACHE_NAME = "proplushka-cache-v5";
 const APP_SHELL = [
   "/manifest.json",
   "/manifest.webmanifest",
@@ -12,7 +12,6 @@ const APP_SHELL = [
   "/apple-touch-icon.png",
   "/favicon.ico",
 ];
-const NETWORK_TIMEOUT_MS = 3500;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -44,7 +43,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (event.request.mode === "navigate" || event.request.headers.get("accept")?.includes("text/html")) {
-    event.respondWith(networkFirst(event.request));
+    event.respondWith(fetch(event.request));
     return;
   }
 
@@ -63,19 +62,6 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-async function networkFirst(request) {
-  const cache = await caches.open(CACHE_NAME);
-  try {
-    const response = await promiseWithTimeout(fetch(request), NETWORK_TIMEOUT_MS);
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    return (await cache.match(request)) || fetch(request);
-  }
-}
-
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request);
@@ -88,22 +74,6 @@ async function cacheFirst(request) {
     cache.put(request, response.clone());
   }
   return response;
-}
-
-function promiseWithTimeout(promise, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("Network timeout")), timeoutMs);
-    promise.then(
-      (value) => {
-        clearTimeout(timeout);
-        resolve(value);
-      },
-      (error) => {
-        clearTimeout(timeout);
-        reject(error);
-      },
-    );
-  });
 }
 
 self.addEventListener("notificationclick", (event) => {

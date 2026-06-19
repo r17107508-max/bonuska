@@ -7,7 +7,7 @@ import { GiftOpenCard } from "@/components/gift-open-card";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { createDynamicCustomerQr } from "@/lib/dynamic-qr";
-import { getClientMemberships, pickNearestGift, rewardLeft } from "@/lib/customer-app";
+import { getClientDashboardMemberships, pickNearestGift, rewardLeft } from "@/lib/customer-app";
 import { buildRewardQrPayload, ensureGlobalQrToken, isGiftBoxProgram } from "@/lib/loyalty";
 import { calculateLoyaltyLevel } from "@/lib/loyalty-levels";
 
@@ -26,7 +26,7 @@ export default async function ClientDashboardPage({
 
   const [dynamicQr, memberships] = await Promise.all([
     createDynamicCustomerQr(user.id),
-    getClientMemberships(user.id),
+    getClientDashboardMemberships(user.id),
   ]);
   const nearest = pickNearestGift(memberships);
   const nearestLevelMembership = memberships.find((membership) => membership.company.loyaltyProgram?.programType === LoyaltyProgramType.CUSTOMER_LEVELS) ?? null;
