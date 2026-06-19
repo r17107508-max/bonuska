@@ -4,41 +4,32 @@ import { useEffect } from "react";
 
 export function PwaRegister() {
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      let refreshing = false;
-
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (refreshing) {
-          return;
-        }
-        refreshing = true;
-        window.location.reload();
-      });
-
-      navigator.serviceWorker
-        .register("/sw.js?v=20260619-2", { updateViaCache: "none" })
-        .then((registration) => {
-          registration.update().catch(() => undefined);
-
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: "SKIP_WAITING" });
-          }
-
-          registration.addEventListener("updatefound", () => {
-            const worker = registration.installing;
-            if (!worker) {
-              return;
-            }
-
-            worker.addEventListener("statechange", () => {
-              if (worker.state === "installed" && navigator.serviceWorker.controller) {
-                worker.postMessage({ type: "SKIP_WAITING" });
-              }
-            });
-          });
-        })
-        .catch(() => undefined);
+    if (!("serviceWorker" in navigator)) {
+      return;
     }
+
+    let reloaded = false;
+
+    async function disableServiceWorkers() {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
+
+        if (navigator.serviceWorker.controller && !reloaded) {
+          reloaded = true;
+          window.location.reload();
+        }
+      } catch {
+        // Ignore cleanup failures so the app remains usable.
+      }
+    }
+
+    disableServiceWorkers();
   }, []);
 
   return null;
