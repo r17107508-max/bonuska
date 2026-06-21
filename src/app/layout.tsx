@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppSplash } from "@/components/app-splash";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default function RootLayout({
     <html lang="ru">
       <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: clearServiceWorkerScript }} />
+        <AppSplash />
         {children}
       </body>
     </html>
