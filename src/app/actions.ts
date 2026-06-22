@@ -1,5 +1,6 @@
 "use server";
 
+import { createHash, randomBytes } from "node:crypto";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -19,7 +20,7 @@ import {
   requireSuperadmin,
 } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, slugify } from "@/lib/format";
+import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, phoneLookupValues, slugify } from "@/lib/format";
 import {
   addPurchase,
   ensureGlobalQrToken,
@@ -30,7 +31,7 @@ import {
   redeemRewardClaimByToken,
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
-import { notifyCompanyApplicationReceived, notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
+import { getMailConfigStatus, notifyCompanyApplicationReceived, notifyCompanyApproved, notifySuperadminsAboutCompanyApplication, sendPasswordResetEmail } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
 import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
 
@@ -146,28 +147,143 @@ export async function loginClientAccount(formData: FormData) {
   redirect("/app");
 }
 
-export async function resetPassword(formData: FormData) {
-  const phone = normalizePhone(formData.get("phone"));
-  const email = text(formData, "email").toLowerCase();
-  const password = text(formData, "password");
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
+const PASSWORD_RESET_RESEND_WINDOW_MS = 10 * 60 * 1000;
+const PASSWORD_RESET_HOURLY_LIMIT = 3;
+const PASSWORD_RESET_NEUTRAL_MESSAGE = "Если пользователь найден, ссылка для восстановления отправлена на email";
 
-  if (phone.length < 10 || !email || password.length < 6) {
-    errorRedirect("/forgot-password", "Заполните телефон, email и новый пароль от 6 символов");
+function passwordResetTokenHash(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function passwordResetDone(): never {
+  redirect(`/forgot-password?sent=1&message=${encodeURIComponent(PASSWORD_RESET_NEUTRAL_MESSAGE)}`);
+}
+
+export async function requestPasswordReset(formData: FormData) {
+  const identifier = text(formData, "identifier").toLowerCase();
+
+  if (!identifier) {
+    errorRedirect("/forgot-password", "Введите телефон или email");
   }
 
-  const user = await getDb().user.findUnique({
-    where: { phone },
+  const db = getDb();
+  const meta = await requestMeta();
+  const phoneValues = phoneLookupValues(identifier);
+  const user = await db.user.findFirst({
+    where: {
+      OR: [
+        { email: identifier },
+        ...(phoneValues.length > 0 ? [{ phone: { in: phoneValues } }] : []),
+      ],
+    },
+    select: { id: true, email: true, name: true },
   });
 
-  if (!user || user.email?.toLowerCase() !== email) {
-    errorRedirect("/forgot-password", "Пользователь с таким телефоном и email не найден");
+  if (!user?.email) {
+    passwordResetDone();
+  }
+
+  const now = new Date();
+  const recentCutoff = new Date(now.getTime() - PASSWORD_RESET_RESEND_WINDOW_MS);
+  const hourlyCutoff = new Date(now.getTime() - 60 * 60 * 1000);
+  const [recentToken, hourlyCount] = await Promise.all([
+    db.passwordResetToken.findFirst({
+      where: { userId: user.id, usedAt: null, createdAt: { gte: recentCutoff } },
+      select: { id: true },
+    }),
+    db.passwordResetToken.count({
+      where: { userId: user.id, createdAt: { gte: hourlyCutoff } },
+    }),
+  ]);
+
+  if (recentToken || hourlyCount >= PASSWORD_RESET_HOURLY_LIMIT) {
+    passwordResetDone();
+  }
+
+  const mailStatus = getMailConfigStatus();
+  if (!mailStatus.ready) {
+    await db.auditLog.create({
+      data: {
+        action: "EMAIL_PASSWORD_RESET_SKIPPED",
+        entityType: "EmailNotification",
+        metadataJson: JSON.stringify({
+          status: "skipped",
+          recipients: [user.email],
+          reason: `SMTP не настроен. Не хватает: ${mailStatus.missing.join(", ")}`,
+        }),
+      },
+    });
+    passwordResetDone();
+  }
+
+  const token = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(now.getTime() + PASSWORD_RESET_TTL_MS);
+  const resetRecord = await db.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash: passwordResetTokenHash(token),
+      expiresAt,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    },
+  });
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || meta.origin;
+  const result = await sendPasswordResetEmail({
+    email: user.email,
+    resetUrl: `${appUrl.replace(/\/$/, "")}/reset-password/${encodeURIComponent(token)}`,
+    expiresAt,
+  });
+
+  if (result.status !== "sent") {
+    await db.passwordResetToken.update({
+      where: { id: resetRecord.id },
+      data: { usedAt: new Date() },
+    });
+  }
+
+  passwordResetDone();
+}
+
+export async function completePasswordReset(formData: FormData) {
+  const token = text(formData, "token");
+  const password = text(formData, "password");
+  const path = `/reset-password/${encodeURIComponent(token)}`;
+
+  if (!token) {
+    errorRedirect("/forgot-password", "Ссылка восстановления недействительна");
+  }
+
+  if (password.length < 6) {
+    errorRedirect(path, "Новый пароль должен быть от 6 символов");
+  }
+
+  const tokenHash = passwordResetTokenHash(token);
+  const resetToken = await getDb().passwordResetToken.findFirst({
+    where: {
+      tokenHash,
+      usedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    include: { user: { select: { id: true } } },
+  });
+
+  if (!resetToken) {
+    errorRedirect(path, "Ссылка восстановления недействительна или устарела");
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  await getDb().user.update({
-    where: { id: user.id },
-    data: { passwordHash },
-  });
+  await getDb().$transaction([
+    getDb().user.update({
+      where: { id: resetToken.userId },
+      data: { passwordHash },
+    }),
+    getDb().passwordResetToken.updateMany({
+      where: { userId: resetToken.userId, usedAt: null },
+      data: { usedAt: new Date() },
+    }),
+  ]);
 
   await clearSession();
   redirect("/company/login?reset=1");

@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import { GlobalRole, type Company } from "@prisma/client";
 import { getDb } from "@/lib/db";
+import { formatMoscowDate, formatMoscowDateTime } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 
 type MailPayload = {
@@ -30,7 +31,7 @@ async function resolveSmtpHost(host: string) {
 }
 
 export function getMailConfigStatus() {
-  const missing = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"].filter((key) => !process.env[key]);
+  const missing = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"].filter((key) => !process.env[key]);
   return {
     ready: missing.length === 0,
     missing,
@@ -41,7 +42,7 @@ export function getMailConfigStatus() {
   };
 }
 
-async function sendMail({ to, subject, text }: MailPayload): Promise<MailResult> {
+export async function sendMail({ to, subject, text }: MailPayload): Promise<MailResult> {
   if (to.length === 0) {
     console.log(`[notification skipped] ${subject}\n${text}`);
     return { status: "skipped", recipients: [], reason: "Нет получателей" };
@@ -97,6 +98,43 @@ async function writeEmailAudit(companyId: string, action: string, result: MailRe
   });
 }
 
+async function writeGlobalEmailAudit(action: string, result: MailResult) {
+  await getDb().auditLog.create({
+    data: {
+      action,
+      entityType: "EmailNotification",
+      metadataJson: JSON.stringify(result),
+    },
+  });
+}
+
+export async function sendPasswordResetEmail({
+  email,
+  resetUrl,
+  expiresAt,
+}: {
+  email: string;
+  resetUrl: string;
+  expiresAt: Date;
+}) {
+  const result = await sendMail({
+    to: uniqueEmails([email]),
+    subject: "Восстановление пароля в сервисе «ПроПлюшка»",
+    text: [
+      "Вы запросили восстановление пароля в сервисе «ПроПлюшка».",
+      "",
+      "Чтобы задать новый пароль, откройте одноразовую ссылку:",
+      resetUrl,
+      "",
+      `Ссылка действует до: ${formatMoscowDateTime(expiresAt)} (Москва).`,
+      "Если вы не запрашивали восстановление, просто игнорируйте это письмо.",
+    ].join("\n"),
+  });
+
+  await writeGlobalEmailAudit(`EMAIL_PASSWORD_RESET_${result.status.toUpperCase()}`, result);
+  return result;
+}
+
 export async function notifySuperadminsAboutCompanyApplication(
   company: Pick<Company, "id" | "name" | "city" | "ownerName" | "ownerPhone" | "ownerEmail" | "createdAt">,
   origin: string,
@@ -121,7 +159,7 @@ export async function notifySuperadminsAboutCompanyApplication(
       `Представитель: ${company.ownerName}`,
       `Телефон: ${company.ownerPhone}`,
       `Email: ${company.ownerEmail}`,
-      `Дата заявки: ${company.createdAt.toLocaleString("ru-RU")}`,
+      `Дата заявки: ${formatMoscowDateTime(company.createdAt)}`,
       ``,
       `Откройте заявку: ${origin}/superadmin/companies/${company.id}`,
     ].join("\n"),
@@ -147,7 +185,7 @@ export async function notifyCompanyApplicationReceived(company: Pick<Company, "i
 }
 
 export async function notifyCompanyApproved(company: Pick<Company, "id" | "name" | "ownerEmail" | "trialEndsAt">, origin: string) {
-  const trialText = company.trialEndsAt ? company.trialEndsAt.toLocaleDateString("ru-RU") : "14 дней с момента подтверждения";
+  const trialText = company.trialEndsAt ? formatMoscowDate(company.trialEndsAt) : "14 дней с момента подтверждения";
 
   const result = await sendMail({
     to: uniqueEmails([company.ownerEmail]),

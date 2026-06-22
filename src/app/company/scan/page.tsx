@@ -8,7 +8,7 @@ import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { statusLabel } from "@/lib/format";
+import { formatDateTime, statusLabel } from "@/lib/format";
 import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
 
 export default async function CompanyScanPage({
@@ -91,8 +91,8 @@ export default async function CompanyScanPage({
                 <p><span className="font-semibold">Подарок:</span> {rewardClaim.title ?? "пока не открыт"}</p>
                 {rewardClaim.description && <p><span className="font-semibold">Описание:</span> {rewardClaim.description}</p>}
                 <p><span className="font-semibold">Статус:</span> {rewardClaimStatusText(rewardClaim.status)}</p>
-                {rewardClaim.openedAt && <p><span className="font-semibold">Открыт:</span> {rewardClaim.openedAt.toLocaleString("ru-RU")}</p>}
-                {rewardClaim.redeemedAt && <p><span className="font-semibold">Выдан:</span> {rewardClaim.redeemedAt.toLocaleString("ru-RU")}</p>}
+                {rewardClaim.openedAt && <p><span className="font-semibold">Открыт:</span> {formatDateTime(rewardClaim.openedAt)}</p>}
+                {rewardClaim.redeemedAt && <p><span className="font-semibold">Выдан:</span> {formatDateTime(rewardClaim.redeemedAt)}</p>}
                 {rewardClaim.redeemedBy && <p><span className="font-semibold">Кассир:</span> {rewardClaim.redeemedBy.name}</p>}
               </div>
               {rewardClaim.companyId !== access.companyId && (
@@ -315,7 +315,7 @@ export default async function CompanyScanPage({
                       <p className="text-base font-semibold">🎁 У клиента есть открытый подарок</p>
                       <p className="mt-2 text-lg font-semibold text-slate-950">{openedRewardClaim.title ?? "Подарок"}</p>
                       {openedRewardClaim.description && <p className="mt-1">{openedRewardClaim.description}</p>}
-                      {openedRewardClaim.openedAt && <p className="mt-2 text-slate-700">Открыт: {openedRewardClaim.openedAt.toLocaleString("ru-RU")}</p>}
+                      {openedRewardClaim.openedAt && <p className="mt-2 text-slate-700">Открыт: {formatDateTime(openedRewardClaim.openedAt)}</p>}
                       <form action={redeemRewardClaim} className="mt-4">
                         <input type="hidden" name="token" value={openedRewardClaim.token} />
                         <ConfirmSubmit

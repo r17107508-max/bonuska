@@ -6,6 +6,7 @@ import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { formatDateTime } from "@/lib/format";
 
 export default async function CompanyClientPage({
   params,
@@ -57,9 +58,9 @@ export default async function CompanyClientPage({
                     </span>
                   </div>
                   <p className="mt-2 text-slate-600">
-                    Открыт: {claim.openedAt ? claim.openedAt.toLocaleString("ru-RU") : "—"}
+                    Открыт: {formatDateTime(claim.openedAt)}
                     {" · "}
-                    Выдан: {claim.redeemedAt ? claim.redeemedAt.toLocaleString("ru-RU") : "—"}
+                    Выдан: {formatDateTime(claim.redeemedAt)}
                   </p>
                   {claim.redeemedBy && <p className="mt-1 text-slate-600">Кассир: {claim.redeemedBy.name}</p>}
                 </div>

@@ -5,6 +5,7 @@ import { SuperadminNotifications } from "@/components/superadmin-notifications";
 import { requireSuperadmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { daysLeft, money } from "@/lib/format";
+import { getMailConfigStatus } from "@/lib/notifications";
 
 export default async function SuperadminPage() {
   await requireSuperadmin();
@@ -48,6 +49,7 @@ export default async function SuperadminPage() {
   const emailSent = emailLogs.filter((log) => log.action.endsWith("_SENT")).length;
   const emailFailed = emailLogs.filter((log) => log.action.endsWith("_FAILED")).length;
   const emailSkipped = emailLogs.filter((log) => log.action.endsWith("_SKIPPED")).length;
+  const mailStatus = getMailConfigStatus();
   const cards = [
     ["Компании всего", companies.length],
     ["Активные trial", companies.filter((company) => company.status === CompanyStatus.ACTIVE_TRIAL).length],
@@ -79,6 +81,12 @@ export default async function SuperadminPage() {
   return (
     <AdminShell title="Глобальная панель" subtitle="Состояние SaaS-платформы и быстрый контроль компаний." nav={superadminNav}>
       <SuperadminNotifications pendingCount={pendingCompanies.length} />
+
+      {!mailStatus.ready && (
+        <section className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
+          SMTP не настроен. Email-уведомления и восстановление пароля не будут отправляться. Не хватает: {mailStatus.missing.join(", ")}.
+        </section>
+      )}
 
       {pendingCompanies.length > 0 && (
         <Link href="/superadmin/companies" className="mb-5 block rounded-lg bg-amber-50 p-4 font-semibold text-amber-900">

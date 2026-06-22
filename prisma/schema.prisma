@@ -73,9 +73,26 @@ model User {
   rewardClaims         RewardClaim[]         @relation("CustomerRewardClaims")
   redeemedRewardClaims RewardClaim[]         @relation("RedeemedRewardClaims")
   auditLogs            AuditLog[]
+  passwordResetTokens  PasswordResetToken[]
 
   @@unique([phone])
   @@index([email])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  ip        String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
 }
 
 model Company {

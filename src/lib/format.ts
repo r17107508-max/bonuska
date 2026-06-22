@@ -1,11 +1,14 @@
 import { CompanyStatus, CompanyUserRole, LoyaltyProgramType, LoyaltyTransactionType } from "@prisma/client";
 
+export const MOSCOW_TIME_ZONE = "Europe/Moscow";
+
 export function formatDate(date: Date | null | undefined) {
   if (!date) {
     return "—";
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: MOSCOW_TIME_ZONE,
     dateStyle: "medium",
   }).format(date);
 }
@@ -16,10 +19,14 @@ export function formatDateTime(date: Date | null | undefined) {
   }
 
   return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: MOSCOW_TIME_ZONE,
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
 }
+
+export const formatMoscowDate = formatDate;
+export const formatMoscowDateTime = formatDateTime;
 
 export const PHONE_ALREADY_REGISTERED_MESSAGE = "Этот номер телефона уже зарегистрирован. Укажите другой номер";
 
