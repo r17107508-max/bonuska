@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
-import bcrypt from "bcryptjs";
 import { CompanyStatus, CompanyUserRole } from "@prisma/client";
 import { apiError, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
-import { normalizePhone, slugify } from "@/lib/format";
-import { ensureGlobalQrToken, newGlobalQrToken } from "@/lib/loyalty";
+import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, slugify } from "@/lib/format";
+import { ensureGlobalQrToken } from "@/lib/loyalty";
 import { getSettings } from "@/lib/settings";
+import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -22,11 +22,16 @@ export async function POST(request: NextRequest) {
 
   const db = getDb();
   const settings = await getSettings();
-  const user = await db.user.upsert({
-    where: { phone },
-    update: { name: ownerName, email, city, passwordHash: await bcrypt.hash(password, 10) },
-    create: { name: ownerName, phone, email, city, passwordHash: await bcrypt.hash(password, 10), globalQrToken: newGlobalQrToken() },
-  });
+  let user: Awaited<ReturnType<typeof createUserWithUniquePhone>>;
+  try {
+    user = await createUserWithUniquePhone({ name: ownerName, phone, email, city, password }, db);
+  } catch (error) {
+    if (isPhoneAlreadyRegisteredError(error)) {
+      return apiError(PHONE_ALREADY_REGISTERED_MESSAGE, 409);
+    }
+
+    throw error;
+  }
   await ensureGlobalQrToken(user);
 
   const baseSlug = slugify(String(body.slug ?? name)) || `company-${Date.now()}`;

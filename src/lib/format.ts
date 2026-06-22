@@ -21,8 +21,41 @@ export function formatDateTime(date: Date | null | undefined) {
   }).format(date);
 }
 
+export const PHONE_ALREADY_REGISTERED_MESSAGE = "Этот номер телефона уже зарегистрирован. Укажите другой номер";
+
 export function normalizePhone(value: FormDataEntryValue | string | null) {
-  return String(value ?? "").replace(/\D/g, "");
+  const digits = String(value ?? "").replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return `7${digits}`;
+  }
+
+  if (digits.length === 11 && digits.startsWith("8")) {
+    return `7${digits.slice(1)}`;
+  }
+
+  return digits;
+}
+
+export function phoneLookupValues(value: FormDataEntryValue | string | null) {
+  const normalized = normalizePhone(value);
+  const rawDigits = String(value ?? "").replace(/\D/g, "");
+  const values = new Set<string>();
+
+  if (normalized) {
+    values.add(normalized);
+  }
+
+  if (normalized.length === 11 && normalized.startsWith("7")) {
+    values.add(`8${normalized.slice(1)}`);
+    values.add(normalized.slice(1));
+  }
+
+  if (rawDigits) {
+    values.add(rawDigits);
+  }
+
+  return Array.from(values);
 }
 
 export function money(amount: number) {

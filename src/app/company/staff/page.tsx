@@ -6,8 +6,12 @@ import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { companyRoleLabel, formatDateTime } from "@/lib/format";
 
-export default async function CompanyStaffPage() {
-  const access = await requireCompanyAdmin();
+export default async function CompanyStaffPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const [access, params] = await Promise.all([requireCompanyAdmin(), searchParams]);
   const staff = await getDb().companyUser.findMany({
     where: { companyId: access.companyId },
     include: { user: true },
@@ -19,6 +23,7 @@ export default async function CompanyStaffPage() {
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <form action={createStaff} className="panel space-y-4 p-5">
           <h2 className="text-xl font-semibold text-slate-950">Добавить сотрудника</h2>
+          {params.error && <p className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">{params.error}</p>}
           <FormField label="Имя" name="name" />
           <FormField label="Телефон" name="phone" />
           <FormField label="Пароль" name="password" type="password" />

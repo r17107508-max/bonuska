@@ -4,6 +4,7 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { CompanyStatus, CompanyUserRole, GlobalRole, type User } from "@prisma/client";
 import { getDb } from "@/lib/db";
+import { phoneLookupValues } from "@/lib/format";
 
 const COOKIE_NAME = "tega_session";
 const SESSION_DAYS = 30;
@@ -174,9 +175,13 @@ export async function requireCustomerMembership(slug: string) {
 }
 
 export async function authenticate(phone: string, password: string) {
-  const normalizedPhone = phone.replace(/\D/g, "");
-  const user = await getDb().user.findUnique({
-    where: { phone: normalizedPhone },
+  const phones = phoneLookupValues(phone);
+  if (phones.length === 0) {
+    return null;
+  }
+
+  const user = await getDb().user.findFirst({
+    where: { phone: { in: phones } },
   });
 
   if (!user) {

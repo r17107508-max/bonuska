@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
-import bcrypt from "bcryptjs";
 import { CompanyStatus } from "@prisma/client";
 import { createSession } from "@/lib/auth";
 import { apiError, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
-import { normalizePhone } from "@/lib/format";
-import { ensureGlobalQrToken, joinCompanyProgram, newGlobalQrToken } from "@/lib/loyalty";
+import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone } from "@/lib/format";
+import { ensureGlobalQrToken, joinCompanyProgram } from "@/lib/loyalty";
 import { getSettings } from "@/lib/settings";
+import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -26,11 +26,16 @@ export async function POST(request: NextRequest) {
 
   const db = getDb();
   const settings = await getSettings();
-  const user = await db.user.upsert({
-    where: { phone },
-    update: { name, city, passwordHash: await bcrypt.hash(password, 10) },
-    create: { name, phone, city, passwordHash: await bcrypt.hash(password, 10), globalQrToken: newGlobalQrToken() },
-  });
+  let user: Awaited<ReturnType<typeof createUserWithUniquePhone>>;
+  try {
+    user = await createUserWithUniquePhone({ name, phone, city, password }, db);
+  } catch (error) {
+    if (isPhoneAlreadyRegisteredError(error)) {
+      return apiError(PHONE_ALREADY_REGISTERED_MESSAGE, 409);
+    }
+
+    throw error;
+  }
   await ensureGlobalQrToken(user);
   let membership: Awaited<ReturnType<typeof joinCompanyProgram>>;
   try {

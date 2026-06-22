@@ -19,7 +19,7 @@ import {
   requireSuperadmin,
 } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { normalizePhone, slugify } from "@/lib/format";
+import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, slugify } from "@/lib/format";
 import {
   addPurchase,
   ensureGlobalQrToken,
@@ -27,12 +27,12 @@ import {
   getSuspiciousLoyaltyReason,
   grantReward,
   joinCompanyProgram,
-  newGlobalQrToken,
   redeemRewardClaimByToken,
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
 import { notifyCompanyApplicationReceived, notifyCompanyApproved, notifySuperadminsAboutCompanyApplication } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
+import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
 
 function text(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim();
@@ -67,26 +67,15 @@ async function getOrCreateUser(data: {
   city?: string;
   password: string;
 }) {
-  const db = getDb();
-  const passwordHash = await bcrypt.hash(data.password, 10);
+  return createUserWithUniquePhone(data);
+}
 
-  return db.user.upsert({
-    where: { phone: data.phone },
-    update: {
-      name: data.name,
-      email: data.email || undefined,
-      city: data.city || undefined,
-      passwordHash,
-    },
-    create: {
-      name: data.name,
-      phone: data.phone,
-      email: data.email || undefined,
-      city: data.city || undefined,
-      passwordHash,
-      globalQrToken: newGlobalQrToken(),
-    },
-  });
+function phoneAlreadyRegisteredRedirect(error: unknown, path: string): never {
+  if (isPhoneAlreadyRegisteredError(error)) {
+    errorRedirect(path, PHONE_ALREADY_REGISTERED_MESSAGE);
+  }
+
+  throw error;
 }
 
 export async function loginSuperadmin(formData: FormData) {
@@ -275,7 +264,12 @@ export async function registerCompany(formData: FormData) {
   }
 
   const meta = await requestMeta();
-  const user = await getOrCreateUser({ name: ownerName, phone, email, city, password });
+  let user: Awaited<ReturnType<typeof getOrCreateUser>>;
+  try {
+    user = await getOrCreateUser({ name: ownerName, phone, email, city, password });
+  } catch (error) {
+    phoneAlreadyRegisteredRedirect(error, "/company/register");
+  }
   await ensureGlobalQrToken(user);
   const company = await db.company.create({
     data: {
@@ -641,12 +635,17 @@ export async function createStaff(formData: FormData) {
     errorRedirect("/company/staff", "Заполните имя, телефон и пароль от 6 символов");
   }
 
-  const user = await getOrCreateUser({
-    name: text(formData, "name"),
-    phone,
-    city: access.company.city,
-    password,
-  });
+  let user: Awaited<ReturnType<typeof getOrCreateUser>>;
+  try {
+    user = await getOrCreateUser({
+      name: text(formData, "name"),
+      phone,
+      city: access.company.city,
+      password,
+    });
+  } catch (error) {
+    phoneAlreadyRegisteredRedirect(error, "/company/staff");
+  }
   await ensureGlobalQrToken(user);
 
   await getDb().companyUser.upsert({
@@ -687,12 +686,17 @@ export async function registerCustomer(formData: FormData) {
 
   const meta = await requestMeta();
   const settings = await getSettings();
-  const user = await getOrCreateUser({
-    name: text(formData, "name"),
-    phone,
-    city,
-    password,
-  });
+  let user: Awaited<ReturnType<typeof getOrCreateUser>>;
+  try {
+    user = await getOrCreateUser({
+      name: text(formData, "name"),
+      phone,
+      city,
+      password,
+    });
+  } catch (error) {
+    phoneAlreadyRegisteredRedirect(error, `/c/${slug}`);
+  }
   await ensureGlobalQrToken(user);
 
   try {
@@ -729,29 +733,26 @@ export async function registerClientAccount(formData: FormData) {
     errorRedirect("/client/register", "Нужно согласие на обработку персональных данных");
   }
 
-  const db = getDb();
-  const existing = await db.user.findUnique({ where: { phone } });
-  if (existing) {
-    errorRedirect("/client/login", "Телефон уже зарегистрирован. Войдите по телефону и паролю");
-  }
-
   const meta = await requestMeta();
   const settings = await getSettings();
-  const passwordHash = await bcrypt.hash(password, 10);
-  const user = await db.user.create({
-    data: {
+  let user: Awaited<ReturnType<typeof getOrCreateUser>>;
+  try {
+    user = await createUserWithUniquePhone({
       name,
       phone,
       city,
-      passwordHash,
-      globalQrToken: newGlobalQrToken(),
-      personalDataConsents: {
-        create: {
-          consentVersion: settings.privacyVersion,
-          ip: meta.ip,
-          userAgent: meta.userAgent,
-        },
-      },
+      password,
+    });
+  } catch (error) {
+    phoneAlreadyRegisteredRedirect(error, "/client/register");
+  }
+
+  await getDb().personalDataConsent.create({
+    data: {
+      userId: user.id,
+      consentVersion: settings.privacyVersion,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
     },
   });
 
