@@ -14,78 +14,18 @@ export function QrScanner() {
   const router = useRouter();
   const scannerRef = useRef<import("html5-qrcode").Html5Qrcode | null>(null);
   const isStartingRef = useRef(false);
+  const scannedRef = useRef(false);
   const [manualValue, setManualValue] = useState("");
-  const [status, setStatus] = useState("Запускаем камеру...");
+  const [status, setStatus] = useState("Камера выключена. Включите сканер, когда будете готовы.");
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    let scanned = false;
-
-    async function start() {
-      if (isStartingRef.current || scannerRef.current) {
-        return;
-      }
-
-      if (!window.isSecureContext) {
-        setStatus("Камера на телефоне требует HTTPS. Если камера не открылась, вставьте QR-токен вручную ниже.");
-        return;
-      }
-
-      try {
-        isStartingRef.current = true;
-        const { Html5Qrcode } = await import("html5-qrcode");
-        const scanner = new Html5Qrcode("qr-reader");
-        scannerRef.current = scanner;
-        const cameras = await Html5Qrcode.getCameras().catch(() => []);
-        const savedCameraId = window.localStorage.getItem(CAMERA_STORAGE_KEY);
-        const camera =
-          cameras.find((item) => item.id === savedCameraId) ??
-          cameras.find((item) => /back|rear|environment|задн/i.test(item.label)) ??
-          cameras[0];
-        const cameraConfig = camera ? { deviceId: { exact: camera.id } } : { facingMode: "environment" };
-
-        if (camera) {
-          window.localStorage.setItem(CAMERA_STORAGE_KEY, camera.id);
-        }
-
-        await scanner.start(
-          cameraConfig,
-          { fps: 10, qrbox: { width: 260, height: 260 } },
-          (decodedText) => {
-            if (scanned) {
-              return;
-            }
-            const token = normalizeScanToken(decodedText);
-            if (token) {
-              scanned = true;
-              setStatus("QR найден. Открываем карту клиента...");
-              scanner.stop().catch(() => undefined);
-              scannerRef.current = null;
-              router.push(`/company/scan?token=${encodeURIComponent(token)}`);
-            }
-          },
-          () => undefined,
-        );
-
-        if (mounted) {
-          setStatus("Наведите камеру на QR-код клиента");
-        }
-      } catch {
-        if (mounted) {
-          setStatus("Камера не запустилась. Разрешите доступ к камере или введите QR-токен вручную.");
-        }
-      } finally {
-        isStartingRef.current = false;
-      }
-    }
-
-    start();
-
     return () => {
-      mounted = false;
       const scanner = scannerRef.current;
       scannerRef.current = null;
       isStartingRef.current = false;
+      scannedRef.current = false;
 
       if (scanner) {
         scanner
@@ -100,7 +40,103 @@ export function QrScanner() {
           });
       }
     };
-  }, [router]);
+  }, []);
+
+  async function stopScanner() {
+    const scanner = scannerRef.current;
+    scannerRef.current = null;
+    scannedRef.current = false;
+
+    if (!scanner) {
+      setIsCameraActive(false);
+      setStatus("Камера выключена. Включите сканер, когда будете готовы.");
+      return;
+    }
+
+    try {
+      await scanner.stop();
+    } catch {
+      // Scanner may already be stopped after a successful scan.
+    }
+
+    try {
+      scanner.clear();
+    } catch {
+      // Ignore cleanup errors from html5-qrcode.
+    }
+
+    setIsCameraActive(false);
+    setStatus("Камера выключена. Включите сканер, когда будете готовы.");
+  }
+
+  async function startScanner() {
+    if (isStartingRef.current || scannerRef.current) {
+      return;
+    }
+
+    if (!window.isSecureContext) {
+      setStatus("Камера на телефоне требует HTTPS. Если камера не открылась, вставьте QR-токен вручную ниже.");
+      return;
+    }
+
+    isStartingRef.current = true;
+    scannedRef.current = false;
+    setIsStarting(true);
+    setStatus("Запускаем камеру...");
+
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode("qr-reader");
+      scannerRef.current = scanner;
+      const savedCameraId = window.localStorage.getItem(CAMERA_STORAGE_KEY);
+      const cameraConfig: string | MediaTrackConstraints = savedCameraId || { facingMode: "environment" };
+
+      await scanner.start(
+        cameraConfig,
+        { fps: 10, qrbox: { width: 260, height: 260 } },
+        (decodedText) => {
+          if (scannedRef.current) {
+            return;
+          }
+          const token = normalizeScanToken(decodedText);
+          if (token) {
+            scannedRef.current = true;
+            setStatus("QR найден. Открываем карту клиента...");
+            scanner
+              .stop()
+              .catch(() => undefined)
+              .finally(() => {
+                try {
+                  scanner.clear();
+                } catch {
+                  // Scanner may already be cleared during navigation.
+                }
+              });
+            scannerRef.current = null;
+            setIsCameraActive(false);
+            router.push(`/company/scan?token=${encodeURIComponent(token)}`);
+          }
+        },
+        () => undefined,
+      );
+
+      const deviceId = scanner.getRunningTrackSettings().deviceId;
+      if (deviceId) {
+        window.localStorage.setItem(CAMERA_STORAGE_KEY, deviceId);
+      }
+
+      setIsCameraActive(true);
+      setStatus("Наведите камеру на QR-код клиента");
+    } catch {
+      window.localStorage.removeItem(CAMERA_STORAGE_KEY);
+      scannerRef.current = null;
+      setIsCameraActive(false);
+      setStatus("Камера не запустилась. Разрешите доступ к камере или введите QR-токен вручную.");
+    } finally {
+      isStartingRef.current = false;
+      setIsStarting(false);
+    }
+  }
 
   function openManualClient() {
     const token = normalizeScanToken(manualValue);
@@ -125,6 +161,25 @@ export function QrScanner() {
           id="qr-reader"
           className="overflow-hidden rounded-lg bg-slate-950 [&_button]:rounded-lg [&_button]:bg-teal-700 [&_button]:px-3 [&_button]:py-2 [&_button]:font-semibold [&_button]:text-white"
         />
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={startScanner}
+            disabled={isStarting || isCameraActive}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-green-700 px-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <ScanLine aria-hidden className="size-5" />
+            {isStarting ? "Запускаем..." : "Включить сканер"}
+          </button>
+          <button
+            type="button"
+            onClick={stopScanner}
+            disabled={!isCameraActive && !isStarting}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Остановить камеру
+          </button>
+        </div>
       </section>
 
       <section className="panel p-4">
