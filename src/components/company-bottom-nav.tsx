@@ -42,16 +42,16 @@ export function CompanyBottomNav() {
                 aria-current={active ? "page" : undefined}
                 className={
                   item.primary
-                    ? `flex min-h-16 -translate-y-2 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-semibold shadow-lg transition active:scale-95 ${
-                        active ? "bg-green-800 text-white" : "bg-green-700 text-white hover:bg-green-800"
+                    ? `flex min-h-16 -translate-y-2 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-bold text-white shadow-lg ring-1 ring-white/35 transition hover:bg-green-900 focus-visible:outline focus-visible:outline-4 focus-visible:outline-green-700/25 active:scale-95 ${
+                        active ? "bg-green-900" : "bg-green-800"
                       }`
-                    : `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold transition active:scale-95 ${
+                    : `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold transition focus-visible:outline focus-visible:outline-4 focus-visible:outline-green-700/20 active:scale-95 ${
                         active ? "bg-green-50 text-green-800" : "text-[#7b6a5b] hover:bg-amber-50 hover:text-[#2f1d13]"
                       }`
                 }
               >
-                <Icon aria-hidden className={item.primary ? "size-6" : "size-5"} />
-                <span className="leading-none">{item.label}</span>
+                <Icon aria-hidden className={item.primary ? "size-6 drop-shadow-sm" : "size-5"} />
+                <span className={item.primary ? "leading-none drop-shadow-sm" : "leading-none"}>{item.label}</span>
               </Link>
             );
           })}
@@ -59,7 +59,7 @@ export function CompanyBottomNav() {
           <button
             type="button"
             onClick={() => setIsMoreOpen(true)}
-            className="flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold text-[#7b6a5b] transition hover:bg-amber-50 hover:text-[#2f1d13] active:scale-95"
+            className="flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold text-[#7b6a5b] transition hover:bg-amber-50 hover:text-[#2f1d13] focus-visible:outline focus-visible:outline-4 focus-visible:outline-green-700/20 active:scale-95"
           >
             <Menu aria-hidden className="size-5" />
             <span className="leading-none">Ещё</span>

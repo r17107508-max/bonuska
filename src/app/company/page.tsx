@@ -23,9 +23,17 @@ export default async function CompanyDashboardPage() {
   const activeClientSince = new Date(now);
   activeClientSince.setDate(activeClientSince.getDate() - 30);
 
-  const [clientsTotal, activeClients, operationsToday, operationsMonth, rewardsIssued, staffTotal, recentTransactions] = await Promise.all([
+  const [clientsTotal, activeClients, repeatClients, sleepingClients, operationsToday, operationsMonth, rewardsIssued, staffTotal, recentTransactions] = await Promise.all([
     getDb().customerMembership.count({ where: { companyId: access.companyId } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, lastActionAt: { gte: activeClientSince } } }),
+    getDb().customerMembership.count({ where: { companyId: access.companyId, totalPurchases: { gt: 1 } } }),
+    getDb().customerMembership.count({
+      where: {
+        companyId: access.companyId,
+        totalPurchases: { gt: 0 },
+        OR: [{ lastActionAt: null }, { lastActionAt: { lt: activeClientSince } }],
+      },
+    }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, createdAt: { gte: today } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, createdAt: { gte: monthStart } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: { in: ["REWARD_REDEEMED", "REWARD_GRANTED"] } } }),
@@ -44,6 +52,7 @@ export default async function CompanyDashboardPage() {
   const active = company ? hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil) : false;
   const left = company?.status === "ACTIVE_TRIAL" ? daysLeft(company.trialEndsAt) : daysLeft(company?.paidUntil);
   const isCashier = access.role === CompanyUserRole.CASHIER;
+  const repeatRate = clientsTotal > 0 ? Math.round((repeatClients / clientsTotal) * 100) : 0;
   const clientUrl = await getCompanyRegistrationUrl(access.company.slug);
   const qrDataUrl = await QRCode.toDataURL(clientUrl, {
     width: 420,
@@ -184,6 +193,8 @@ export default async function CompanyDashboardPage() {
         <Metric icon={<BarChart3 aria-hidden className="size-5" />} label="Операций за месяц" value={operationsMonth} description={operationsMonth > 0 ? "за текущий месяц" : "пока нет данных"} />
         <Metric icon={<Trophy aria-hidden className="size-5" />} label="Подарков выдано" value={rewardsIssued} description={rewardsIssued > 0 ? "за всё время" : "пока нет данных"} />
         <Metric icon={<UserPlus aria-hidden className="size-5" />} label="Активных клиентов" value={activeClients} description="за последние 30 дней" />
+        <Metric icon={<Users aria-hidden className="size-5" />} label="Повторных клиентов" value={`${repeatRate}%`} description={`${repeatClients} вернулись за покупкой`} />
+        <Metric icon={<Clock3 aria-hidden className="size-5" />} label="Спящих клиентов" value={sleepingClients} description="не было покупок 30 дней" />
       </div>
 
       <div className="mt-6">
@@ -320,10 +331,15 @@ function Metric({
 
 function Action({ href, icon, title, text, emphasis = false }: { href: string; icon: React.ReactNode; title: string; text: string; emphasis?: boolean }) {
   return (
-    <Link href={href} className={`panel p-5 transition hover:-translate-y-0.5 hover:shadow-lg ${emphasis ? "bg-green-700 text-white" : ""}`}>
-      <div className={`flex size-12 items-center justify-center rounded-lg ${emphasis ? "bg-white/15 text-white" : "bg-green-50 text-green-800"}`}>{icon}</div>
-      <h2 className={`mt-4 text-xl font-semibold ${emphasis ? "text-white" : "text-[#2f1d13]"}`}>{title}</h2>
-      <p className={`mt-2 ${emphasis ? "text-white/80" : "text-slate-600"}`}>{text}</p>
+    <Link
+      href={href}
+      className={`panel block p-5 transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-4 focus-visible:outline-green-700/25 ${
+        emphasis ? "border-2 border-green-700 bg-[#fffdf8] shadow-[0_18px_46px_rgba(21,128,61,0.14)]" : ""
+      }`}
+    >
+      <div className={`flex size-12 items-center justify-center rounded-lg ${emphasis ? "bg-green-100 text-green-900 ring-1 ring-green-700/25" : "bg-green-50 text-green-800"}`}>{icon}</div>
+      <h2 className="mt-4 text-xl font-semibold text-[#2f1d13]">{title}</h2>
+      <p className={`mt-2 ${emphasis ? "text-[#5c3521]" : "text-slate-600"}`}>{text}</p>
     </Link>
   );
 }

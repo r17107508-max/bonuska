@@ -16,6 +16,8 @@ export default async function CompanyReportsPage() {
   const weekStart = new Date(now);
   weekStart.setDate(weekStart.getDate() - 7);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const sleepingStart = new Date(now);
+  sleepingStart.setDate(sleepingStart.getDate() - 30);
   const program = access.company.loyaltyProgram;
   const nearRewardStart = Math.max((program?.goalCount ?? 6) - 1, 1);
 
@@ -28,9 +30,11 @@ export default async function CompanyReportsPage() {
     purchasesMonth,
     rewardsMonth,
     repeatClients,
+    sleepingClients,
     rewardReadyClients,
     nearRewardClients,
     topClients,
+    topRewardClients,
     monthTransactions,
     weekTransactions,
     suspiciousCount,
@@ -45,6 +49,16 @@ export default async function CompanyReportsPage() {
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: monthStart } } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: { in: ["REWARD_REDEEMED", "REWARD_GRANTED"] }, createdAt: { gte: monthStart } } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, totalPurchases: { gt: 1 } } }),
+    getDb().customerMembership.findMany({
+      where: {
+        companyId: access.companyId,
+        totalPurchases: { gt: 0 },
+        OR: [{ lastActionAt: null }, { lastActionAt: { lt: sleepingStart } }],
+      },
+      include: { user: true },
+      orderBy: [{ lastActionAt: "asc" }, { createdAt: "asc" }],
+      take: 10,
+    }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, rewardAvailable: true } }),
     getDb().customerMembership.findMany({
       where: { companyId: access.companyId, rewardAvailable: false, currentCount: { gte: nearRewardStart } },
@@ -56,6 +70,12 @@ export default async function CompanyReportsPage() {
       where: { companyId: access.companyId },
       include: { user: true },
       orderBy: { totalPurchases: "desc" },
+      take: 10,
+    }),
+    getDb().customerMembership.findMany({
+      where: { companyId: access.companyId, totalRewards: { gt: 0 } },
+      include: { user: true },
+      orderBy: { totalRewards: "desc" },
       take: 10,
     }),
     getDb().loyaltyTransaction.findMany({
@@ -86,6 +106,7 @@ export default async function CompanyReportsPage() {
     }),
   ]);
   const activeClients7 = new Set(weekTransactions.map((transaction) => transaction.membershipId)).size;
+  const repeatRate = clientsTotal > 0 ? Math.round((repeatClients / clientsTotal) * 100) : 0;
   const cashierStats = Array.from(
     monthTransactions.reduce((map, transaction) => {
       if (transaction.type === "REWARD_OPENED") {
@@ -113,13 +134,13 @@ export default async function CompanyReportsPage() {
     .map(([, value]) => value)
     .sort((a, b) => b.total - a.total);
   return (
-    <AdminShell title="Отчеты" subtitle="Клиенты, покупки, подарки, кассиры и подозрительные операции." nav={companyNav}>
+    <AdminShell title="Отчёты" subtitle="Клиенты, покупки, подарки, кассиры и подозрительные операции." nav={companyNav}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Metric label="Клиентов всего" value={clientsTotal} />
         <Metric label="Новых за 7 дней" value={newClients7} />
         <Metric label="Новых за месяц" value={newClientsMonth} />
         <Metric label="Активных за 7 дней" value={activeClients7} />
-        <Metric label="Повторных клиентов" value={repeatClients} />
+        <Metric label="Повторных клиентов" value={`${repeatRate}%`} />
       </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -133,6 +154,36 @@ export default async function CompanyReportsPage() {
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Metric label="Подозрительных попыток" value={suspiciousCount} />
         <Metric label="Клиентов близко к подарку" value={nearRewardClients.length} />
+        <Metric label="Спящих клиентов" value={sleepingClients.length} />
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <section className="panel p-5">
+          <h2 className="text-xl font-semibold text-slate-950">Повторные клиенты</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            {repeatClients} из {clientsTotal} клиентов сделали больше одной покупки. Это главный показатель, что акция возвращает людей.
+          </p>
+          <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-full rounded-full bg-green-700" style={{ width: `${repeatRate}%` }} />
+          </div>
+        </section>
+
+        <section className="panel p-5">
+          <h2 className="text-xl font-semibold text-slate-950">Спящие клиенты</h2>
+          <p className="mt-2 text-sm text-slate-600">Клиенты с покупками, у которых не было операций больше 30 дней.</p>
+          <div className="mt-4 divide-y divide-slate-200">
+            {sleepingClients.map((client) => (
+              <div key={client.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                <div>
+                  <p className="font-semibold text-slate-950">{client.user.name}</p>
+                  <p className="text-slate-500">{client.user.phone}</p>
+                </div>
+                <p className="text-slate-600 sm:text-right">{client.lastActionAt ? formatDateTime(client.lastActionAt) : "операций не было"}</p>
+              </div>
+            ))}
+            {sleepingClients.length === 0 && <p className="py-3 text-sm text-slate-500">Спящих клиентов пока нет.</p>}
+          </div>
+        </section>
       </div>
 
       <section className="panel mt-6 p-5">
@@ -213,16 +264,37 @@ export default async function CompanyReportsPage() {
 
       <section className="panel mt-6 p-5">
         <h2 className="text-xl font-semibold text-slate-950">Топ клиентов</h2>
-        <div className="mt-4 divide-y divide-slate-200">
-          {topClients.map((client) => (
-            <div key={client.id} className="flex items-center justify-between py-3">
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+          <div>
+            <h3 className="font-semibold text-slate-800">По покупкам</h3>
+            <div className="mt-2 divide-y divide-slate-200">
+              {topClients.map((client) => (
+                <div key={client.id} className="flex items-center justify-between gap-3 py-3">
                 <span>
                   <span className="font-semibold">{client.user.name}</span>
                   <span className="ml-2 text-sm text-slate-500">{client.user.phone}</span>
                 </span>
-              <span className="font-semibold text-teal-700">{client.totalPurchases}</span>
+                  <span className="font-semibold text-teal-700">{client.totalPurchases}</span>
+                </div>
+              ))}
+              {topClients.length === 0 && <p className="py-3 text-sm text-slate-500">Покупок пока нет.</p>}
             </div>
-          ))}
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800">По подаркам</h3>
+            <div className="mt-2 divide-y divide-slate-200">
+              {topRewardClients.map((client) => (
+                <div key={client.id} className="flex items-center justify-between gap-3 py-3">
+                  <span>
+                    <span className="font-semibold">{client.user.name}</span>
+                    <span className="ml-2 text-sm text-slate-500">{client.user.phone}</span>
+                  </span>
+                  <span className="font-semibold text-amber-700">{client.totalRewards}</span>
+                </div>
+              ))}
+              {topRewardClients.length === 0 && <p className="py-3 text-sm text-slate-500">Выданных подарков пока нет.</p>}
+            </div>
+          </div>
         </div>
       </section>
     </AdminShell>
@@ -303,7 +375,7 @@ function rewardClaimTimelineText(customerName: string, status: string, title: st
   return `${customerName} — накопила подарок`;
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
+function Metric({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="panel p-5">
       <p className="text-sm font-semibold text-slate-500">{label}</p>
