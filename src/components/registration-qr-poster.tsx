@@ -30,14 +30,14 @@ function posterHtml({ companyName, clientUrl, qrDataUrl, rewardTitle }: Registra
   <title>QR для регистрации клиентов</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f8fafc; font-family: Arial, sans-serif; color: #0f172a; }
-    .poster { width: 720px; max-width: 92vw; border: 2px solid #0f766e; border-radius: 28px; background: white; padding: 44px; text-align: center; }
-    .badge { display: inline-block; border-radius: 999px; background: #ccfbf1; color: #115e59; padding: 10px 18px; font-weight: 700; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #fff8ed; font-family: Arial, sans-serif; color: #2f1d13; }
+    .poster { width: 720px; max-width: 92vw; border: 2px solid #d97706; border-radius: 28px; background: linear-gradient(145deg, #fffdf8, #fff3db); padding: 44px; text-align: center; box-shadow: 0 24px 70px rgba(92, 53, 33, 0.16); }
+    .badge { display: inline-block; border-radius: 999px; background: #dff4dc; color: #14532d; padding: 10px 18px; font-weight: 700; }
     h1 { margin: 26px 0 12px; font-size: 42px; line-height: 1.08; }
-    p { margin: 0; font-size: 22px; line-height: 1.4; color: #475569; }
-    img { width: 360px; height: 360px; margin: 34px auto 24px; display: block; }
-    .url { margin-top: 18px; font-size: 18px; color: #0f766e; word-break: break-all; }
-    .brand { margin-top: 28px; font-size: 18px; font-weight: 700; color: #0f766e; }
+    p { margin: 0; font-size: 22px; line-height: 1.4; color: #5c3521; }
+    img { width: 360px; height: 360px; margin: 34px auto 24px; display: block; background: white; border-radius: 22px; padding: 18px; box-shadow: inset 0 0 0 1px #eadfcd; }
+    .url { margin-top: 18px; font-size: 18px; color: #166534; word-break: break-all; }
+    .brand { margin-top: 28px; font-size: 18px; font-weight: 700; color: #92400e; }
     @media print {
       body { background: white; }
       .poster { width: 100%; max-width: none; border-radius: 0; border: 0; }
@@ -82,28 +82,28 @@ export function RegistrationQrPoster(props: RegistrationQrPosterProps) {
   }
 
   return (
-    <section className="panel p-5">
+    <section className="warm-card p-5">
       <div className="grid gap-5 lg:grid-cols-[220px_1fr] lg:items-center">
-        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+        <div className="rounded-lg bg-white p-4 ring-1 ring-amber-100">
           <img src={props.qrDataUrl} alt="QR для регистрации клиентов" className="mx-auto aspect-square w-full max-w-[220px]" />
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase text-slate-500">QR для клиентов</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-950">Регистрация в программе лояльности</h2>
-          <p className="mt-2 text-slate-600">
+          <p className="text-sm font-semibold uppercase text-green-800">QR для клиентов</p>
+          <h2 className="mt-2 text-2xl font-semibold text-[#2f1d13]">Плакат для стойки</h2>
+          <p className="mt-2 text-[#7b6a5b]">
             Распечатайте QR и поставьте его на стойку. Клиент сканирует код, попадает на страницу вашей компании и регистрируется в программе лояльности.
           </p>
-          <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-700 break-all">{props.clientUrl}</div>
+          <div className="mt-4 break-all rounded-lg bg-amber-50 p-3 text-sm font-semibold text-[#5c3521]">{props.clientUrl}</div>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button type="button" onClick={printPoster} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white">
+            <button type="button" onClick={printPoster} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-green-700 px-4 font-semibold text-white">
               <Printer aria-hidden className="size-5" />
               Печать плаката
             </button>
-            <button type="button" onClick={downloadQr} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 font-semibold text-slate-700">
+            <button type="button" onClick={downloadQr} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-amber-200 px-4 font-semibold text-[#5c3521]">
               <Download aria-hidden className="size-5" />
               Скачать QR
             </button>
-            <button type="button" onClick={copyLink} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 font-semibold text-slate-700">
+            <button type="button" onClick={copyLink} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-amber-200 px-4 font-semibold text-[#5c3521]">
               <Copy aria-hidden className="size-5" />
               Скопировать ссылку
             </button>

@@ -22,11 +22,12 @@ export function AppSplash() {
       return;
     }
 
-    setPhase("visible");
+    const showTimer = window.setTimeout(() => setPhase("visible"), 0);
     const exitTimer = window.setTimeout(() => setPhase("leaving"), START_EXIT_AFTER_MS);
     const removeTimer = window.setTimeout(() => setPhase("hidden"), REMOVE_AFTER_MS);
 
     return () => {
+      window.clearTimeout(showTimer);
       window.clearTimeout(exitTimer);
       window.clearTimeout(removeTimer);
     };

@@ -27,7 +27,7 @@ export function CompanyBottomNav() {
   return (
     <>
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-16px_40px_rgba(15,23,42,0.12)] backdrop-blur"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-amber-100 bg-[#fffdf8]/95 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-16px_40px_rgba(92,53,33,0.14)] backdrop-blur"
         aria-label="Навигация компании"
       >
         <div className="mx-auto grid max-w-xl grid-cols-5 items-end gap-1">
@@ -43,10 +43,10 @@ export function CompanyBottomNav() {
                 className={
                   item.primary
                     ? `flex min-h-16 -translate-y-2 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-semibold shadow-lg transition active:scale-95 ${
-                        active ? "bg-teal-700 text-white" : "bg-teal-600 text-white hover:bg-teal-700"
+                        active ? "bg-green-800 text-white" : "bg-green-700 text-white hover:bg-green-800"
                       }`
                     : `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold transition active:scale-95 ${
-                        active ? "bg-teal-50 text-teal-800" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                        active ? "bg-green-50 text-green-800" : "text-[#7b6a5b] hover:bg-amber-50 hover:text-[#2f1d13]"
                       }`
                 }
               >
@@ -59,7 +59,7 @@ export function CompanyBottomNav() {
           <button
             type="button"
             onClick={() => setIsMoreOpen(true)}
-            className="flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 active:scale-95"
+            className="flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold text-[#7b6a5b] transition hover:bg-amber-50 hover:text-[#2f1d13] active:scale-95"
           >
             <Menu aria-hidden className="size-5" />
             <span className="leading-none">Ещё</span>
@@ -68,8 +68,8 @@ export function CompanyBottomNav() {
       </nav>
 
       {isMoreOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end bg-slate-950/40 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:items-center sm:justify-center">
-          <div role="dialog" aria-modal="true" aria-labelledby="company-more-title" className="w-full rounded-xl bg-white p-5 shadow-2xl sm:max-w-sm">
+        <div className="fixed inset-0 z-[60] flex items-end bg-[#2f1d13]/45 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:items-center sm:justify-center">
+          <div role="dialog" aria-modal="true" aria-labelledby="company-more-title" className="w-full rounded-xl bg-[#fffdf8] p-5 shadow-2xl sm:max-w-sm">
             <div className="flex items-center justify-between gap-3">
               <h2 id="company-more-title" className="text-xl font-semibold text-slate-950">
                 Ещё
@@ -90,16 +90,16 @@ export function CompanyBottomNav() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setIsMoreOpen(false)}
-                    className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 font-semibold text-slate-700"
+                    className="flex min-h-12 items-center gap-3 rounded-lg border border-amber-100 bg-white px-4 font-semibold text-[#5c3521]"
                   >
-                    <Icon aria-hidden className="size-5 text-teal-700" />
+                    <Icon aria-hidden className="size-5 text-green-700" />
                     {item.label}
                   </Link>
                 );
               })}
               <form action={logout}>
-                <button type="submit" className="flex min-h-12 w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 font-semibold text-slate-700">
-                  <LogOut aria-hidden className="size-5 text-teal-700" />
+                <button type="submit" className="flex min-h-12 w-full items-center gap-3 rounded-lg border border-amber-100 bg-white px-4 font-semibold text-[#5c3521]">
+                  <LogOut aria-hidden className="size-5 text-green-700" />
                   Выйти
                 </button>
               </form>

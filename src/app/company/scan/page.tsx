@@ -64,7 +64,7 @@ export default async function CompanyScanPage({
   return (
     <AdminShell
       title="Сканер QR"
-      subtitle="Рабочий экран кассира: сканируйте QR, начисляйте покупки и выдавайте подарки."
+      subtitle="Быстрый рабочий экран: сканируйте QR, проверьте клиента и подтвердите действие."
       nav={companyNavForRole(access.role)}
       cashier={isCashier ? { companyName: access.company.name, status: statusLabel(company?.status ?? access.company.status) } : undefined}
     >
@@ -121,7 +121,7 @@ export default async function CompanyScanPage({
       )}
 
       {active && membership && membership.company.loyaltyProgram && (
-        <section className="panel mb-5 border-2 border-teal-200 bg-teal-50 p-5">
+        <section className="panel mb-5 border-2 border-green-200 bg-green-50 p-5">
           <p className="text-sm font-semibold uppercase text-teal-800">QR распознан</p>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -198,19 +198,19 @@ export default async function CompanyScanPage({
 
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         {token ? (
-          <section className="panel p-5">
+          <section className="warm-card p-5">
             <div className="flex items-start gap-3">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-800">
                 <ScanLine aria-hidden className="size-5" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-slate-950">QR считан</h2>
-                <p className="mt-2 text-sm text-slate-600">
+                <h2 className="text-xl font-semibold text-[#2f1d13]">QR считан</h2>
+                <p className="mt-2 text-sm text-[#7b6a5b]">
                   Камера остановлена, чтобы не запрашивать доступ повторно на экране результата.
                 </p>
               </div>
             </div>
-            <Link href="/company/scan" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white">
+            <Link href="/company/scan" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-700 px-4 font-semibold text-white">
               <ScanLine aria-hidden className="size-5" />
               Сканировать другой QR
             </Link>
@@ -220,17 +220,17 @@ export default async function CompanyScanPage({
         )}
 
         <section className="space-y-5">
-          <div className="panel p-5">
-            <h2 className="text-xl font-semibold text-slate-950">Ручной поиск клиента</h2>
-            <p className="mt-2 text-sm text-slate-600">Если камера не сработала, найдите клиента по имени или телефону внутри вашей компании.</p>
+          <div className="warm-card p-5">
+            <h2 className="text-xl font-semibold text-[#2f1d13]">Ручной поиск клиента</h2>
+            <p className="mt-2 text-sm text-[#7b6a5b]">Если камера не сработала, найдите клиента по имени или телефону внутри вашей компании.</p>
             <form className="mt-4 flex flex-col gap-3 sm:flex-row">
               <input
                 name="q"
                 defaultValue={q}
                 placeholder="Имя или телефон"
-                className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+                className="min-h-11 flex-1 rounded-lg border border-amber-200 bg-white px-3 outline-none focus:border-green-700 focus:ring-4 focus:ring-green-700/15"
               />
-              <button className="min-h-11 rounded-lg bg-teal-700 px-4 font-semibold text-white">Найти</button>
+              <button className="min-h-11 rounded-lg bg-green-700 px-4 font-semibold text-white">Найти</button>
             </form>
             {q && (
               <div className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
@@ -249,8 +249,8 @@ export default async function CompanyScanPage({
           </div>
 
           {!token && (
-            <div className="panel p-5 text-slate-700">
-              <h2 className="text-xl font-semibold text-slate-950">Ожидаем QR клиента</h2>
+            <div className="warm-card p-5 text-[#5c3521]">
+              <h2 className="text-xl font-semibold text-[#2f1d13]">Ожидаем QR клиента</h2>
               <p className="mt-2">Отсканируйте QR-код или введите токен вручную. После этого здесь появится карточка клиента и кнопка действия.</p>
             </div>
           )}

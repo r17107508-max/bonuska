@@ -1,7 +1,7 @@
 import Link from "next/link";
 import QRCode from "qrcode";
 import { CompanyUserRole } from "@prisma/client";
-import { BarChart3, Bell, CheckCircle2, ChevronDown, Gift, QrCode, ScanLine, Settings, UserPlus, Users } from "lucide-react";
+import { Activity, BarChart3, Bell, CheckCircle2, ChevronDown, Clock3, Gift, QrCode, ScanLine, Settings, Trophy, UserPlus, Users } from "lucide-react";
 import { hideCompanyOnboardingChecklist } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { RegistrationQrPoster } from "@/components/registration-qr-poster";
@@ -75,11 +75,11 @@ export default async function CompanyDashboardPage() {
           </div>
         )}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Metric label="Операций сегодня" value={operationsToday} />
-          <Metric label="Операций за месяц" value={operationsMonth} />
+          <Metric icon={<Activity aria-hidden className="size-5" />} label="Сегодня" value={operationsToday} description="операций за смену" />
+          <Metric icon={<BarChart3 aria-hidden className="size-5" />} label="За месяц" value={operationsMonth} description="начислений и подарков" />
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <Action href="/company/scan" icon={<ScanLine aria-hidden className="size-6" />} title="Сканировать QR" text="Начислить покупку или выдать подарок клиенту." emphasis />
+          <Action href="/company/scan" icon={<ScanLine aria-hidden className="size-6" />} title="Сканировать QR" text="Главное действие кассира: открыть камеру и подтвердить операцию." emphasis />
           <div className="panel p-5">
             <h2 className="text-xl font-semibold text-slate-950">Как работать</h2>
             <ol className="mt-3 space-y-2 text-sm text-slate-600">
@@ -173,21 +173,21 @@ export default async function CompanyDashboardPage() {
         </section>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="panel p-5">
-          <p className="text-sm font-semibold text-slate-500">Статус подписки</p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="stat-card p-5">
+          <p className="text-sm font-semibold text-[#7b6a5b]">Статус подписки</p>
           <p className="mt-3"><span className={`badge ${statusClass(company?.status ?? access.company.status)}`}>{statusLabel(company?.status ?? access.company.status)}</span></p>
         </div>
-        <Metric label="Дней осталось" value={left} />
-        <Metric label="Клиентов всего" value={clientsTotal} />
-        <Metric label="Операций сегодня" value={operationsToday} />
-        <Metric label="Операций за месяц" value={operationsMonth} />
-        <Metric label="Подарков выдано" value={rewardsIssued} />
-        <Metric label="Активных клиентов" value={activeClients} />
+        <Metric icon={<Clock3 aria-hidden className="size-5" />} label="Дней осталось" value={left} description="до оплаты или конца trial" />
+        <Metric icon={<Users aria-hidden className="size-5" />} label="Клиентов всего" value={clientsTotal} description={clientsTotal > 0 ? "людей в программе" : "пока нет данных"} />
+        <Metric icon={<Activity aria-hidden className="size-5" />} label="Операций сегодня" value={operationsToday} description={operationsToday > 0 ? "работа идёт" : "пока нет данных"} />
+        <Metric icon={<BarChart3 aria-hidden className="size-5" />} label="Операций за месяц" value={operationsMonth} description={operationsMonth > 0 ? "за текущий месяц" : "пока нет данных"} />
+        <Metric icon={<Trophy aria-hidden className="size-5" />} label="Подарков выдано" value={rewardsIssued} description={rewardsIssued > 0 ? "за всё время" : "пока нет данных"} />
+        <Metric icon={<UserPlus aria-hidden className="size-5" />} label="Активных клиентов" value={activeClients} description="за последние 30 дней" />
       </div>
 
       <div className="mt-6">
-        <Action href="/company/scan" icon={<ScanLine aria-hidden className="size-6" />} title="Сканер" text="Начислить покупку или выдать подарок." emphasis />
+        <Action href="/company/scan" icon={<ScanLine aria-hidden className="size-6" />} title="Сканировать QR" text="Быстрый переход к начислению покупки или выдаче подарка." emphasis />
       </div>
 
       <div className="mt-6 space-y-3">
@@ -293,20 +293,36 @@ export default async function CompanyDashboardPage() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: number | string }) {
+function Metric({
+  icon,
+  label,
+  value,
+  description,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+  description: string;
+}) {
   return (
-    <div className="panel p-5">
-      <p className="text-sm font-semibold text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-slate-950">{value}</p>
+    <div className="stat-card p-5">
+      <div className="relative z-10">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-[#7b6a5b]">{label}</p>
+          <span className="flex size-9 items-center justify-center rounded-lg bg-white text-green-700 shadow-sm ring-1 ring-amber-100">{icon}</span>
+        </div>
+        <p className="mt-3 text-3xl font-semibold text-[#2f1d13]">{value}</p>
+        <p className="mt-1 text-sm text-[#7b6a5b]">{description}</p>
+      </div>
     </div>
   );
 }
 
 function Action({ href, icon, title, text, emphasis = false }: { href: string; icon: React.ReactNode; title: string; text: string; emphasis?: boolean }) {
   return (
-    <Link href={href} className={`panel p-5 transition hover:-translate-y-0.5 hover:shadow-lg ${emphasis ? "bg-teal-700 text-white" : ""}`}>
-      <div className={`flex size-12 items-center justify-center rounded-lg ${emphasis ? "bg-white/15 text-white" : "bg-teal-50 text-teal-700"}`}>{icon}</div>
-      <h2 className={`mt-4 text-xl font-semibold ${emphasis ? "text-white" : "text-slate-950"}`}>{title}</h2>
+    <Link href={href} className={`panel p-5 transition hover:-translate-y-0.5 hover:shadow-lg ${emphasis ? "bg-green-700 text-white" : ""}`}>
+      <div className={`flex size-12 items-center justify-center rounded-lg ${emphasis ? "bg-white/15 text-white" : "bg-green-50 text-green-800"}`}>{icon}</div>
+      <h2 className={`mt-4 text-xl font-semibold ${emphasis ? "text-white" : "text-[#2f1d13]"}`}>{title}</h2>
       <p className={`mt-2 ${emphasis ? "text-white/80" : "text-slate-600"}`}>{text}</p>
     </Link>
   );
@@ -324,16 +340,16 @@ function AccordionSection({
   children: React.ReactNode;
 }) {
   return (
-    <details className="group rounded-lg border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+    <details className="group rounded-lg border border-amber-100 bg-[#fffdf8] shadow-[0_16px_40px_rgba(92,53,33,0.08)]">
       <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">{icon}</div>
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-800">{icon}</div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-slate-950">{title}</h2>
-          <p className="mt-0.5 text-sm text-slate-600">{description}</p>
+          <h2 className="font-semibold text-[#2f1d13]">{title}</h2>
+          <p className="mt-0.5 text-sm text-[#7b6a5b]">{description}</p>
         </div>
         <ChevronDown aria-hidden className="size-5 shrink-0 text-slate-400 transition group-open:rotate-180" />
       </summary>
-      <div className="border-t border-slate-100 p-4">{children}</div>
+      <div className="border-t border-amber-100 p-4">{children}</div>
     </details>
   );
 }

@@ -10,7 +10,7 @@
   color: #4a2a12;
   background:
     radial-gradient(circle at 50% 36%, rgba(255, 245, 214, 0.98) 0, rgba(255, 245, 214, 0.78) 28%, rgba(255, 247, 237, 0) 56%),
-    linear-gradient(145deg, #fff7ed 0%, #f8dfb7 48%, #a86124 100%);
+    linear-gradient(145deg, #fff8ed 0%, #f8dfb7 48%, #7c3f18 100%);
   opacity: 1;
   pointer-events: auto;
   transition: opacity 360ms ease, visibility 360ms ease;
@@ -60,7 +60,7 @@
   place-items: center;
   width: clamp(124px, 34vw, 168px);
   aspect-ratio: 1;
-  border-radius: 38px;
+  border-radius: 34px;
   background: rgba(255, 251, 235, 0.48);
   box-shadow:
     0 26px 70px rgba(92, 43, 10, 0.24),
@@ -92,7 +92,7 @@
   height: 5px;
   margin-top: 16px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #f59e0b, #7c2d12);
+  background: linear-gradient(90deg, #f59e0b, #166534);
   animation: splashMark 1500ms 420ms ease-out both;
 }
 

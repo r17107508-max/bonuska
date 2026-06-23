@@ -3,8 +3,8 @@ import { AppSplash } from "@/components/app-splash";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ПроПлюшка - QR-программы лояльности",
-  description: "PWA/SaaS для цифровых бонусных карт малых бизнесов.",
+  title: "ПроПлюшка - QR-программа лояльности",
+  description: "Простая QR-программа лояльности для кофеен, кафе, шаурмичных, магазинов и салонов.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

@@ -94,10 +94,11 @@ export function DynamicGlobalQrCard({
   }, [refreshQr]);
 
   return (
-    <section className="panel p-4 text-center">
-      <p className="text-lg font-semibold text-slate-950">Мой QR для всех компаний</p>
+    <section className="warm-card p-4 text-center">
+      <p className="text-sm font-semibold uppercase text-green-800">QR для кассы</p>
+      <h2 className="mt-1 text-xl font-semibold text-[#2f1d13]">Мой QR для всех компаний</h2>
 
-      <div className="mx-auto mt-4 flex max-w-80 items-center justify-center rounded-lg bg-white p-3 shadow-inner ring-1 ring-slate-200">
+      <div className="mx-auto mt-4 flex max-w-80 items-center justify-center rounded-lg bg-white p-3 shadow-inner ring-1 ring-amber-100">
         {qrDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={qrDataUrl} alt="Динамический QR-код клиента" className="w-full" />
@@ -108,20 +109,20 @@ export function DynamicGlobalQrCard({
         )}
       </div>
 
-      <p className="mt-4 text-base font-semibold text-slate-950">Покажите QR-код кассиру</p>
-      <p className="mt-1 text-sm leading-5 text-slate-500">QR обновляется автоматически и не содержит телефон</p>
+      <p className="mt-4 text-base font-semibold text-[#2f1d13]">Покажите QR-код кассиру</p>
+      <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">QR обновляется автоматически и не содержит телефон</p>
 
       <div className="mt-4 flex items-center gap-3">
         <button
           type="button"
           onClick={() => void refreshQr()}
           disabled={loading}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white disabled:opacity-60"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-green-700 px-4 font-semibold text-white disabled:opacity-60"
         >
           <RefreshCw aria-hidden className={`size-5 ${loading ? "animate-spin" : ""}`} />
           Обновить QR
         </button>
-        <span className="min-w-28 text-right text-sm font-semibold leading-5 text-slate-600">
+        <span className="min-w-28 text-right text-sm font-semibold leading-5 text-[#7b6a5b]">
           Обновится через {secondsLeft} сек.
         </span>
       </div>

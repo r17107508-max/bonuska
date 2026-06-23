@@ -24,24 +24,24 @@ export function AdminShell({
   const isCompanyAdminShell = !cashier && nav.some((item) => item.href === "/company/staff");
 
   return (
-    <main className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
+    <main className="min-h-screen bg-[#fff8ed]">
+      <header className="border-b border-amber-100 bg-[#fffdf8]/95 backdrop-blur">
         <div className="page-shell flex flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
           <BrandMark compact />
           {cashier ? (
             <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold text-slate-900">{cashier.companyName}</span>
-              <span className="rounded-full bg-teal-50 px-3 py-1 font-semibold text-teal-800">Кассир</span>
-              {cashier.status && <span className="rounded-full bg-white px-3 py-1 font-semibold text-slate-600 ring-1 ring-slate-200">{cashier.status}</span>}
+              <span className="rounded-full bg-amber-50 px-3 py-1 font-semibold text-[#2f1d13]">{cashier.companyName}</span>
+              <span className="rounded-full bg-green-50 px-3 py-1 font-semibold text-green-800">Кассир</span>
+              {cashier.status && <span className="rounded-full bg-white px-3 py-1 font-semibold text-[#7b6a5b] ring-1 ring-amber-100">{cashier.status}</span>}
             </div>
           ) : isCompanyAdminShell ? (
-            <div className="rounded-full bg-teal-50 px-3 py-1 text-sm font-semibold text-teal-800">
+            <div className="rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-green-800">
               Кабинет компании
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               {nav.map((item) => (
-                <Link key={item.href} href={item.href} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                <Link key={item.href} href={item.href} className="rounded-lg px-3 py-2 text-sm font-semibold text-[#5c3521] hover:bg-amber-50">
                   {item.label}
                 </Link>
               ))}
@@ -52,8 +52,8 @@ export function AdminShell({
       </header>
       <section className={`page-shell py-8 ${cashier || isCompanyAdminShell ? "pb-32" : ""}`}>
         <div className="mb-6">
-          <h1 className="text-3xl font-semibold text-slate-950">{title}</h1>
-          {subtitle && <p className="mt-2 text-slate-600">{subtitle}</p>}
+          <h1 className="text-3xl font-semibold text-[#2f1d13]">{title}</h1>
+          {subtitle && <p className="mt-2 text-[#7b6a5b]">{subtitle}</p>}
         </div>
         {children}
       </section>
