@@ -54,6 +54,7 @@ export default async function ClientCardPage({
         status: activeRewardClaim.status,
         title: activeRewardClaim.title,
         description: activeRewardClaim.description,
+        rewardQrToken: activeRewardClaim.token,
         qrDataUrl: await QRCode.toDataURL(buildRewardQrPayload(activeRewardClaim.token), {
           margin: 1,
           width: 360,

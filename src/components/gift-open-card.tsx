@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Gift, Loader2, PartyPopper, Sparkles, X } from "lucide-react";
+import { buildManualScanCode } from "@/lib/scan-codes";
 
 type RewardClaimView = {
   id: string;
@@ -82,6 +83,14 @@ export function GiftOpenCard({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className="size-56" src={claim?.qrDataUrl ?? ""} alt="QR-код подарка" />
                 </div>
+                {claim?.rewardQrToken && (
+                  <div className="mt-3 rounded-lg bg-white p-3 text-center ring-1 ring-amber-100">
+                    <p className="text-xs font-semibold uppercase text-amber-800">Код подарка для ручного ввода</p>
+                    <p className="mt-1 font-mono text-2xl font-semibold tracking-normal text-slate-950">
+                      {buildManualScanCode(claim.rewardQrToken, "reward")}
+                    </p>
+                  </div>
+                )}
                 <p className="mt-3 text-sm font-semibold text-slate-700">
                   Покажите QR-код подарка кассиру. Обычный QR клиента нужен только для начисления покупок.
                 </p>
@@ -145,6 +154,14 @@ export function GiftOpenCard({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={claim?.qrDataUrl ?? ""} alt="QR-код подарка" />
                   </div>
+                  {claim?.rewardQrToken && (
+                    <div className="mx-auto mt-3 max-w-64 rounded-lg bg-amber-50 p-3 ring-1 ring-amber-100">
+                      <p className="text-xs font-semibold uppercase text-amber-800">Код подарка</p>
+                      <p className="mt-1 font-mono text-2xl font-semibold tracking-normal text-slate-950">
+                        {buildManualScanCode(claim.rewardQrToken, "reward")}
+                      </p>
+                    </div>
+                  )}
                   <p className="mt-4 text-sm font-semibold text-slate-700">
                     Покажите этот QR-код кассиру, чтобы получить подарок.
                   </p>

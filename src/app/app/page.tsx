@@ -22,7 +22,7 @@ export default async function ClientDashboardPage({
     select: { id: true, name: true, globalQrToken: true },
   });
 
-  await ensureGlobalQrToken(user);
+  const globalQrToken = await ensureGlobalQrToken(user);
 
   const [dynamicQr, memberships] = await Promise.all([
     createDynamicCustomerQr(user.id),
@@ -117,7 +117,12 @@ export default async function ClientDashboardPage({
           />
         )}
 
-        <DynamicGlobalQrCard initialPayload={dynamicQr.payload} initialExpiresAt={dynamicQr.expiresAt} color="#5c3521" />
+        <DynamicGlobalQrCard
+          initialPayload={dynamicQr.payload}
+          initialExpiresAt={dynamicQr.expiresAt}
+          manualCodeToken={globalQrToken}
+          color="#5c3521"
+        />
       </section>
     </main>
   );

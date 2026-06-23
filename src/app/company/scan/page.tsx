@@ -15,12 +15,13 @@ import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForSca
 export default async function CompanyScanPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string; error?: string; success?: string; q?: string }>;
+  searchParams: Promise<{ token?: string; error?: string; success?: string; q?: string; source?: string }>;
 }) {
   const access = await requireCompanyUser();
   const params = await searchParams;
   const company = await refreshCompanySubscription(access.companyId);
   const token = params.token ?? "";
+  const isManualToken = params.source === "manual";
   const rewardClaim = token ? await findRewardClaimForScan(token) : null;
   const membership = token && !rewardClaim ? await findMembershipForScan(access.companyId, token) : null;
   const globalCustomerWithoutMembership = token && !membership && !rewardClaim ? await findCustomerForGlobalScan(access.companyId, token) : null;
@@ -257,8 +258,12 @@ export default async function CompanyScanPage({
 
           {token && !membership && !globalCustomerWithoutMembership && !rewardClaim && (
             <div className="panel p-5 text-red-700">
-              <h2 className="text-xl font-semibold">Клиент не найден</h2>
-              <p className="mt-2 text-sm">Этот QR не найден. Попросите клиента открыть общий кабинет «ПроПлюшка» или отсканировать QR-плакат компании.</p>
+              <h2 className="text-xl font-semibold">{isManualToken ? "Код введён неверно" : "Клиент не найден"}</h2>
+              <p className="mt-2 text-sm">
+                {isManualToken
+                  ? "Проверьте код под QR клиента или подарка. Если iPhone снова спрашивает камеру, можно открыть сканер в Safari."
+                  : "Этот QR не найден. Попросите клиента открыть общий кабинет «ПроПлюшка» или отсканировать QR-плакат компании."}
+              </p>
             </div>
           )}
 

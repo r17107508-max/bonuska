@@ -1,6 +1,7 @@
 import QRCode from "qrcode";
 import { CustomerQrActions } from "@/components/customer-qr-actions";
 import { buildGlobalQrPayload, buildQrPayload, buildRewardQrPayload } from "@/lib/loyalty";
+import { buildManualScanCode } from "@/lib/scan-codes";
 
 export async function QrCard({
   token,
@@ -15,6 +16,7 @@ export async function QrCard({
 }) {
   const payload =
     mode === "global" ? buildGlobalQrPayload(token) : mode === "reward" ? buildRewardQrPayload(token) : buildQrPayload(token);
+  const manualCode = buildManualScanCode(token, mode === "reward" ? "reward" : "customer");
   const qrDataUrl = await QRCode.toDataURL(payload, {
     margin: 1,
     width: 360,
@@ -40,6 +42,10 @@ export async function QrCard({
             ? "Покажите этот QR-код кассиру, чтобы получить подарок. Он одноразовый."
             : "QR содержит защищённый токен, а не номер телефона."}
       </p>
+      <div className="mt-4 rounded-lg bg-white p-3 text-center ring-1 ring-amber-100">
+        <p className="text-xs font-semibold uppercase text-[#7b6a5b]">Код для ручного ввода</p>
+        <p className="mt-1 font-mono text-2xl font-semibold tracking-normal text-[#2f1d13]">{manualCode}</p>
+      </div>
       <CustomerQrActions qrDataUrl={qrDataUrl} companyName={companyName} />
       <details className="mt-4 rounded-lg bg-amber-50 p-3 text-left">
         <summary className="cursor-pointer text-sm font-semibold text-[#5c3521]">Токен для локального теста</summary>

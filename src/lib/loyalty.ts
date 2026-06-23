@@ -13,6 +13,7 @@ import {
 import { getDb } from "@/lib/db";
 import { verifyDynamicCustomerQr } from "@/lib/dynamic-qr";
 import { calculateLoyaltyLevel, ensureDefaultLoyaltyLevels, isCustomerLevelsProgram } from "@/lib/loyalty-levels";
+import { parseManualScanCode } from "@/lib/scan-codes";
 
 export const REPEAT_GUARD_SECONDS = 30;
 export const DAILY_PURCHASE_LIMIT_PER_CUSTOMER = 5;
@@ -161,6 +162,16 @@ function rewardTitle(program: LoyaltyProgram, giftOptions: GiftOption[]) {
 }
 
 export async function findMembershipForScan(companyId: string, token: string) {
+  const manualCode = parseManualScanCode(token);
+  if (manualCode?.type === "reward") {
+    return null;
+  }
+
+  if (manualCode?.type === "customer") {
+    const membership = await findMembershipByManualCode(companyId, manualCode.prefix);
+    return membership ?? findMembershipByGlobalManualCode(companyId, manualCode.prefix);
+  }
+
   const parsed = parseScanPayload(token);
 
   if (parsed.type === "rewardClaim") {
@@ -199,11 +210,58 @@ export async function findMembershipForScan(companyId: string, token: string) {
   return findMembershipByGlobalToken(companyId, parsed.token);
 }
 
+async function findMembershipByManualCode(companyId: string, tokenPrefix: string) {
+  const matches = await getDb().customerMembership.findMany({
+    where: {
+      companyId,
+      qrToken: { startsWith: tokenPrefix },
+      company: { status: { not: CompanyStatus.DELETED } },
+    },
+    include: {
+      user: true,
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
+      transactions: {
+        include: { cashier: { select: { id: true, name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      },
+    },
+    take: 2,
+  });
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
 async function findMembershipByGlobalToken(companyId: string, globalQrToken: string) {
   const user = await getDb().user.findUnique({
     where: { globalQrToken },
     select: { id: true },
   });
+
+  if (!user) {
+    return null;
+  }
+
+  return getDb().customerMembership.findFirst({
+    where: {
+      companyId,
+      userId: user.id,
+      company: { status: { not: CompanyStatus.DELETED } },
+    },
+    include: {
+      user: true,
+      company: { include: { loyaltyProgram: true, giftOptions: true } },
+      transactions: {
+        include: { cashier: { select: { id: true, name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      },
+    },
+  });
+}
+
+async function findMembershipByGlobalManualCode(companyId: string, tokenPrefix: string) {
+  const user = await findUserByGlobalManualCode(tokenPrefix);
 
   if (!user) {
     return null;
@@ -252,10 +310,17 @@ async function findMembershipByDynamicToken(companyId: string, dynamicToken: str
 }
 
 export async function findCustomerForGlobalScan(companyId: string, token: string) {
+  const manualCode = parseManualScanCode(token);
+  if (manualCode?.type === "reward") {
+    return null;
+  }
+
   const parsed = parseScanPayload(token);
   let user: { id: string; name: string; phone: string } | null = null;
 
-  if (parsed.type === "dynamicUser") {
+  if (manualCode?.type === "customer") {
+    user = await findUserByGlobalManualCode(manualCode.prefix);
+  } else if (parsed.type === "dynamicUser") {
     const userId = await verifyDynamicCustomerQr(parsed.token);
     user = userId
       ? await getDb().user.findUnique({
@@ -283,6 +348,16 @@ export async function findCustomerForGlobalScan(companyId: string, token: string
   });
 
   return membership ? null : user;
+}
+
+async function findUserByGlobalManualCode(tokenPrefix: string) {
+  const users = await getDb().user.findMany({
+    where: { globalQrToken: { startsWith: tokenPrefix } },
+    select: { id: true, name: true, phone: true },
+    take: 2,
+  });
+
+  return users.length === 1 ? users[0] : null;
 }
 
 export async function joinCompanyProgram(companyId: string, userId: string, actorUserId?: string | null) {
@@ -722,6 +797,32 @@ export async function grantReward(companyId: string, membershipId: string, cashi
 }
 
 export async function findRewardClaimForScan(token: string) {
+  const manualCode = parseManualScanCode(token);
+  if (manualCode?.type === "customer") {
+    return null;
+  }
+
+  if (manualCode?.type === "reward") {
+    const matches = await getDb().rewardClaim.findMany({
+      where: { token: { startsWith: manualCode.prefix } },
+      include: {
+        company: true,
+        membership: {
+          include: {
+            user: true,
+            company: { include: { loyaltyProgram: true } },
+          },
+        },
+        user: true,
+        giftOption: true,
+        redeemedBy: { select: { id: true, name: true } },
+      },
+      take: 2,
+    });
+
+    return matches.length === 1 ? matches[0] : null;
+  }
+
   const normalizedToken = normalizeRewardClaimToken(token);
 
   return getDb().rewardClaim.findUnique({

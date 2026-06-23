@@ -43,6 +43,7 @@ export async function GET(
         title: activeRewardClaim.title,
         description: activeRewardClaim.description,
         openedAt: activeRewardClaim.openedAt,
+        rewardQrToken: activeRewardClaim.token,
         qrPayload: buildRewardQrPayload(activeRewardClaim.token),
         qrDataUrl: await QRCode.toDataURL(buildRewardQrPayload(activeRewardClaim.token), {
           margin: 1,
