@@ -8,6 +8,7 @@ import { phoneLookupValues } from "@/lib/format";
 
 const COOKIE_NAME = "tega_session";
 const SESSION_DAYS = 30;
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * SESSION_DAYS;
 const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "replace-this-local-secret-before-production",
 );
@@ -18,6 +19,17 @@ type SessionPayload = {
 
 export type CurrentUser = Pick<User, "id" | "name" | "phone" | "email" | "city" | "globalRole">;
 
+function sessionCookieOptions(expires = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000)) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    expires,
+  };
+}
+
 export async function createSession(user: Pick<User, "id">) {
   const token = await new SignJWT({})
     .setProtectedHeader({ alg: "HS256" })
@@ -27,18 +39,15 @@ export async function createSession(user: Pick<User, "id">) {
     .sign(secret);
 
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * SESSION_DAYS,
-  });
+  cookieStore.set(COOKIE_NAME, token, sessionCookieOptions());
 }
 
 export async function clearSession() {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.set(COOKIE_NAME, "", {
+    ...sessionCookieOptions(new Date(0)),
+    maxAge: 0,
+  });
 }
 
 async function readSession(): Promise<SessionPayload | null> {

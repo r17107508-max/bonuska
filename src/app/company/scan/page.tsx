@@ -1,5 +1,6 @@
 import { CompanyUserRole, RewardClaimStatus } from "@prisma/client";
-import { AlertTriangle, CheckCircle2, Gift, UserRound } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, CheckCircle2, Gift, ScanLine, UserRound } from "lucide-react";
 import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase, redeemRewardClaim } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
@@ -196,7 +197,27 @@ export default async function CompanyScanPage({
       )}
 
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-        <QrScanner />
+        {token ? (
+          <section className="panel p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+                <ScanLine aria-hidden className="size-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-slate-950">QR считан</h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Камера остановлена, чтобы не запрашивать доступ повторно на экране результата.
+                </p>
+              </div>
+            </div>
+            <Link href="/company/scan" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white">
+              <ScanLine aria-hidden className="size-5" />
+              Сканировать другой QR
+            </Link>
+          </section>
+        ) : (
+          <QrScanner />
+        )}
 
         <section className="space-y-5">
           <div className="panel p-5">

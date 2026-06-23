@@ -1,7 +1,7 @@
 import Link from "next/link";
 import QRCode from "qrcode";
 import { CompanyUserRole } from "@prisma/client";
-import { CheckCircle2, Gift, QrCode, ScanLine, UserPlus, Users } from "lucide-react";
+import { BarChart3, Bell, CheckCircle2, ChevronDown, Gift, QrCode, ScanLine, Settings, UserPlus, Users } from "lucide-react";
 import { hideCompanyOnboardingChecklist } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { RegistrationQrPoster } from "@/components/registration-qr-poster";
@@ -186,42 +186,108 @@ export default async function CompanyDashboardPage() {
         <Metric label="Активных клиентов" value={activeClients} />
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-4">
+      <div className="mt-6">
         <Action href="/company/scan" icon={<ScanLine aria-hidden className="size-6" />} title="Сканер" text="Начислить покупку или выдать подарок." emphasis />
-        <Action href="/company/settings#registration-qr" icon={<QrCode aria-hidden className="size-6" />} title="QR для клиентов" text="Скачать или распечатать QR-плакат." />
-        <Action href="/company/staff" icon={<UserPlus aria-hidden className="size-6" />} title="Кассиры" text="Добавить сотрудника для сканирования." />
-        <Action href="/company/clients" icon={<Users aria-hidden className="size-6" />} title="Клиенты" text="Прогресс, история и список клиентов." />
       </div>
 
-      <section className="panel mt-6 p-5">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-sm font-semibold uppercase text-teal-700">Быстрые шаблоны</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-950">Настройте акцию без лишних решений</h2>
-          </div>
-          <Link href="/company/settings" className="text-sm font-semibold text-teal-700">Все настройки</Link>
-        </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {loyaltyTemplates.slice(0, 6).map((template) => (
-            <Link key={template.id} href={`/company/settings?template=${template.id}`} className="rounded-lg border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-3xl">{template.icon}</span>
-                <Gift aria-hidden className="size-5 text-teal-700" />
-              </div>
-              <h3 className="mt-3 font-semibold text-slate-950">{template.title}</h3>
-              <p className="mt-1 text-sm text-slate-600">{template.goalCount} покупок · {template.rewardTitle}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <div className="mt-6 space-y-3">
+        <AccordionSection
+          icon={<QrCode aria-hidden className="size-5" />}
+          title="QR для клиентов"
+          description="Плакат, ссылка и регистрация новых клиентов."
+        >
+          {clientUrl && qrDataUrl ? (
+            <RegistrationQrPoster
+              companyName={access.company.name}
+              clientUrl={clientUrl}
+              qrDataUrl={qrDataUrl}
+              rewardTitle={access.company.loyaltyProgram?.rewardTitle}
+            />
+          ) : (
+            <EmptyState text="QR будет доступен после сохранения основных настроек компании." />
+          )}
+        </AccordionSection>
 
-      <div className="mt-6">
-        <RegistrationQrPoster
-          companyName={access.company.name}
-          clientUrl={clientUrl}
-          qrDataUrl={qrDataUrl}
-          rewardTitle={access.company.loyaltyProgram?.rewardTitle}
-        />
+        <AccordionSection
+          icon={<Users aria-hidden className="size-5" />}
+          title="Клиенты"
+          description={`${clientsTotal} всего, ${activeClients} активных за 30 дней.`}
+        >
+          <SectionAction href="/company/clients" title="Открыть список клиентов" text="Поиск, карточки клиентов, история и прогресс." />
+        </AccordionSection>
+
+        <AccordionSection
+          icon={<UserPlus aria-hidden className="size-5" />}
+          title="Кассиры"
+          description={`${staffTotal} активных сотрудников в компании.`}
+        >
+          <SectionAction href="/company/staff" title="Управлять кассирами" text="Добавить сотрудника, изменить роль или отключить доступ." />
+        </AccordionSection>
+
+        <AccordionSection
+          icon={<Settings aria-hidden className="size-5" />}
+          title="Настройки акции"
+          description="Шаблоны, подарки, цвет, адрес и параметры программы."
+        >
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-950">Быстрые шаблоны</h3>
+              <p className="mt-1 text-sm text-slate-600">Выберите готовый сценарий или откройте полные настройки.</p>
+            </div>
+            <Link href="/company/settings" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-4 text-sm font-semibold text-white">
+              Все настройки
+            </Link>
+          </div>
+          {loyaltyTemplates.length > 0 ? (
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {loyaltyTemplates.slice(0, 6).map((template) => (
+                <Link key={template.id} href={`/company/settings?template=${template.id}`} className="rounded-lg border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-3xl">{template.icon}</span>
+                    <Gift aria-hidden className="size-5 text-teal-700" />
+                  </div>
+                  <h3 className="mt-3 font-semibold text-slate-950">{template.title}</h3>
+                  <p className="mt-1 text-sm text-slate-600">{template.goalCount} покупок · {template.rewardTitle}</p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <EmptyState text="Шаблонов пока нет. Откройте полные настройки акции." />
+          )}
+        </AccordionSection>
+
+        <AccordionSection
+          icon={<BarChart3 aria-hidden className="size-5" />}
+          title="Статистика"
+          description={`${operationsMonth} операций за месяц, ${rewardsIssued} подарков выдано.`}
+        >
+          <SectionAction href="/company/reports" title="Открыть отчёты" text="Клиенты, покупки, подарки, кассиры и подозрительные операции." />
+          {recentTransactions.length > 0 ? (
+            <div className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+              {recentTransactions.map((transaction) => (
+                <div key={transaction.id} className="grid gap-1 p-4 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div>
+                    <p className="font-semibold text-slate-950">{operationLabel(transaction.type)}</p>
+                    <p className="text-slate-500">
+                      {transaction.membership.user.name} · {transaction.type === "REWARD_OPENED" ? "открыл клиент" : `кассир: ${transaction.cashier.name}`}
+                    </p>
+                  </div>
+                  <p className="font-medium text-slate-500 sm:text-right">{formatDateTime(transaction.createdAt)}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState text="Операций пока нет. После первых сканирований здесь появится история." />
+          )}
+        </AccordionSection>
+
+        <AccordionSection
+          icon={<Bell aria-hidden className="size-5" />}
+          title="Уведомления и оплата"
+          description="Статус подписки, продление доступа и служебные напоминания."
+        >
+          <SectionAction href="/company/billing" title="Открыть оплату" text="Продление подписки и текущий статус доступа." />
+        </AccordionSection>
       </div>
     </AdminShell>
   );
@@ -243,6 +309,52 @@ function Action({ href, icon, title, text, emphasis = false }: { href: string; i
       <h2 className={`mt-4 text-xl font-semibold ${emphasis ? "text-white" : "text-slate-950"}`}>{title}</h2>
       <p className={`mt-2 ${emphasis ? "text-white/80" : "text-slate-600"}`}>{text}</p>
     </Link>
+  );
+}
+
+function AccordionSection({
+  icon,
+  title,
+  description,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="group rounded-lg border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+      <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">{icon}</div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-slate-950">{title}</h2>
+          <p className="mt-0.5 text-sm text-slate-600">{description}</p>
+        </div>
+        <ChevronDown aria-hidden className="size-5 shrink-0 text-slate-400 transition group-open:rotate-180" />
+      </summary>
+      <div className="border-t border-slate-100 p-4">{children}</div>
+    </details>
+  );
+}
+
+function SectionAction({ href, title, text }: { href: string; title: string; text: string }) {
+  return (
+    <Link href={href} className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 transition hover:bg-slate-100">
+      <span>
+        <span className="block font-semibold text-slate-950">{title}</span>
+        <span className="mt-1 block text-sm text-slate-600">{text}</span>
+      </span>
+      <span className="shrink-0 text-sm font-semibold text-teal-700">Открыть</span>
+    </Link>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+      {text}
+    </div>
   );
 }
 

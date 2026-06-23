@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Keyboard, ScanLine } from "lucide-react";
 
+const CAMERA_STORAGE_KEY = "proplushka-preferred-camera-id";
+
 function normalizeScanToken(value: string) {
   return decodeURIComponent(value).trim();
 }
@@ -11,6 +13,7 @@ function normalizeScanToken(value: string) {
 export function QrScanner() {
   const router = useRouter();
   const scannerRef = useRef<import("html5-qrcode").Html5Qrcode | null>(null);
+  const isStartingRef = useRef(false);
   const [manualValue, setManualValue] = useState("");
   const [status, setStatus] = useState("Запускаем камеру...");
 
@@ -19,18 +22,34 @@ export function QrScanner() {
     let scanned = false;
 
     async function start() {
+      if (isStartingRef.current || scannerRef.current) {
+        return;
+      }
+
       if (!window.isSecureContext) {
         setStatus("Камера на телефоне требует HTTPS. Если камера не открылась, вставьте QR-токен вручную ниже.");
         return;
       }
 
       try {
+        isStartingRef.current = true;
         const { Html5Qrcode } = await import("html5-qrcode");
         const scanner = new Html5Qrcode("qr-reader");
         scannerRef.current = scanner;
+        const cameras = await Html5Qrcode.getCameras().catch(() => []);
+        const savedCameraId = window.localStorage.getItem(CAMERA_STORAGE_KEY);
+        const camera =
+          cameras.find((item) => item.id === savedCameraId) ??
+          cameras.find((item) => /back|rear|environment|задн/i.test(item.label)) ??
+          cameras[0];
+        const cameraConfig = camera ? { deviceId: { exact: camera.id } } : { facingMode: "environment" };
+
+        if (camera) {
+          window.localStorage.setItem(CAMERA_STORAGE_KEY, camera.id);
+        }
 
         await scanner.start(
-          { facingMode: "environment" },
+          cameraConfig,
           { fps: 10, qrbox: { width: 260, height: 260 } },
           (decodedText) => {
             if (scanned) {
@@ -41,6 +60,7 @@ export function QrScanner() {
               scanned = true;
               setStatus("QR найден. Открываем карту клиента...");
               scanner.stop().catch(() => undefined);
+              scannerRef.current = null;
               router.push(`/company/scan?token=${encodeURIComponent(token)}`);
             }
           },
@@ -54,6 +74,8 @@ export function QrScanner() {
         if (mounted) {
           setStatus("Камера не запустилась. Разрешите доступ к камере или введите QR-токен вручную.");
         }
+      } finally {
+        isStartingRef.current = false;
       }
     }
 
@@ -61,11 +83,21 @@ export function QrScanner() {
 
     return () => {
       mounted = false;
-      try {
-        scannerRef.current?.stop().catch(() => undefined);
-        scannerRef.current?.clear();
-      } catch {
-        // Scanner may already be stopped during route change.
+      const scanner = scannerRef.current;
+      scannerRef.current = null;
+      isStartingRef.current = false;
+
+      if (scanner) {
+        scanner
+          .stop()
+          .catch(() => undefined)
+          .finally(() => {
+            try {
+              scanner.clear();
+            } catch {
+              // Scanner may already be stopped during route change.
+            }
+          });
       }
     };
   }, [router]);
