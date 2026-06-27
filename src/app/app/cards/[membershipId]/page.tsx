@@ -39,6 +39,7 @@ export default async function ClientCardPage({
 
   const program = membership.company.loyaltyProgram;
   const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
+  const promoText = program.rewardDescription || program.rewardTitle || `${program.goalCount} покупок — подарок`;
   const activeRewardClaim = isGiftBox && membership.rewardAvailable
     ? await getDb().rewardClaim.findFirst({
         where: {
@@ -64,21 +65,21 @@ export default async function ClientCardPage({
     : null;
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-5">
-      <section className="mx-auto max-w-md space-y-5">
+    <main className="min-h-screen bg-slate-100 px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-4">
+      <section className="mx-auto max-w-md space-y-4">
         <Link href="/app" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
           <ArrowLeft aria-hidden className="size-4" />
           Назад
         </Link>
 
-        <header className="rounded-2xl p-5 text-white shadow-sm" style={{ backgroundColor: program.themeColor }}>
+        <header className="rounded-lg p-4 text-white shadow-sm" style={{ backgroundColor: program.themeColor }}>
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold opacity-80">{membership.company.businessType}</p>
-              <h1 className="mt-1 text-3xl font-semibold">{membership.company.name}</h1>
-              <p className="mt-2 text-sm opacity-85">Карта клиента: {membership.user.name}</p>
+              <h1 className="mt-1 text-2xl font-semibold">{membership.company.name}</h1>
+              <p className="mt-2 text-sm font-semibold opacity-90">{promoText}</p>
             </div>
-            <span className="text-5xl">{program.icon}</span>
+            <span className="text-4xl">{program.icon}</span>
           </div>
         </header>
 
@@ -97,13 +98,13 @@ export default async function ClientCardPage({
           current={membership.currentCount}
           goal={program.goalCount}
           rewardAvailable={membership.rewardAvailable}
-          rewardTitle={isGiftBox ? program.rewardTitle : membership.pendingReward ?? program.rewardTitle}
+          rewardTitle={promoText}
           rewardReadyTitle={membership.rewardAvailable && isGiftBox ? "Подарок готов" : undefined}
           rewardReadyHint={
             membership.rewardAvailable && isGiftBox
               ? initialRewardClaim
-                ? "Покажите QR подарка кассиру, чтобы получить подарок."
-                : "Откройте коробку, узнайте подарок и покажите отдельный QR кассиру."
+                ? "Покажите QR подарка кассиру."
+                : "Откройте подарок и покажите QR кассиру."
               : undefined
           }
         />
@@ -111,16 +112,14 @@ export default async function ClientCardPage({
         <InstallPwaButton />
 
         <section>
-          <h2 className="mb-3 text-xl font-semibold text-slate-950">История покупок</h2>
+          <h2 className="mb-3 text-lg font-semibold text-slate-950">История</h2>
           <HistoryList transactions={membership.transactions} emptyText="Покупок пока нет" />
         </section>
 
-        <form action={leaveCustomerMembership} className="panel p-5">
+        <form action={leaveCustomerMembership} className="panel p-4">
           <input type="hidden" name="membershipId" value={membership.id} />
-          <h2 className="text-xl font-semibold text-slate-950">Участие в программе</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Можно выйти из программы этой компании. Остальные бонусные карты и аккаунт «ПроПлюшка» останутся.
-          </p>
+          <h2 className="text-lg font-semibold text-slate-950">Участие</h2>
+          <p className="mt-1 text-sm text-slate-600">Можно удалить только эту карту.</p>
           <div className="mt-4">
             <ConfirmSubmit
               danger

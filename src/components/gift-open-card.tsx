@@ -60,20 +60,20 @@ export function GiftOpenCard({
 
   return (
     <>
-      <section className={`panel overflow-hidden p-5 ${hasOpenedGift ? "border-amber-300 bg-white" : "border-amber-200 bg-amber-50"}`}>
-        <div className="flex items-start gap-4">
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-amber-200 text-amber-900">
-            {hasOpenedGift ? <PartyPopper aria-hidden className="size-7" /> : <Gift aria-hidden className="size-7" />}
+      <section className={`panel overflow-hidden p-4 ${hasOpenedGift ? "border-amber-300 bg-white" : "border-amber-200 bg-amber-50"}`}>
+        <div className="flex items-start gap-3">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-amber-200 text-amber-900">
+            {hasOpenedGift ? <PartyPopper aria-hidden className="size-6" /> : <Gift aria-hidden className="size-6" />}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold uppercase text-amber-800">Подарок готов</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-950">
+            <p className="text-xs font-semibold uppercase text-amber-800">Подарок</p>
+            <h2 className="mt-1 text-xl font-semibold text-slate-950">
               {hasOpenedGift ? `Ваш подарок: ${claim?.title}` : "Откройте коробку"}
             </h2>
             <p className="mt-1 text-sm leading-5 text-amber-900">
               {hasOpenedGift
-                ? "Покажите этот QR-код кассиру. После фактической выдачи подарка прогресс начнется заново."
-                : `Откройте коробку и узнайте, какой подарок вас ждет в ${companyName}. Подарок выбирается на сервере.`}
+                ? "Покажите QR кассиру."
+                : `Узнайте подарок от ${companyName}.`}
             </p>
 
             {hasOpenedGift ? (
@@ -91,9 +91,7 @@ export function GiftOpenCard({
                     </p>
                   </div>
                 )}
-                <p className="mt-3 text-sm font-semibold text-slate-700">
-                  Покажите QR-код подарка кассиру. Обычный QR клиента нужен только для начисления покупок.
-                </p>
+                <p className="mt-3 text-sm font-semibold text-slate-700">Покажите QR подарка кассиру.</p>
               </div>
             ) : (
               <button
@@ -132,8 +130,7 @@ export function GiftOpenCard({
 
               {loading && (
                 <div className="mt-6">
-                  <h2 className="text-2xl font-semibold text-slate-950">Открываем коробку</h2>
-                  <p className="mt-2 text-sm text-slate-600">Сервер выбирает подарок из списка компании.</p>
+                  <h2 className="text-xl font-semibold text-slate-950">Открываем подарок</h2>
                   <Loader2 aria-hidden className="mx-auto mt-4 size-6 animate-spin text-amber-600" />
                 </div>
               )}
@@ -148,7 +145,7 @@ export function GiftOpenCard({
               {!loading && hasOpenedGift && (
                 <div className="mt-6">
                   <p className="text-sm font-semibold uppercase text-amber-700">Поздравляем!</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-slate-950">{claim?.title}</h2>
+                  <h2 className="mt-2 text-xl font-semibold text-slate-950">{claim?.title}</h2>
                   {claim?.description && <p className="mt-2 text-sm text-slate-600">{claim.description}</p>}
                   <div className="mx-auto mt-5 flex max-w-64 items-center justify-center rounded-lg bg-white p-4 shadow-inner ring-1 ring-slate-200">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -162,9 +159,7 @@ export function GiftOpenCard({
                       </p>
                     </div>
                   )}
-                  <p className="mt-4 text-sm font-semibold text-slate-700">
-                    Покажите этот QR-код кассиру, чтобы получить подарок.
-                  </p>
+                  <p className="mt-4 text-sm font-semibold text-slate-700">Покажите QR кассиру.</p>
                 </div>
               )}
             </div>

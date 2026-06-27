@@ -18,18 +18,18 @@ export default async function ClientHistoryPage() {
   });
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 pb-28 pt-4">
-      <section className="mx-auto max-w-md space-y-4">
+    <main className="min-h-screen bg-slate-100 px-4 pb-28 pt-3">
+      <section className="mx-auto max-w-md space-y-3">
         <ClientBrandHeader />
 
-        <section className="panel p-4">
+        <section className="panel p-3.5">
           <div className="flex items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
               <Clock3 aria-hidden className="size-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold text-slate-950">История</h1>
-              <p className="mt-1 text-sm leading-5 text-slate-600">Операции по всем компаниям.</p>
+              <h1 className="text-xl font-semibold text-slate-950">История</h1>
+              <p className="mt-0.5 text-sm leading-5 text-slate-600">Все операции.</p>
             </div>
           </div>
         </section>
@@ -59,7 +59,7 @@ export default async function ClientHistoryPage() {
             );
           })}
 
-          {transactions.length === 0 && <div className="panel p-5 text-sm text-slate-600">Истории пока нет.</div>}
+          {transactions.length === 0 && <div className="panel p-4 text-sm text-slate-600">Истории пока нет.</div>}
         </section>
       </section>
     </main>

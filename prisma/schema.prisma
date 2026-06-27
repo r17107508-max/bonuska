@@ -105,6 +105,8 @@ model Company {
   themeColor                String        @default("#0f766e")
   city                      String
   address                   String
+  website                   String?
+  logoUrl                   String?
   ownerName                 String
   ownerPhone                String
   ownerEmail                String

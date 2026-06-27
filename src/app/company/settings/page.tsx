@@ -41,7 +41,7 @@ export default async function CompanySettingsPage({
   };
 
   return (
-    <AdminShell title="Настройки акции" subtitle="Ссылка для клиентов, QR-плакат, шаблон программы лояльности и подарок." nav={companyNav}>
+    <AdminShell title="Настройки акции" subtitle="Программа лояльности, карточка точки и QR для клиентов." nav={companyNav}>
       {params.success && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">Настройки сохранены.</p>}
       {params.error && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">{params.error}</p>}
 
@@ -65,12 +65,12 @@ export default async function CompanySettingsPage({
         />
       </div>
 
-      <section className="panel mb-6 p-5">
+      <section className="panel mb-5 p-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <p className="text-sm font-semibold uppercase text-teal-700">Готовые шаблоны</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-950">Выберите акцию для своей ниши</h2>
-            <p className="mt-2 text-slate-600">Шаблон подставит количество покупок, подарок, иконку и текст для клиента. Всё можно изменить перед сохранением.</p>
+            <p className="text-xs font-semibold uppercase text-teal-700">Шаблоны</p>
+            <h2 className="mt-1 text-xl font-semibold text-slate-950">Выберите основу акции</h2>
+            <p className="mt-1 text-sm text-slate-600">Шаблон можно изменить перед сохранением.</p>
           </div>
         </div>
         <div className="mt-5 grid gap-3 md:grid-cols-3">
@@ -92,15 +92,29 @@ export default async function CompanySettingsPage({
       </section>
 
       <form action={saveCompanySettings} className="panel grid gap-4 p-5">
+        <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="mb-3">
+            <h2 className="text-lg font-semibold text-slate-950">Карточка точки</h2>
+            <p className="mt-1 text-sm text-slate-600">Эти данные клиент увидит в списке партнёров.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Название компании" name="name" defaultValue={access.company.name} />
+            <FormField label="Телефон для клиента" name="phone" defaultValue={access.company.ownerPhone} />
+            <FormField label="Город" name="city" defaultValue={access.company.city} />
+            <FormField label="Адрес" name="address" defaultValue={access.company.address} required={false} />
+            <FormField label="Сайт" name="website" defaultValue={access.company.website} required={false} placeholder="example.ru" />
+            <FormField label="Изображение / логотип" name="logoUrl" defaultValue={access.company.logoUrl} required={false} placeholder="https://..." />
+          </div>
+          <div className="mt-4">
+            <TextAreaField label="Короткое описание точки" name="description" defaultValue={access.company.description} rows={2} required={false} />
+          </div>
+        </section>
+
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Название компании" name="name" defaultValue={access.company.name} />
           <FormField label="Slug компании" name="slug" defaultValue={access.company.slug} />
           <SelectField label="Тип бизнеса" name="businessType" defaultValue={defaults.businessType} options={businessTypes.map((item) => ({ value: item, label: item }))} />
           <SelectField label="Иконка прогресса" name="icon" defaultValue={defaults.icon} options={icons.map((item) => ({ value: item.split(" ")[0] ?? "🎁", label: item }))} />
           <FormField label="Цветовая тема" name="themeColor" type="color" defaultValue={defaults.themeColor} />
-          <FormField label="Телефон" name="phone" defaultValue={access.company.ownerPhone} />
-          <FormField label="Город" name="city" defaultValue={access.company.city} />
-          <FormField label="Адрес" name="address" defaultValue={access.company.address} required={false} />
           <FormField label="Количество покупок до подарка" name="goalCount" type="number" defaultValue={defaults.goalCount} />
         </div>
         <ProgramTypeSettings
@@ -109,8 +123,7 @@ export default async function CompanySettingsPage({
           loyaltyLevelsDefaultValue={[]}
         />
         <FormField label="Название подарка" name="rewardTitle" defaultValue={defaults.rewardTitle} />
-        <TextAreaField label="Описание компании" name="description" defaultValue={access.company.description} rows={3} required={false} />
-        <TextAreaField label="Текст для клиента" name="rewardDescription" defaultValue={defaults.rewardDescription} rows={3} />
+        <TextAreaField label="Короткий текст акции" name="rewardDescription" defaultValue={defaults.rewardDescription} rows={2} placeholder="Например: 7-й кофе бесплатно" />
         <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
           <p className="font-semibold">Ссылка для клиентов: {clientUrl}</p>
           <p className="mt-1">После изменения slug сохраните настройки, чтобы QR обновился под новую ссылку.</p>

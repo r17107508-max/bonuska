@@ -8,7 +8,7 @@ import { ProgressIcons } from "@/components/progress-cups";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { createDynamicCustomerQr } from "@/lib/dynamic-qr";
-import { getClientDashboardMemberships, pickNearestGift, rewardLeft } from "@/lib/customer-app";
+import { getClientDashboardMemberships, pickNearestGift } from "@/lib/customer-app";
 import { buildRewardQrPayload, ensureGlobalQrToken, isGiftBoxProgram } from "@/lib/loyalty";
 
 export default async function ClientDashboardPage({
@@ -58,33 +58,33 @@ export default async function ClientDashboardPage({
     : null;
 
   return (
-    <main className="min-h-screen bg-[#fff8ed] px-4 pb-28 pt-4">
-      <section className="mx-auto max-w-md space-y-4">
+    <main className="min-h-screen bg-[#fff8ed] px-4 pb-28 pt-3">
+      <section className="mx-auto max-w-md space-y-3">
         <ClientBrandHeader />
 
         {params.error && <p className="rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-800">{params.error}</p>}
 
-        <section className={`warm-card p-5 ${nearest?.rewardAvailable ? "border-amber-300 bg-amber-50" : ""}`}>
+        <section className={`warm-card p-4 ${nearest?.rewardAvailable ? "border-amber-300 bg-amber-50" : ""}`}>
           <div className="flex items-start gap-3">
-            <div className={`flex size-12 shrink-0 items-center justify-center rounded-lg ${nearest?.rewardAvailable ? "bg-amber-200 text-amber-900" : "bg-green-50 text-green-800"}`}>
-              {nearest?.rewardAvailable ? <Sparkles aria-hidden className="size-6" /> : <Gift aria-hidden className="size-6" />}
+            <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${nearest?.rewardAvailable ? "bg-amber-200 text-amber-900" : "bg-green-50 text-green-800"}`}>
+              {nearest?.rewardAvailable ? <Sparkles aria-hidden className="size-5" /> : <Gift aria-hidden className="size-5" />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold uppercase text-green-800">Ближайшая плюшка</p>
+              <p className="text-xs font-semibold uppercase text-green-800">Ближайшая плюшка</p>
               {nearest?.company.loyaltyProgram ? (
                 <>
-                  <h1 className="mt-1 text-2xl font-semibold text-[#2f1d13]">{nearest.company.name}</h1>
-                  <p className="mt-1 text-sm font-semibold text-[#5c3521]">
+                  <h1 className="mt-1 text-xl font-semibold text-[#2f1d13]">{nearest.company.name}</h1>
+                  <p className="mt-1 text-sm font-semibold leading-5 text-[#5c3521]">
                     {nearest.rewardAvailable
                       ? nearestUsesGiftBox
-                        ? "Подарок готов. Откройте коробку в карте."
-                        : "Подарок доступен. Покажите QR кассиру."
-                      : `До подарка осталось ${pluralPurchases(rewardLeft(nearest))}`}
+                        ? "Подарок готов"
+                        : "Подарок доступен"
+                      : nearest.company.loyaltyProgram.rewardDescription || `${nearest.currentCount}/${nearest.company.loyaltyProgram.goalCount}`}
                   </p>
                 </>
               ) : (
-                <p className="mt-1 text-sm leading-6 text-[#7b6a5b]">
-                  Пока нет активных карт. Найдите партнёра и начните копить плюшки.
+                <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">
+                  Пока нет активных карт.
                 </p>
               )}
             </div>
@@ -102,8 +102,8 @@ export default async function ClientDashboardPage({
             rewardReadyHint={
               nearest.rewardAvailable
                 ? nearestUsesGiftBox
-                  ? "Нажмите «Открыть подарок», узнайте плюшку и покажите подарочный QR кассиру."
-                  : "Покажите QR-код кассиру перед оплатой, чтобы забрать подарок."
+                  ? "Откройте подарок и покажите QR кассиру."
+                  : "Покажите QR кассиру."
                 : undefined
             }
           />
@@ -126,24 +126,4 @@ export default async function ClientDashboardPage({
       </section>
     </main>
   );
-}
-
-function pluralPurchases(value: number) {
-  const abs = Math.abs(value);
-  const last = abs % 10;
-  const lastTwo = abs % 100;
-
-  if (lastTwo >= 11 && lastTwo <= 14) {
-    return `${value} покупок`;
-  }
-
-  if (last === 1) {
-    return `${value} покупка`;
-  }
-
-  if (last >= 2 && last <= 4) {
-    return `${value} покупки`;
-  }
-
-  return `${value} покупок`;
 }

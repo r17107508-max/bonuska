@@ -17,7 +17,7 @@ export function FormField({
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">{label}</span>
       <input
         name={name}
         type={type}
@@ -25,7 +25,7 @@ export function FormField({
         placeholder={placeholder}
         defaultValue={defaultValue ?? ""}
         required={required}
-        className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+        className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
       />
     </label>
   );
@@ -48,14 +48,14 @@ export function TextAreaField({
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">{label}</span>
       <textarea
         name={name}
         rows={rows}
         placeholder={placeholder}
         defaultValue={defaultValue ?? ""}
         required={required}
-        className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+        className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm leading-5 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
       />
     </label>
   );
@@ -74,11 +74,11 @@ export function SelectField({
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">{label}</span>
       <select
         name={name}
         defaultValue={defaultValue ?? options[0]?.value}
-        className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+        className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>

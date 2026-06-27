@@ -27,30 +27,26 @@ export async function QrCard({
   });
 
   return (
-    <section className="warm-card p-5 text-center">
-      <div className="mx-auto flex max-w-72 items-center justify-center rounded-lg bg-white p-4 shadow-inner ring-1 ring-amber-100">
+    <section className="warm-card p-4 text-center">
+      <div className="mx-auto flex max-w-64 items-center justify-center rounded-lg bg-white p-3 shadow-inner ring-1 ring-amber-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qrDataUrl} alt={mode === "reward" ? "QR-код подарка" : "Личный QR-код клиента"} />
       </div>
-      <p className="mt-4 text-lg font-semibold text-[#2f1d13]">
-        {mode === "global" ? "Мой QR для всех компаний" : mode === "reward" ? "QR подарка" : "Покажите QR-код на кассе"}
+      <p className="mt-3 text-base font-semibold text-[#2f1d13]">
+        {mode === "global" ? "Мой QR" : mode === "reward" ? "QR подарка" : "QR на кассе"}
       </p>
-      <p className="mt-1 text-sm text-[#7b6a5b]">
+      <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">
         {mode === "global"
-          ? "Кассир начислит покупку в своей компании. QR не содержит телефон."
+          ? "Покажите кассиру."
           : mode === "reward"
-            ? "Покажите этот QR-код кассиру, чтобы получить подарок. Он одноразовый."
-            : "QR содержит защищённый токен, а не номер телефона."}
+            ? "Для получения подарка."
+            : "Для начисления покупки."}
       </p>
-      <div className="mt-4 rounded-lg bg-white p-3 text-center ring-1 ring-amber-100">
+      <div className="mt-3 rounded-lg bg-white p-3 text-center ring-1 ring-amber-100">
         <p className="text-xs font-semibold uppercase text-[#7b6a5b]">Код для ручного ввода</p>
-        <p className="mt-1 font-mono text-2xl font-semibold tracking-normal text-[#2f1d13]">{manualCode}</p>
+        <p className="mt-1 font-mono text-xl font-semibold tracking-normal text-[#2f1d13]">{manualCode}</p>
       </div>
       <CustomerQrActions qrDataUrl={qrDataUrl} companyName={companyName} />
-      <details className="mt-4 rounded-lg bg-amber-50 p-3 text-left">
-        <summary className="cursor-pointer text-sm font-semibold text-[#5c3521]">Токен для локального теста</summary>
-        <p className="mt-2 break-all font-mono text-xs text-[#7b6a5b]">{payload}</p>
-      </details>
     </section>
   );
 }

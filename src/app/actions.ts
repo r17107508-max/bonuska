@@ -44,6 +44,13 @@ function numberValue(formData: FormData, name: string, fallback: number) {
   return Number.isFinite(value) ? value : fallback;
 }
 
+function optionalUrl(formData: FormData, name: string) {
+  const value = text(formData, name);
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  return `https://${value}`;
+}
+
 function errorRedirect(path: string, message: string): never {
   const separator = path.includes("?") ? "&" : "?";
   redirect(`${path}${separator}error=${encodeURIComponent(message)}`);
@@ -698,6 +705,8 @@ export async function saveCompanySettings(formData: FormData) {
         themeColor: text(formData, "themeColor") || "#0f766e",
         city: text(formData, "city") || access.company.city,
         address: text(formData, "address"),
+        website: optionalUrl(formData, "website"),
+        logoUrl: optionalUrl(formData, "logoUrl"),
         ownerPhone: text(formData, "phone") || access.company.ownerPhone,
         loyaltyProgram: {
           upsert: {
