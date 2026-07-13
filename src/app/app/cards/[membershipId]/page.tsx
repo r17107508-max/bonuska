@@ -1,8 +1,8 @@
 import Link from "next/link";
 import QRCode from "qrcode";
-import { CompanyStatus, RewardClaimStatus } from "@prisma/client";
+import { CompanyStatus, RaffleStatus, RewardClaimStatus } from "@prisma/client";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trophy } from "lucide-react";
 import { leaveCustomerMembership } from "@/app/actions";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { GiftOpenCard } from "@/components/gift-open-card";
@@ -12,7 +12,9 @@ import { ProgressIcons } from "@/components/progress-cups";
 import { QrCard } from "@/components/qr-card";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { formatDateTime } from "@/lib/format";
 import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
+import { finalizeDueRafflesForCompany, formatKopeks, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
 
 export default async function ClientCardPage({
   params,
@@ -36,6 +38,8 @@ export default async function ClientCardPage({
   if (!membership || !membership.company.loyaltyProgram) {
     notFound();
   }
+
+  await finalizeDueRafflesForCompany(membership.companyId);
 
   const program = membership.company.loyaltyProgram;
   const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
@@ -63,6 +67,17 @@ export default async function ClientCardPage({
         }),
       }
     : null;
+  const raffleTickets = await getDb().raffleTicket.findMany({
+    where: {
+      membershipId: membership.id,
+      raffle: {
+        status: { in: [RaffleStatus.ACTIVE, RaffleStatus.DRAWN] },
+      },
+    },
+    include: { raffle: true },
+    orderBy: { createdAt: "desc" },
+    take: 3,
+  });
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-4">
@@ -90,6 +105,10 @@ export default async function ClientCardPage({
             initialClaim={initialRewardClaim}
           />
         )}
+
+        {raffleTickets.map((ticket) => (
+          <RaffleTicketCard key={ticket.id} ticket={ticket} />
+        ))}
 
         <QrCard token={membership.qrToken} color={program.themeColor} companyName={membership.company.name} />
 
@@ -131,5 +150,58 @@ export default async function ClientCardPage({
         </form>
       </section>
     </main>
+  );
+}
+
+function RaffleTicketCard({
+  ticket,
+}: {
+  ticket: {
+    id: string;
+    number: number;
+    purchaseAmountKopeks: number;
+    raffle: {
+      title: string;
+      status: RaffleStatus;
+      participationEndsAt: Date;
+      drawAt: Date;
+      firstPrizeTitle: string;
+      secondPrizeTitle: string;
+      thirdPrizeTitle: string;
+      winner1TicketId: string | null;
+      winner2TicketId: string | null;
+      winner3TicketId: string | null;
+    };
+  };
+}) {
+  const place = ticketWinningPlace(ticket.id, ticket.raffle);
+  const isDrawn = ticket.raffle.status === RaffleStatus.DRAWN;
+
+  return (
+    <section className={`warm-card p-4 ${place ? "border-amber-300 bg-amber-50" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+          <Trophy aria-hidden className="size-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase text-amber-800">
+            {isDrawn ? "Итоги розыгрыша" : "Ваш номер в розыгрыше"}
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-[#2f1d13]">№ {ticket.number}</h2>
+          <p className="mt-1 text-sm font-semibold text-[#5c3521]">{ticket.raffle.title}</p>
+          {isDrawn ? (
+            <p className="mt-2 text-sm leading-5 text-[#7b6a5b]">
+              {place
+                ? `Вы выиграли ${place} место: ${prizeTitleForPlace(place, ticket.raffle)}`
+                : "Ваш номер не попал в победители."}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm leading-5 text-[#7b6a5b]">
+              Розыгрыш: {formatDateTime(ticket.raffle.drawAt)}. Покупка: {formatKopeks(ticket.purchaseAmountKopeks)}.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

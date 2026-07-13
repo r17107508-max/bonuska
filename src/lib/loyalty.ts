@@ -13,6 +13,7 @@ import {
 import { getDb } from "@/lib/db";
 import { verifyDynamicCustomerQr } from "@/lib/dynamic-qr";
 import { calculateLoyaltyLevel, ensureDefaultLoyaltyLevels, isCustomerLevelsProgram } from "@/lib/loyalty-levels";
+import { issueRaffleTicketForPurchase } from "@/lib/raffles";
 import { parseManualScanCode } from "@/lib/scan-codes";
 
 export const REPEAT_GUARD_SECONDS = 30;
@@ -391,7 +392,7 @@ export async function joinCompanyProgram(companyId: string, userId: string, acto
   return membership;
 }
 
-export async function addPurchase(companyId: string, membershipId: string, cashierId: string) {
+export async function addPurchase(companyId: string, membershipId: string, cashierId: string, purchaseAmountKopeks = 0) {
   return getDb().$transaction(async (tx: Prisma.TransactionClient) => {
     const membership = await tx.customerMembership.findFirst({
       where: { id: membershipId, companyId },
@@ -479,6 +480,13 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
         },
       });
 
+      const raffleTicket = await issueRaffleTicketForPurchase(tx, {
+        companyId,
+        membershipId,
+        userId: membership.userId,
+        purchaseAmountKopeks,
+      });
+
       if (reachedNewLevel && currentLevel) {
         await tx.loyaltyTransaction.create({
           data: {
@@ -506,6 +514,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
             totalPurchases: totalAfter,
             levelId: currentLevel?.id ?? null,
             levelName: currentLevel?.name ?? null,
+            raffleTicketNumber: raffleTicket?.number ?? null,
             customerName: membership.user.name,
             companyName: membership.company.name,
           }),
@@ -518,6 +527,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
         levelUp: reachedNewLevel ? currentLevel : null,
         nextLevel: levelProgress.next,
         remainingToNext: levelProgress.remainingToNext,
+        raffleTicket,
       };
     }
 
@@ -583,7 +593,32 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       },
     });
 
-    return { rewardAvailable, levelUp: null };
+    const raffleTicket = await issueRaffleTicketForPurchase(tx, {
+      companyId,
+      membershipId,
+      userId: membership.userId,
+      purchaseAmountKopeks,
+    });
+
+    if (raffleTicket) {
+      await tx.auditLog.create({
+        data: {
+          actorUserId: cashierId,
+          companyId,
+          action: "RAFFLE_TICKET_ISSUED",
+          entityType: "RaffleTicket",
+          entityId: raffleTicket.id,
+          metadataJson: JSON.stringify({
+            membershipId,
+            raffleId: raffleTicket.raffleId,
+            number: raffleTicket.number,
+            purchaseAmountKopeks,
+          }),
+        },
+      });
+    }
+
+    return { rewardAvailable, levelUp: null, raffleTicket };
   });
 }
 

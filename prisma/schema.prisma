@@ -52,6 +52,14 @@ enum RewardClaimStatus {
   CANCELLED
 }
 
+enum RaffleStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  DRAWN
+  CANCELLED
+}
+
 model User {
   id            String     @id @default(cuid())
   name          String
@@ -72,6 +80,7 @@ model User {
   cashierTransactions  LoyaltyTransaction[]  @relation("CashierTransactions")
   rewardClaims         RewardClaim[]         @relation("CustomerRewardClaims")
   redeemedRewardClaims RewardClaim[]         @relation("RedeemedRewardClaims")
+  raffleTickets        RaffleTicket[]
   auditLogs            AuditLog[]
   passwordResetTokens  PasswordResetToken[]
 
@@ -130,6 +139,8 @@ model Company {
   transactions         LoyaltyTransaction[]
   giftOptions          GiftOption[]
   rewardClaims         RewardClaim[]
+  raffles              CompanyRaffle[]
+  raffleTickets        RaffleTicket[]
   payments             SubscriptionPayment[]
   offerAcceptances     OfferAcceptance[]
   personalDataConsents PersonalDataConsent[]
@@ -192,31 +203,79 @@ model LoyaltyLevel {
 }
 
 model CustomerMembership {
-  id              String    @id @default(cuid())
-  companyId       String
-  userId          String
-  qrToken         String    @unique
-  currentCount    Int       @default(0)
-  totalPurchases  Int       @default(0)
-  totalRewards    Int       @default(0)
-  levelId         String?
+  id               String    @id @default(cuid())
+  companyId        String
+  userId           String
+  qrToken          String    @unique
+  currentCount     Int       @default(0)
+  totalPurchases   Int       @default(0)
+  totalRewards     Int       @default(0)
+  levelId          String?
   currentLevelName String?
-  levelReachedAt  DateTime?
-  rewardAvailable Boolean   @default(false)
-  pendingReward   String?
-  lastActionAt    DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  levelReachedAt   DateTime?
+  rewardAvailable  Boolean   @default(false)
+  pendingReward    String?
+  lastActionAt     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  company      Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  level        LoyaltyLevel?        @relation(fields: [levelId], references: [id], onDelete: SetNull)
-  transactions LoyaltyTransaction[]
-  rewardClaims RewardClaim[]
+  company       Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level         LoyaltyLevel?        @relation(fields: [levelId], references: [id], onDelete: SetNull)
+  transactions  LoyaltyTransaction[]
+  rewardClaims  RewardClaim[]
+  raffleTickets RaffleTicket[]
 
   @@unique([companyId, userId])
   @@index([companyId, qrToken])
   @@index([userId, updatedAt])
+}
+
+model CompanyRaffle {
+  id                      String       @id @default(cuid())
+  companyId               String
+  title                   String
+  minPurchaseAmountKopeks Int
+  participationEndsAt     DateTime
+  drawAt                  DateTime
+  firstPrizeTitle         String
+  secondPrizeTitle        String
+  thirdPrizeTitle         String
+  status                  RaffleStatus @default(DRAFT)
+  winner1TicketId         String?
+  winner2TicketId         String?
+  winner3TicketId         String?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tickets RaffleTicket[]
+
+  @@index([companyId, status])
+  @@index([companyId, participationEndsAt])
+  @@index([companyId, drawAt])
+}
+
+model RaffleTicket {
+  id                   String   @id @default(cuid())
+  raffleId             String
+  companyId            String
+  membershipId         String
+  userId               String
+  number               Int
+  purchaseAmountKopeks Int
+  createdAt            DateTime @default(now())
+
+  raffle     CompanyRaffle      @relation(fields: [raffleId], references: [id], onDelete: Cascade)
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  membership CustomerMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([raffleId, membershipId])
+  @@unique([raffleId, number])
+  @@index([companyId, raffleId])
+  @@index([membershipId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model LoyaltyTransaction {

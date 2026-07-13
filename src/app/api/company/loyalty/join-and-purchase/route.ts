@@ -6,6 +6,7 @@ import {
   joinCompanyProgram,
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
+import { parseRublesToKopeks } from "@/lib/raffles";
 
 export async function POST(request: Request) {
   const { error, access } = await requireApiCompanyUser();
@@ -13,6 +14,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const token = String(body.token ?? "");
+  const purchaseAmountKopeks = parseRublesToKopeks(body.purchaseAmount ?? body.purchaseAmountRubles ?? "");
   let membershipId = "";
 
   try {
@@ -26,9 +28,9 @@ export async function POST(request: Request) {
 
     const membership = await joinCompanyProgram(access!.companyId, customer.id, access!.userId);
     membershipId = membership.id;
-    await addPurchase(access!.companyId, membership.id, access!.userId);
+    const result = await addPurchase(access!.companyId, membership.id, access!.userId, purchaseAmountKopeks);
 
-    return ok({ membershipId: membership.id });
+    return ok({ membershipId: membership.id, ...result });
   } catch (err) {
     const suspiciousReason = getSuspiciousLoyaltyReason(err);
     if (suspiciousReason) {

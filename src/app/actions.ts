@@ -9,6 +9,7 @@ import {
   CompanyStatus,
   CompanyUserRole,
   LoyaltyProgramType,
+  RaffleStatus,
 } from "@prisma/client";
 import {
   authenticate,
@@ -32,6 +33,7 @@ import {
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
 import { getMailConfigStatus, notifyCompanyApplicationReceived, notifyCompanyApproved, notifySuperadminsAboutCompanyApplication, sendPasswordResetEmail } from "@/lib/notifications";
+import { finalizeRaffle, parseRublesToKopeks } from "@/lib/raffles";
 import { getSettings } from "@/lib/settings";
 import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
 
@@ -54,6 +56,19 @@ function optionalUrl(formData: FormData, name: string) {
 function errorRedirect(path: string, message: string): never {
   const separator = path.includes("?") ? "&" : "?";
   redirect(`${path}${separator}error=${encodeURIComponent(message)}`);
+}
+
+function successRedirect(path: string, message: string): never {
+  const separator = path.includes("?") ? "&" : "?";
+  redirect(`${path}${separator}success=${encodeURIComponent(message)}`);
+}
+
+function safeCompanyReturnPath(value: string, fallback: string) {
+  if (value.startsWith("/company/scan") || value.startsWith("/company/client/") || value.startsWith("/company/raffles")) {
+    return value;
+  }
+
+  return fallback;
 }
 
 async function requestMeta() {
@@ -937,10 +952,13 @@ export async function confirmPurchase(formData: FormData) {
   const access = await requireCompanyUser();
   const membershipId = text(formData, "membershipId");
   const token = text(formData, "token");
+  const fallbackPath = `/company/scan?token=${encodeURIComponent(token)}`;
+  const returnTo = safeCompanyReturnPath(text(formData, "returnTo"), fallbackPath);
+  const purchaseAmountKopeks = parseRublesToKopeks(formData.get("purchaseAmount"));
   let successMessage = "Начислено";
   try {
-    const result = await addPurchase(access.companyId, membershipId, access.userId);
-    successMessage = result.levelUp ? `🎉 Клиент достиг нового уровня: ${result.levelUp.name}` : "Начислено";
+    const result = await addPurchase(access.companyId, membershipId, access.userId, purchaseAmountKopeks);
+    successMessage = purchaseSuccessMessage(result);
   } catch (error) {
     const suspiciousReason = getSuspiciousLoyaltyReason(error);
     if (suspiciousReason) {
@@ -954,16 +972,20 @@ export async function confirmPurchase(formData: FormData) {
         reason: suspiciousReason,
       });
     }
-    errorRedirect(`/company/scan?token=${encodeURIComponent(token)}`, error instanceof Error ? error.message : "Не удалось начислить покупку");
+    errorRedirect(returnTo, error instanceof Error ? error.message : "Не удалось начислить покупку");
   }
   revalidatePath("/company");
-  redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent(successMessage)}`);
+  revalidatePath("/company/clients");
+  revalidatePath(`/company/client/${membershipId}`);
+  successRedirect(returnTo, successMessage);
 }
 
 export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) {
   const access = await requireCompanyUser();
   const token = text(formData, "token");
+  const purchaseAmountKopeks = parseRublesToKopeks(formData.get("purchaseAmount"));
   let membershipIdForLog = "";
+  let successMessage = "Клиент подключён, покупка начислена";
 
   try {
     const customer = await findCustomerForGlobalScan(access.companyId, token);
@@ -976,7 +998,8 @@ export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) 
 
     const membership = await joinCompanyProgram(access.companyId, customer.id, access.userId);
     membershipIdForLog = membership.id;
-    await addPurchase(access.companyId, membership.id, access.userId);
+    const result = await addPurchase(access.companyId, membership.id, access.userId, purchaseAmountKopeks);
+    successMessage = `Клиент подключён. ${purchaseSuccessMessage(result)}`;
   } catch (error) {
     const suspiciousReason = getSuspiciousLoyaltyReason(error);
     if (suspiciousReason) {
@@ -994,7 +1017,81 @@ export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) 
   }
 
   revalidatePath("/company");
-  redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent("Клиент подключён, покупка начислена")}`);
+  redirect(`/company/scan?token=${encodeURIComponent(token)}&success=${encodeURIComponent(successMessage)}`);
+}
+
+function purchaseSuccessMessage(result: Awaited<ReturnType<typeof addPurchase>>) {
+  const base = result.levelUp ? `🎉 Клиент достиг нового уровня: ${result.levelUp.name}` : "Начислено";
+  return result.raffleTicket
+    ? `${base}. Номер для розыгрыша: ${result.raffleTicket.number}`
+    : base;
+}
+
+export async function createCompanyRaffle(formData: FormData) {
+  const access = await requireCompanyAdmin();
+  const title = text(formData, "title");
+  const minPurchaseAmountKopeks = parseRublesToKopeks(formData.get("minPurchaseAmount"));
+  const participationEndsAt = new Date(text(formData, "participationEndsAt"));
+  const drawAt = new Date(text(formData, "drawAt"));
+  const firstPrizeTitle = text(formData, "firstPrizeTitle");
+  const secondPrizeTitle = text(formData, "secondPrizeTitle");
+  const thirdPrizeTitle = text(formData, "thirdPrizeTitle");
+
+  if (!title || minPurchaseAmountKopeks <= 0 || !firstPrizeTitle || !secondPrizeTitle || !thirdPrizeTitle) {
+    errorRedirect("/company/raffles", "Заполните название, сумму покупки и все три приза");
+  }
+
+  if (Number.isNaN(participationEndsAt.getTime()) || Number.isNaN(drawAt.getTime())) {
+    errorRedirect("/company/raffles", "Укажите дату окончания участия и дату розыгрыша");
+  }
+
+  if (drawAt <= participationEndsAt) {
+    errorRedirect("/company/raffles", "Дата розыгрыша должна быть позже окончания участия");
+  }
+
+  await getDb().companyRaffle.create({
+    data: {
+      companyId: access.companyId,
+      title,
+      minPurchaseAmountKopeks,
+      participationEndsAt,
+      drawAt,
+      firstPrizeTitle,
+      secondPrizeTitle,
+      thirdPrizeTitle,
+      status: RaffleStatus.ACTIVE,
+    },
+  });
+
+  revalidatePath("/company");
+  revalidatePath("/company/raffles");
+  successRedirect("/company/raffles", "Розыгрыш создан и активен");
+}
+
+export async function drawCompanyRaffle(formData: FormData) {
+  const access = await requireCompanyAdmin();
+  const raffleId = text(formData, "raffleId");
+  const raffle = await getDb().companyRaffle.findFirst({
+    where: { id: raffleId, companyId: access.companyId },
+    select: { id: true, drawAt: true, status: true },
+  });
+
+  if (!raffle) {
+    errorRedirect("/company/raffles", "Розыгрыш не найден");
+  }
+
+  if (raffle.status === RaffleStatus.DRAWN) {
+    successRedirect("/company/raffles", "Победители уже зафиксированы");
+  }
+
+  if (raffle.drawAt > new Date()) {
+    errorRedirect("/company/raffles", "Победителей можно фиксировать только после даты розыгрыша");
+  }
+
+  await finalizeRaffle(raffle.id);
+  revalidatePath("/company");
+  revalidatePath("/company/raffles");
+  successRedirect("/company/raffles", "Победители зафиксированы на сервере");
 }
 
 export async function giveReward(formData: FormData) {

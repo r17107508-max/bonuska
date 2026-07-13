@@ -74,6 +74,7 @@ export const companyNav = [
   { href: "/company", label: "Панель" },
   { href: "/company/scan", label: "Сканер" },
   { href: "/company/clients", label: "Клиенты" },
+  { href: "/company/raffles", label: "Розыгрыши" },
   { href: "/company/settings", label: "Акция" },
   { href: "/company/billing", label: "Оплата" },
   { href: "/company/staff", label: "Сотрудники" },

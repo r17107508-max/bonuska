@@ -11,6 +11,7 @@ import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDateTime, statusLabel } from "@/lib/format";
 import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
+import { formatKopeks, getActiveCompanyRaffle } from "@/lib/raffles";
 
 export default async function CompanyScanPage({
   searchParams,
@@ -26,6 +27,7 @@ export default async function CompanyScanPage({
   const membership = token && !rewardClaim ? await findMembershipForScan(access.companyId, token) : null;
   const globalCustomerWithoutMembership = token && !membership && !rewardClaim ? await findCustomerForGlobalScan(access.companyId, token) : null;
   const active = company ? hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil) : false;
+  const activeRaffle = active ? await getActiveCompanyRaffle(access.companyId) : null;
   const isCashier = access.role === CompanyUserRole.CASHIER;
   const q = params.q?.trim() ?? "";
   const manualMatches = q
@@ -165,6 +167,7 @@ export default async function CompanyScanPage({
                 <form action={confirmPurchase}>
                   <input type="hidden" name="membershipId" value={membership.id} />
                   <input type="hidden" name="token" value={token} />
+                  <PurchaseAmountFields activeRaffle={activeRaffle} />
                   <ConfirmSubmit
                     title="Начислить покупку?"
                     confirmText="Подтвердите, что клиент совершил покупку сейчас. Повторное начисление одному клиенту временно блокируется."
@@ -187,6 +190,7 @@ export default async function CompanyScanPage({
               <p className="text-sm text-slate-700">Подключить к программе и сразу начислить покупку.</p>
             </div>
             <div className="w-full sm:w-80">
+              <PurchaseAmountFields activeRaffle={activeRaffle} />
               <ConfirmSubmit
                 title="Подключить клиента?"
                 confirmText="Клиент будет подключён к программе вашей компании, после этого первая покупка будет начислена."
@@ -285,6 +289,7 @@ export default async function CompanyScanPage({
               {active && (
                 <form action={joinScannedCustomerAndConfirmPurchase} className="mt-4">
                   <input type="hidden" name="token" value={token} />
+                  <PurchaseAmountFields activeRaffle={activeRaffle} />
                   <ConfirmSubmit
                     title="Подключить клиента?"
                     confirmText="Клиент будет подключён к программе вашей компании, после этого первая покупка будет начислена."
@@ -366,10 +371,11 @@ export default async function CompanyScanPage({
                       />
                     </form>
                   ) : (
-                    <form action={confirmPurchase}>
-                      <input type="hidden" name="membershipId" value={membership.id} />
-                      <input type="hidden" name="token" value={token} />
-                      <ConfirmSubmit
+                  <form action={confirmPurchase}>
+                    <input type="hidden" name="membershipId" value={membership.id} />
+                    <input type="hidden" name="token" value={token} />
+                    <PurchaseAmountFields activeRaffle={activeRaffle} />
+                    <ConfirmSubmit
                         title="Начислить покупку?"
                         confirmText="Подтвердите, что клиент действительно совершил покупку. Повторное начисление одному клиенту временно блокируется."
                         buttonText="Начислить покупку"
@@ -388,6 +394,28 @@ export default async function CompanyScanPage({
         </section>
       </div>
     </AdminShell>
+  );
+}
+
+function PurchaseAmountFields({ activeRaffle }: { activeRaffle: Awaited<ReturnType<typeof getActiveCompanyRaffle>> }) {
+  return (
+    <div className="mb-3">
+      <label className="block">
+        <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">Сумма покупки</span>
+        <input
+          name="purchaseAmount"
+          inputMode="decimal"
+          placeholder="Например, 450"
+          required={Boolean(activeRaffle)}
+          className="mt-1.5 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+        />
+      </label>
+      <p className="mt-1 text-xs leading-5 text-slate-600">
+        {activeRaffle
+          ? `Для розыгрыша «${activeRaffle.title}» нужен чек от ${formatKopeks(activeRaffle.minPurchaseAmountKopeks)}.`
+          : "Если активного розыгрыша нет, поле можно оставить пустым."}
+      </p>
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import QRCode from "qrcode";
-import { CompanyUserRole } from "@prisma/client";
+import { CompanyUserRole, RaffleStatus } from "@prisma/client";
 import { Activity, BarChart3, Bell, CheckCircle2, ChevronDown, Clock3, Gift, QrCode, ScanLine, Settings, Trophy, UserPlus, Users } from "lucide-react";
 import { hideCompanyOnboardingChecklist } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
@@ -23,7 +23,7 @@ export default async function CompanyDashboardPage() {
   const activeClientSince = new Date(now);
   activeClientSince.setDate(activeClientSince.getDate() - 30);
 
-  const [clientsTotal, activeClients, repeatClients, sleepingClients, operationsToday, operationsMonth, rewardsIssued, staffTotal, recentTransactions] = await Promise.all([
+  const [clientsTotal, activeClients, repeatClients, sleepingClients, operationsToday, operationsMonth, rewardsIssued, staffTotal, recentTransactions, activeRaffle] = await Promise.all([
     getDb().customerMembership.count({ where: { companyId: access.companyId } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, lastActionAt: { gte: activeClientSince } } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, totalPurchases: { gt: 1 } } }),
@@ -46,6 +46,15 @@ export default async function CompanyDashboardPage() {
       },
       orderBy: { createdAt: "desc" },
       take: 5,
+    }),
+    getDb().companyRaffle.findFirst({
+      where: {
+        companyId: access.companyId,
+        status: RaffleStatus.ACTIVE,
+        drawAt: { gt: now },
+      },
+      include: { _count: { select: { tickets: true } } },
+      orderBy: [{ participationEndsAt: "asc" }, { createdAt: "desc" }],
     }),
   ]);
 
@@ -233,6 +242,14 @@ export default async function CompanyDashboardPage() {
           description={`${staffTotal} активных сотрудников в компании.`}
         >
           <SectionAction href="/company/staff" title="Управлять кассирами" text="Добавить сотрудника, изменить роль или отключить доступ." />
+        </AccordionSection>
+
+        <AccordionSection
+          icon={<Trophy aria-hidden className="size-5" />}
+          title="Розыгрыши"
+          description={activeRaffle ? `${activeRaffle.title}: ${activeRaffle._count.tickets} участников.` : "Создание акций с розыгрышем призов."}
+        >
+          <SectionAction href="/company/raffles" title="Открыть розыгрыши" text="Создать розыгрыш, посмотреть участников и зафиксировать победителей." />
         </AccordionSection>
 
         <AccordionSection

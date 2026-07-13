@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CreditCard, Home, LogOut, Menu, QrCode, ScanLine, Settings, UserPlus, Users } from "lucide-react";
+import { BarChart3, CreditCard, Home, LogOut, Menu, QrCode, ScanLine, Settings, Trophy, UserPlus, Users } from "lucide-react";
 import { logout } from "@/app/actions";
 
 const primaryItems = [
@@ -14,6 +14,7 @@ const primaryItems = [
 ] as const;
 
 const moreItems = [
+  { href: "/company/raffles", label: "Розыгрыши", icon: Trophy },
   { href: "/company/staff", label: "Сотрудники", icon: UserPlus },
   { href: "/company/reports", label: "Отчёты", icon: BarChart3 },
   { href: "/company/billing", label: "Оплата", icon: CreditCard },

@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
-import { RewardClaimStatus } from "@prisma/client";
-import { Gift, Sparkles } from "lucide-react";
+import { RaffleStatus, RewardClaimStatus } from "@prisma/client";
+import { Gift, Sparkles, Trophy } from "lucide-react";
 import { ClientBrandHeader } from "@/components/client-brand-header";
 import { DynamicGlobalQrCard } from "@/components/dynamic-global-qr-card";
 import { GiftOpenCard } from "@/components/gift-open-card";
@@ -9,7 +9,9 @@ import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { createDynamicCustomerQr } from "@/lib/dynamic-qr";
 import { getClientDashboardMemberships, pickNearestGift } from "@/lib/customer-app";
+import { formatDateTime } from "@/lib/format";
 import { buildRewardQrPayload, ensureGlobalQrToken, isGiftBoxProgram } from "@/lib/loyalty";
+import { finalizeDueRafflesForUser, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
 
 export default async function ClientDashboardPage({
   searchParams,
@@ -23,10 +25,27 @@ export default async function ClientDashboardPage({
   });
 
   const globalQrToken = await ensureGlobalQrToken(user);
+  await finalizeDueRafflesForUser(user.id);
 
-  const [dynamicQr, memberships] = await Promise.all([
+  const [dynamicQr, memberships, nearestRaffleTicket] = await Promise.all([
     createDynamicCustomerQr(user.id),
     getClientDashboardMemberships(user.id),
+    getDb().raffleTicket.findFirst({
+      where: {
+        userId: user.id,
+        raffle: {
+          status: { in: [RaffleStatus.ACTIVE, RaffleStatus.DRAWN] },
+        },
+      },
+      include: {
+        raffle: {
+          include: {
+            company: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: [{ createdAt: "desc" }],
+    }),
   ]);
   const nearest = pickNearestGift(memberships);
   const nearestUsesGiftBox = nearest?.company.loyaltyProgram
@@ -63,6 +82,8 @@ export default async function ClientDashboardPage({
         <ClientBrandHeader />
 
         {params.error && <p className="rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-800">{params.error}</p>}
+
+        {nearestRaffleTicket && <RaffleBanner ticket={nearestRaffleTicket} />}
 
         <section className={`warm-card p-4 ${nearest?.rewardAvailable ? "border-amber-300 bg-amber-50" : ""}`}>
           <div className="flex items-start gap-3">
@@ -125,5 +146,52 @@ export default async function ClientDashboardPage({
         />
       </section>
     </main>
+  );
+}
+
+function RaffleBanner({
+  ticket,
+}: {
+  ticket: {
+    id: string;
+    number: number;
+    raffle: {
+      title: string;
+      status: RaffleStatus;
+      drawAt: Date;
+      firstPrizeTitle: string;
+      secondPrizeTitle: string;
+      thirdPrizeTitle: string;
+      winner1TicketId: string | null;
+      winner2TicketId: string | null;
+      winner3TicketId: string | null;
+      company: { name: string };
+    };
+  };
+}) {
+  const place = ticketWinningPlace(ticket.id, ticket.raffle);
+  const drawn = ticket.raffle.status === RaffleStatus.DRAWN;
+
+  return (
+    <section className={`warm-card p-4 ${place ? "border-amber-300 bg-amber-50" : ""}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+          <Trophy aria-hidden className="size-5" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase text-amber-800">{drawn ? "Результат розыгрыша" : "Розыгрыш скоро"}</p>
+          <h2 className="mt-1 text-lg font-semibold text-[#2f1d13]">
+            {ticket.raffle.company.name}: № {ticket.number}
+          </h2>
+          <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">
+            {drawn
+              ? place
+                ? `Вы выиграли ${place} место: ${prizeTitleForPlace(place, ticket.raffle)}`
+                : "Итоги зафиксированы. Ваш номер не попал в победители."
+              : `${ticket.raffle.title}. Розыгрыш: ${formatDateTime(ticket.raffle.drawAt)}.`}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
