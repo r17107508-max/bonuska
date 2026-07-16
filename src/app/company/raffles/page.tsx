@@ -1,5 +1,5 @@
 import { RaffleStatus } from "@prisma/client";
-import { createCompanyRaffle, drawCompanyRaffle } from "@/app/actions";
+import { createCompanyRaffle, deleteCompanyRaffle, drawCompanyRaffle, updateCompanyRaffle } from "@/app/actions";
 import { AdminShell, companyNav } from "@/components/admin-shell";
 import { SubmitButton } from "@/components/buttons";
 import { ConfirmSubmit } from "@/components/confirm-submit";
@@ -75,6 +75,8 @@ export default async function CompanyRafflesPage({
             })
             .filter(Boolean);
           const canDraw = raffle.status !== RaffleStatus.DRAWN && raffle.status !== RaffleStatus.CANCELLED && raffle.drawAt <= new Date();
+          const canEdit = raffle.status !== RaffleStatus.DRAWN && raffle.status !== RaffleStatus.CANCELLED;
+          const canDelete = raffle.status !== RaffleStatus.DRAWN;
 
           return (
             <article key={raffle.id} className="panel overflow-hidden">
@@ -97,8 +99,44 @@ export default async function CompanyRafflesPage({
                     <Prize place={2} title={raffle.secondPrizeTitle} />
                     <Prize place={3} title={raffle.thirdPrizeTitle} />
                   </div>
+                  {canEdit && (
+                    <details className="mt-5 rounded-lg border border-slate-200 bg-slate-50">
+                      <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-900">
+                        Редактировать условия
+                      </summary>
+                      <form action={updateCompanyRaffle} className="grid gap-4 border-t border-slate-200 bg-white p-4">
+                        <input type="hidden" name="raffleId" value={raffle.id} />
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <FormField label="Название" name="title" defaultValue={raffle.title} />
+                          <FormField
+                            label="Минимальная сумма покупки, ₽"
+                            name="minPurchaseAmount"
+                            type="number"
+                            step="0.01"
+                            defaultValue={formatKopeksForInput(raffle.minPurchaseAmountKopeks)}
+                          />
+                          <FormField
+                            label="Участие до"
+                            name="participationEndsAt"
+                            type="datetime-local"
+                            defaultValue={formatDateTimeInput(raffle.participationEndsAt)}
+                          />
+                          <FormField
+                            label="Дата розыгрыша"
+                            name="drawAt"
+                            type="datetime-local"
+                            defaultValue={formatDateTimeInput(raffle.drawAt)}
+                          />
+                          <FormField label="Приз за 1 место" name="firstPrizeTitle" defaultValue={raffle.firstPrizeTitle} />
+                          <FormField label="Приз за 2 место" name="secondPrizeTitle" defaultValue={raffle.secondPrizeTitle} />
+                          <FormField label="Приз за 3 место" name="thirdPrizeTitle" defaultValue={raffle.thirdPrizeTitle} />
+                        </div>
+                        <SubmitButton variant="secondary">Сохранить изменения</SubmitButton>
+                      </form>
+                    </details>
+                  )}
                 </div>
-                <div>
+                <div className="space-y-3">
                   {canDraw ? (
                     <form action={drawCompanyRaffle}>
                       <input type="hidden" name="raffleId" value={raffle.id} />
@@ -114,6 +152,18 @@ export default async function CompanyRafflesPage({
                         ? "Итоги уже зафиксированы."
                         : "Фиксация станет доступна после даты розыгрыша."}
                     </div>
+                  )}
+                  {canDelete && (
+                    <form action={deleteCompanyRaffle}>
+                      <input type="hidden" name="raffleId" value={raffle.id} />
+                      <ConfirmSubmit
+                        title="Удалить розыгрыш?"
+                        confirmText="Розыгрыш и уже выданные номера участников будут удалены. Это действие нельзя отменить."
+                        buttonText="Удалить розыгрыш"
+                        confirmButtonText="Удалить"
+                        danger
+                      />
+                    </form>
                   )}
                 </div>
               </div>
@@ -144,6 +194,20 @@ export default async function CompanyRafflesPage({
       </section>
     </AdminShell>
   );
+}
+
+function formatKopeksForInput(kopeks: number) {
+  const rubles = kopeks / 100;
+  return Number.isInteger(rubles) ? String(rubles) : rubles.toFixed(2);
+}
+
+function formatDateTimeInput(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return [
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+  ].join("T");
 }
 
 function Prize({ place, title }: { place: number; title: string }) {

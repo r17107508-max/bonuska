@@ -1087,8 +1087,7 @@ function purchaseSuccessMessage(result: Awaited<ReturnType<typeof addPurchase>>)
     : base;
 }
 
-export async function createCompanyRaffle(formData: FormData) {
-  const access = await requireCompanyAdmin();
+function raffleFormValues(formData: FormData) {
   const title = text(formData, "title");
   const minPurchaseAmountKopeks = parseRublesToKopeks(formData.get("minPurchaseAmount"));
   const participationEndsAt = new Date(text(formData, "participationEndsAt"));
@@ -1097,28 +1096,52 @@ export async function createCompanyRaffle(formData: FormData) {
   const secondPrizeTitle = text(formData, "secondPrizeTitle");
   const thirdPrizeTitle = text(formData, "thirdPrizeTitle");
 
-  if (!title || minPurchaseAmountKopeks <= 0 || !firstPrizeTitle || !secondPrizeTitle || !thirdPrizeTitle) {
-    errorRedirect("/company/raffles", "Заполните название, сумму покупки и все три приза");
+  return {
+    title,
+    minPurchaseAmountKopeks,
+    participationEndsAt,
+    drawAt,
+    firstPrizeTitle,
+    secondPrizeTitle,
+    thirdPrizeTitle,
+  };
+}
+
+function validateRaffleForm(values: ReturnType<typeof raffleFormValues>) {
+  if (
+    !values.title ||
+    values.minPurchaseAmountKopeks <= 0 ||
+    !values.firstPrizeTitle ||
+    !values.secondPrizeTitle ||
+    !values.thirdPrizeTitle
+  ) {
+    return "Заполните название, сумму покупки и все три приза";
   }
 
-  if (Number.isNaN(participationEndsAt.getTime()) || Number.isNaN(drawAt.getTime())) {
-    errorRedirect("/company/raffles", "Укажите дату окончания участия и дату розыгрыша");
+  if (Number.isNaN(values.participationEndsAt.getTime()) || Number.isNaN(values.drawAt.getTime())) {
+    return "Укажите дату окончания участия и дату розыгрыша";
   }
 
-  if (drawAt <= participationEndsAt) {
-    errorRedirect("/company/raffles", "Дата розыгрыша должна быть позже окончания участия");
+  if (values.drawAt <= values.participationEndsAt) {
+    return "Дата розыгрыша должна быть позже окончания участия";
+  }
+
+  return null;
+}
+
+export async function createCompanyRaffle(formData: FormData) {
+  const access = await requireCompanyAdmin();
+  const values = raffleFormValues(formData);
+  const error = validateRaffleForm(values);
+
+  if (error) {
+    errorRedirect("/company/raffles", error);
   }
 
   await getDb().companyRaffle.create({
     data: {
       companyId: access.companyId,
-      title,
-      minPurchaseAmountKopeks,
-      participationEndsAt,
-      drawAt,
-      firstPrizeTitle,
-      secondPrizeTitle,
-      thirdPrizeTitle,
+      ...values,
       status: RaffleStatus.ACTIVE,
     },
   });
@@ -1126,6 +1149,64 @@ export async function createCompanyRaffle(formData: FormData) {
   revalidatePath("/company");
   revalidatePath("/company/raffles");
   successRedirect("/company/raffles", "Розыгрыш создан и активен");
+}
+
+export async function updateCompanyRaffle(formData: FormData) {
+  const access = await requireCompanyAdmin();
+  const raffleId = text(formData, "raffleId");
+  const values = raffleFormValues(formData);
+  const error = validateRaffleForm(values);
+
+  if (error) {
+    errorRedirect("/company/raffles", error);
+  }
+
+  const raffle = await getDb().companyRaffle.findFirst({
+    where: { id: raffleId, companyId: access.companyId },
+    select: { id: true, status: true },
+  });
+
+  if (!raffle) {
+    errorRedirect("/company/raffles", "Розыгрыш не найден");
+  }
+
+  if (raffle.status === RaffleStatus.DRAWN) {
+    errorRedirect("/company/raffles", "Разыгранный розыгрыш нельзя редактировать");
+  }
+
+  await getDb().companyRaffle.update({
+    where: { id: raffle.id },
+    data: values,
+  });
+
+  revalidatePath("/company");
+  revalidatePath("/company/raffles");
+  successRedirect("/company/raffles", "Розыгрыш обновлён");
+}
+
+export async function deleteCompanyRaffle(formData: FormData) {
+  const access = await requireCompanyAdmin();
+  const raffleId = text(formData, "raffleId");
+  const raffle = await getDb().companyRaffle.findFirst({
+    where: { id: raffleId, companyId: access.companyId },
+    select: { id: true, status: true },
+  });
+
+  if (!raffle) {
+    errorRedirect("/company/raffles", "Розыгрыш не найден");
+  }
+
+  if (raffle.status === RaffleStatus.DRAWN) {
+    errorRedirect("/company/raffles", "Разыгранный розыгрыш нельзя удалить");
+  }
+
+  await getDb().companyRaffle.delete({
+    where: { id: raffle.id },
+  });
+
+  revalidatePath("/company");
+  revalidatePath("/company/raffles");
+  successRedirect("/company/raffles", "Розыгрыш удалён");
 }
 
 export async function drawCompanyRaffle(formData: FormData) {
