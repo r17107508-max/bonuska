@@ -1,7 +1,7 @@
 import Link from "next/link";
 import QRCode from "qrcode";
 import { CompanyUserRole, RaffleStatus } from "@prisma/client";
-import { Activity, BarChart3, Bell, CheckCircle2, ChevronDown, Clock3, Gift, QrCode, ScanLine, Settings, Trophy, UserPlus, Users } from "lucide-react";
+import { Activity, BarChart3, Bell, CheckCircle2, ChevronDown, Clock3, Gift, Lightbulb, MapPinned, QrCode, ScanLine, Settings, Trophy, UserPlus, Users } from "lucide-react";
 import { hideCompanyOnboardingChecklist } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { RegistrationQrPoster } from "@/components/registration-qr-poster";
@@ -78,6 +78,16 @@ export default async function CompanyDashboardPage() {
   ];
   const completedSteps = setupProgress.filter((item) => item.done).length;
   const showSetupChecklist = !access.company.onboardingChecklistHidden && completedSteps < setupProgress.length;
+  const recommendations = buildOwnerRecommendations({
+    clientsTotal,
+    staffTotal,
+    operationsMonth,
+    sleepingClients,
+    repeatRate,
+    activeRaffleTitle: activeRaffle?.title ?? null,
+    hasCoordinates: typeof access.company.latitude === "number" && typeof access.company.longitude === "number",
+    hasActiveAccess: active,
+  });
 
   if (isCashier) {
     return (
@@ -205,6 +215,27 @@ export default async function CompanyDashboardPage() {
         <Metric icon={<Users aria-hidden className="size-5" />} label="Повторных клиентов" value={`${repeatRate}%`} description={`${repeatClients} вернулись за покупкой`} />
         <Metric icon={<Clock3 aria-hidden className="size-5" />} label="Спящих клиентов" value={sleepingClients} description="не было покупок 30 дней" />
       </div>
+
+      <section className="panel mt-6 p-5">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+          <div>
+            <p className="text-sm font-semibold uppercase text-green-700">Что сделать дальше</p>
+            <h2 className="mt-1 text-2xl font-semibold text-[#2f1d13]">Рекомендации для роста</h2>
+            <p className="mt-2 text-sm leading-5 text-[#7b6a5b]">
+              Простые следующие шаги по текущим данным компании.
+            </p>
+          </div>
+          <span className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-amber-100 px-3 text-sm font-bold text-amber-900">
+            <Lightbulb aria-hidden className="size-4" />
+            {recommendations.length} совета
+          </span>
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          {recommendations.map((recommendation) => (
+            <RecommendationCard key={recommendation.title} recommendation={recommendation} />
+          ))}
+        </div>
+      </section>
 
       <div className="mt-6">
         <Action href="/company/scan" icon={<ScanLine aria-hidden className="size-6" />} title="Сканировать QR" text="Быстрый переход к начислению покупки или выдаче подарка." emphasis />
@@ -343,6 +374,163 @@ function Metric({
         <p className="mt-1 text-sm text-[#7b6a5b]">{description}</p>
       </div>
     </div>
+  );
+}
+
+type OwnerRecommendation = {
+  title: string;
+  text: string;
+  href: string;
+  action: string;
+  icon: React.ReactNode;
+  tone: "green" | "amber" | "blue";
+};
+
+function buildOwnerRecommendations({
+  clientsTotal,
+  staffTotal,
+  operationsMonth,
+  sleepingClients,
+  repeatRate,
+  activeRaffleTitle,
+  hasCoordinates,
+  hasActiveAccess,
+}: {
+  clientsTotal: number;
+  staffTotal: number;
+  operationsMonth: number;
+  sleepingClients: number;
+  repeatRate: number;
+  activeRaffleTitle: string | null;
+  hasCoordinates: boolean;
+  hasActiveAccess: boolean;
+}) {
+  const items: OwnerRecommendation[] = [];
+
+  if (!hasActiveAccess) {
+    items.push({
+      title: "Верните доступ кассирам",
+      text: "Подписка не активна. После оплаты сканер снова сможет начислять покупки и выдавать подарки.",
+      href: "/company/billing",
+      action: "Открыть оплату",
+      icon: <Bell aria-hidden className="size-5" />,
+      tone: "amber",
+    });
+  }
+
+  if (clientsTotal === 0) {
+    items.push({
+      title: "Поставьте QR на стойку",
+      text: "Первый клиент появится быстрее, если QR-плакат лежит рядом с кассой и понятна выгода.",
+      href: "/company/settings#registration-qr",
+      action: "Распечатать QR",
+      icon: <QrCode aria-hidden className="size-5" />,
+      tone: "green",
+    });
+  }
+
+  if (staffTotal <= 1) {
+    items.push({
+      title: "Добавьте кассира",
+      text: "Отдельный доступ кассира снижает риск ошибок и помогает видеть, кто проводил операции.",
+      href: "/company/staff",
+      action: "Добавить сотрудника",
+      icon: <UserPlus aria-hidden className="size-5" />,
+      tone: "blue",
+    });
+  }
+
+  if (operationsMonth === 0) {
+    items.push({
+      title: "Сделайте тестовое начисление",
+      text: "Проверьте рабочий сценарий: QR клиента, подтверждение покупки и обновление прогресса.",
+      href: "/company/scan",
+      action: "Открыть сканер",
+      icon: <ScanLine aria-hidden className="size-5" />,
+      tone: "green",
+    });
+  }
+
+  if (sleepingClients > 0) {
+    items.push({
+      title: "Верните спящих клиентов",
+      text: `${sleepingClients} клиентов давно не покупали. Посмотрите список и запустите ручное возвращение через привычный канал связи.`,
+      href: "/company/reports",
+      action: "Открыть отчёты",
+      icon: <Clock3 aria-hidden className="size-5" />,
+      tone: "amber",
+    });
+  }
+
+  if (clientsTotal >= 5 && repeatRate < 30) {
+    items.push({
+      title: "Усильте повторные покупки",
+      text: `Повторных клиентов сейчас ${repeatRate}%. Проверьте, достаточно ли заметна награда и понятны ли правила акции.`,
+      href: "/company/settings",
+      action: "Проверить акцию",
+      icon: <BarChart3 aria-hidden className="size-5" />,
+      tone: "blue",
+    });
+  }
+
+  if (!activeRaffleTitle && clientsTotal > 0) {
+    items.push({
+      title: "Добавьте повод вернуться",
+      text: "Розыгрыш по чекам помогает оживить базу без сложных кампаний и новой логики бонусов.",
+      href: "/company/raffles",
+      action: "Создать розыгрыш",
+      icon: <Trophy aria-hidden className="size-5" />,
+      tone: "amber",
+    });
+  }
+
+  if (!hasCoordinates) {
+    items.push({
+      title: "Укажите точку на карте",
+      text: "Координаты помогут клиентам найти компанию в разделе партнёров и построить маршрут.",
+      href: "/company/settings#map",
+      action: "Открыть настройки",
+      icon: <MapPinned aria-hidden className="size-5" />,
+      tone: "blue",
+    });
+  }
+
+  if (items.length === 0) {
+    items.push({
+      title: "Проверьте отчёты недели",
+      text: "Посмотрите активных, повторных и близких к подарку клиентов, чтобы выбрать следующую акцию.",
+      href: "/company/reports",
+      action: "Открыть отчёты",
+      icon: <BarChart3 aria-hidden className="size-5" />,
+      tone: "green",
+    });
+  }
+
+  return items.slice(0, 4);
+}
+
+function RecommendationCard({ recommendation }: { recommendation: OwnerRecommendation }) {
+  const styles = {
+    green: "bg-green-50 text-green-800",
+    amber: "bg-amber-100 text-amber-900",
+    blue: "bg-blue-50 text-blue-800",
+  };
+
+  return (
+    <Link href={recommendation.href} className="rounded-lg border border-amber-100 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-start gap-3">
+        <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${styles[recommendation.tone]}`}>
+          {recommendation.icon}
+        </div>
+        <div className="min-w-0">
+          <h3 className="font-semibold text-[#2f1d13]">{recommendation.title}</h3>
+          <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">{recommendation.text}</p>
+          <span className="mt-3 inline-flex min-h-9 items-center rounded-lg bg-green-700 px-3 text-sm font-bold text-white">
+            {recommendation.action}
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }
 
