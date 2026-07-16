@@ -7,7 +7,6 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { requireUser } from "@/lib/auth";
 import { getPartnerCities } from "@/lib/customer-app";
 import { getDb } from "@/lib/db";
-import { getSettings } from "@/lib/settings";
 
 export default async function AccountPage({
   searchParams,
@@ -15,12 +14,11 @@ export default async function AccountPage({
   searchParams: Promise<{ error?: string; success?: string }>;
 }) {
   const [currentUser, params] = await Promise.all([requireUser("/company/login"), searchParams]);
-  const [user, settings, cities] = await Promise.all([
+  const [user, cities] = await Promise.all([
     getDb().user.findUniqueOrThrow({
       where: { id: currentUser.id },
       select: { name: true, phone: true, email: true, city: true },
     }),
-    getSettings(),
     getPartnerCities(),
   ]);
 
@@ -120,13 +118,13 @@ export default async function AccountPage({
               <ShieldCheck aria-hidden className="size-5 text-teal-700" />
               Политика персональных данных
             </Link>
-            <a
-              href={`mailto:${settings.supportEmail}`}
+            <Link
+              href="/app/support"
               className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
             >
               <HelpCircle aria-hidden className="size-5 text-teal-700" />
               Поддержка
-            </a>
+            </Link>
           </div>
         </section>
 
