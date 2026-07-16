@@ -1,14 +1,15 @@
 import Link from "next/link";
-import { ExternalLink, Globe2, MapPinned, Phone, Star, Store } from "lucide-react";
+import { Filter, MapPinned, Store } from "lucide-react";
 import { ClientBrandHeader } from "@/components/client-brand-header";
+import { PartnersBrowser } from "@/components/partners-browser";
 import { PartnersMap } from "@/components/partners-map";
-import { getActivePartnerCompanies, getPartnerCities } from "@/lib/customer-app";
+import { getActivePartnerCompanies, getPartnerCategories, getPartnerCities } from "@/lib/customer-app";
 import { requireUser } from "@/lib/auth";
 
 export default async function PartnersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ city?: string }>;
+  searchParams: Promise<{ city?: string; category?: string }>;
 }) {
   const [user, params, cities] = await Promise.all([
     requireUser("/company/login"),
@@ -17,37 +18,49 @@ export default async function PartnersPage({
   ]);
   const myCity = user.city ?? "";
   const selectedCity = params.city?.trim() || myCity || cities[0] || "";
-  const partners = await getActivePartnerCompanies(selectedCity || null);
+  const categories = await getPartnerCategories(selectedCity || null);
+  const selectedCategory = categories.includes(params.category ?? "") ? params.category! : "";
+  const partners = await getActivePartnerCompanies(selectedCity || null, undefined, selectedCategory || null);
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 pb-28 pt-3">
+    <main className="min-h-screen bg-[#fff8ed] px-4 pb-28 pt-3">
       <section className="mx-auto max-w-md space-y-3">
         <ClientBrandHeader />
 
-        <section className="panel p-3.5">
+        <section className="warm-card p-4">
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
-              <Store aria-hidden className="size-5" />
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-800">
+              <Store aria-hidden className="size-6" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-slate-950">Карта точек</h1>
-              <p className="mt-0.5 text-sm leading-5 text-slate-600">Где работает ПроПлюшка.</p>
+              <p className="text-xs font-semibold uppercase text-green-800">Партнёры рядом</p>
+              <h1 className="mt-1 text-2xl font-bold text-[#2f1d13]">Карта точек</h1>
+              <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">Выберите место, посмотрите правила и постройте маршрут.</p>
             </div>
           </div>
         </section>
 
-        <section className="panel p-4">
-          <p className="text-xs font-semibold uppercase text-slate-500">Город</p>
-          <p className="mt-1 text-lg font-semibold text-slate-950">{selectedCity || "Не выбран"}</p>
+        <section className="warm-card p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+              <MapPinned aria-hidden className="size-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase text-[#7b6a5b]">Город</p>
+              <p className="mt-1 truncate text-lg font-semibold text-[#2f1d13]">{selectedCity || "Не выбран"}</p>
+            </div>
+          </div>
+
           <form className="mt-3 grid gap-3">
+            <input type="hidden" name="category" value={selectedCategory} />
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">Изменить город</span>
+              <span className="text-xs font-semibold uppercase text-[#7b6a5b]">Изменить город</span>
               <input
                 name="city"
                 list="partner-city-options"
                 defaultValue={selectedCity}
                 placeholder="Введите город"
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+                className="mt-1.5 min-h-11 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm text-[#2f1d13] outline-none transition focus:border-green-700 focus:ring-4 focus:ring-green-700/15"
               />
               <datalist id="partner-city-options">
                 {cities.map((city) => (
@@ -56,15 +69,36 @@ export default async function PartnersPage({
               </datalist>
             </label>
             <div className="grid grid-cols-2 gap-2">
-              <button className="min-h-10 rounded-lg bg-teal-700 px-4 text-sm font-semibold text-white">Показать</button>
+              <button className="min-h-11 rounded-lg bg-green-700 px-4 text-sm font-bold text-white">Показать</button>
               <Link
-                href={myCity ? `/app/partners?city=${encodeURIComponent(myCity)}` : "/app/account"}
-                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700"
+                href={myCity ? `/app/partners?city=${encodeURIComponent(myCity)}${selectedCategory ? `&category=${encodeURIComponent(selectedCategory)}` : ""}` : "/app/account"}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-amber-100 bg-white px-4 text-sm font-bold text-[#5c3521]"
               >
                 Мой город
               </Link>
             </div>
           </form>
+        </section>
+
+        <section className="warm-card p-3">
+          <div className="mb-3 flex items-center gap-2 px-1 text-sm font-bold text-[#2f1d13]">
+            <Filter aria-hidden className="size-4 text-green-800" />
+            Категории
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <CategoryLink active={!selectedCategory} href={`/app/partners?city=${encodeURIComponent(selectedCity)}`}>
+              Все
+            </CategoryLink>
+            {categories.map((category) => (
+              <CategoryLink
+                key={category}
+                active={selectedCategory === category}
+                href={`/app/partners?city=${encodeURIComponent(selectedCity)}&category=${encodeURIComponent(category)}`}
+              >
+                {category}
+              </CategoryLink>
+            ))}
+          </div>
         </section>
 
         <PartnersMap
@@ -81,116 +115,41 @@ export default async function PartnersPage({
           }))}
         />
 
-        <section className="space-y-2.5">
-          {partners.map((company) => {
-            const address = [company.city, company.address].filter(Boolean).join(", ");
-            const routeHref = address ? `https://yandex.ru/maps/?text=${encodeURIComponent(address)}` : "";
-            const promoText = company.loyaltyProgram?.rewardDescription || `${company.loyaltyProgram?.goalCount ?? 6} покупок — подарок`;
-            const website = company.website?.trim();
-            const phoneHref = company.ownerPhone ? `tel:${company.ownerPhone.replace(/[^\d+]/g, "")}` : "";
-
-            return (
-              <article key={company.id} className="panel overflow-hidden">
-                <Link href={`/app/companies/${company.slug}`} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
-                  <span className="flex min-w-0 items-center gap-3">
-                    {company.logoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={company.logoUrl} alt="" className="size-10 shrink-0 rounded-lg border border-slate-200 bg-white object-cover" />
-                    ) : (
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-lg">
-                        {company.loyaltyProgram?.icon ?? company.icon}
-                      </span>
-                    )}
-                    <span className="min-w-0">
-                      <span className="block truncate text-base font-semibold text-slate-950">{company.name}</span>
-                      <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-amber-700">
-                        <Star aria-hidden className="size-3.5 fill-current" />
-                        {company.reviewCount > 0 ? `${company.ratingAverage?.toFixed(1)} · ${company.reviewCount} отзывов` : "Нет отзывов"}
-                      </span>
-                    </span>
-                  </span>
-                  <ExternalLink aria-hidden className="size-4 shrink-0 text-slate-400" />
-                </Link>
-
-                <div className="border-t border-slate-100 px-4 pb-4 pt-3">
-                  <p className="text-sm font-semibold text-slate-800">{promoText}</p>
-                  {company.description && <p className="mt-1 text-sm leading-5 text-slate-600">{company.description}</p>}
-
-                  <div className="mt-3 space-y-2 text-sm text-slate-700">
-                    {address && (
-                      <p className="flex gap-2">
-                        <MapPinned aria-hidden className="mt-0.5 size-4 shrink-0 text-teal-700" />
-                        <span>{address}</span>
-                      </p>
-                    )}
-                    {website && (
-                      <p className="flex gap-2">
-                        <Globe2 aria-hidden className="mt-0.5 size-4 shrink-0 text-teal-700" />
-                        <span className="break-all">{website.replace(/^https?:\/\//i, "")}</span>
-                      </p>
-                    )}
-                    {company.ownerPhone && (
-                      <p className="flex gap-2">
-                        <Phone aria-hidden className="mt-0.5 size-4 shrink-0 text-teal-700" />
-                        <span>{company.ownerPhone}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    {phoneHref ? (
-                      <a href={phoneHref} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-teal-700 px-3 text-sm font-semibold text-white">
-                        <Phone aria-hidden className="size-4" />
-                        Позвонить
-                      </a>
-                    ) : (
-                      <Link href={`/app/companies/${company.slug}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-teal-700 px-3 text-sm font-semibold text-white">
-                        <ExternalLink aria-hidden className="size-4" />
-                        Открыть
-                      </Link>
-                    )}
-                    {website ? (
-                      <a
-                        href={website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700"
-                      >
-                        <Globe2 aria-hidden className="size-4" />
-                        Сайт
-                      </a>
-                    ) : routeHref ? (
-                      <a
-                        href={routeHref}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700"
-                      >
-                        <MapPinned aria-hidden className="size-4" />
-                        Маршрут
-                      </a>
-                    ) : (
-                      <Link
-                        href={`/app/companies/${company.slug}`}
-                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700"
-                      >
-                        <ExternalLink aria-hidden className="size-4" />
-                        Карточка
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-
-          {partners.length === 0 && (
-            <div className="panel p-4 text-sm leading-5 text-slate-600">
-              В этом городе пока нет партнёров.
-            </div>
-          )}
-        </section>
+        <PartnersBrowser
+          partners={partners.map((company) => ({
+            id: company.id,
+            name: company.name,
+            slug: company.slug,
+            description: company.description,
+            businessType: company.businessType,
+            city: company.city,
+            address: company.address,
+            website: company.website,
+            ownerPhone: company.ownerPhone,
+            logoUrl: company.logoUrl,
+            icon: company.icon,
+            programIcon: company.loyaltyProgram?.icon ?? null,
+            promoText: company.loyaltyProgram?.rewardDescription || `${company.loyaltyProgram?.goalCount ?? 6} покупок - подарок`,
+            latitude: company.latitude,
+            longitude: company.longitude,
+            ratingAverage: company.ratingAverage,
+            reviewCount: company.reviewCount,
+          }))}
+        />
       </section>
     </main>
+  );
+}
+
+function CategoryLink({ active, href, children }: { active: boolean; href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex min-h-10 max-w-48 shrink-0 items-center rounded-lg px-4 text-sm font-bold ${
+        active ? "bg-green-700 text-white" : "border border-amber-100 bg-white/80 text-[#5c3521]"
+      }`}
+    >
+      <span className="truncate">{children}</span>
+    </Link>
   );
 }

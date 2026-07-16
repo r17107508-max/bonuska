@@ -4,8 +4,10 @@ import { getActivePartnerCompanies } from "@/lib/customer-app";
 
 export async function GET(request: Request) {
   const user = await requireUser();
-  const city = new URL(request.url).searchParams.get("city")?.trim() || user.city || null;
-  const partners = await getActivePartnerCompanies(city, 50);
+  const searchParams = new URL(request.url).searchParams;
+  const city = searchParams.get("city")?.trim() || user.city || null;
+  const category = searchParams.get("category")?.trim() || null;
+  const partners = await getActivePartnerCompanies(city, 50, category);
 
   return ok({ partners });
 }

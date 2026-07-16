@@ -88,12 +88,13 @@ export async function getClientDashboardMemberships(userId: string) {
   });
 }
 
-export async function getActivePartnerCompanies(city?: string | null, take?: number) {
+export async function getActivePartnerCompanies(city?: string | null, take?: number, businessType?: string | null) {
   const where = {
     isBlocked: false,
     status: { in: [CompanyStatus.ACTIVE_TRIAL, CompanyStatus.ACTIVE_PAID] },
     loyaltyProgram: { isNot: null },
     ...(city ? { city: { equals: city } } : {}),
+    ...(businessType ? { businessType: { equals: businessType } } : {}),
   } satisfies Prisma.CompanyWhereInput;
 
   const candidates = await getDb().company.findMany({
@@ -128,4 +129,9 @@ export async function getActivePartnerCompanies(city?: string | null, take?: num
 export async function getPartnerCities() {
   const companies = await getActivePartnerCompanies();
   return Array.from(new Set(companies.map((company) => company.city).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ru"));
+}
+
+export async function getPartnerCategories(city?: string | null) {
+  const companies = await getActivePartnerCompanies(city || null);
+  return Array.from(new Set(companies.map((company) => company.businessType).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ru"));
 }
