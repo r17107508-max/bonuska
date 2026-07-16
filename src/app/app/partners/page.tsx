@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ChevronDown, ExternalLink, Globe2, MapPinned, Phone, Store } from "lucide-react";
+import { ExternalLink, Globe2, MapPinned, Phone, Star, Store } from "lucide-react";
 import { ClientBrandHeader } from "@/components/client-brand-header";
+import { PartnersMap } from "@/components/partners-map";
 import { getActivePartnerCompanies, getPartnerCities } from "@/lib/customer-app";
 import { requireUser } from "@/lib/auth";
 
@@ -29,8 +30,8 @@ export default async function PartnersPage({
               <Store aria-hidden className="size-5" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-slate-950">Партнёры</h1>
-              <p className="mt-0.5 text-sm leading-5 text-slate-600">Компании рядом.</p>
+              <h1 className="text-xl font-semibold text-slate-950">Карта точек</h1>
+              <p className="mt-0.5 text-sm leading-5 text-slate-600">Где работает ПроПлюшка.</p>
             </div>
           </div>
         </section>
@@ -66,6 +67,20 @@ export default async function PartnersPage({
           </form>
         </section>
 
+        <PartnersMap
+          points={partners.map((company) => ({
+            id: company.id,
+            name: company.name,
+            slug: company.slug,
+            city: company.city,
+            address: company.address,
+            latitude: company.latitude,
+            longitude: company.longitude,
+            ratingAverage: company.ratingAverage,
+            reviewCount: company.reviewCount,
+          }))}
+        />
+
         <section className="space-y-2.5">
           {partners.map((company) => {
             const address = [company.city, company.address].filter(Boolean).join(", ");
@@ -75,21 +90,27 @@ export default async function PartnersPage({
             const phoneHref = company.ownerPhone ? `tel:${company.ownerPhone.replace(/[^\d+]/g, "")}` : "";
 
             return (
-              <details key={company.id} className="panel group overflow-hidden">
-                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+              <article key={company.id} className="panel overflow-hidden">
+                <Link href={`/app/companies/${company.slug}`} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
                   <span className="flex min-w-0 items-center gap-3">
                     {company.logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={company.logoUrl} alt="" className="size-9 shrink-0 rounded-lg border border-slate-200 bg-white object-cover" />
+                      <img src={company.logoUrl} alt="" className="size-10 shrink-0 rounded-lg border border-slate-200 bg-white object-cover" />
                     ) : (
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-lg">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-lg">
                         {company.loyaltyProgram?.icon ?? company.icon}
                       </span>
                     )}
-                    <span className="min-w-0 truncate text-base font-semibold text-slate-950">{company.name}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-base font-semibold text-slate-950">{company.name}</span>
+                      <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-amber-700">
+                        <Star aria-hidden className="size-3.5 fill-current" />
+                        {company.reviewCount > 0 ? `${company.ratingAverage?.toFixed(1)} · ${company.reviewCount} отзывов` : "Нет отзывов"}
+                      </span>
+                    </span>
                   </span>
-                  <ChevronDown aria-hidden className="size-4 shrink-0 text-slate-400 transition group-open:rotate-180" />
-                </summary>
+                  <ExternalLink aria-hidden className="size-4 shrink-0 text-slate-400" />
+                </Link>
 
                 <div className="border-t border-slate-100 px-4 pb-4 pt-3">
                   <p className="text-sm font-semibold text-slate-800">{promoText}</p>
@@ -123,7 +144,7 @@ export default async function PartnersPage({
                         Позвонить
                       </a>
                     ) : (
-                      <Link href={`/c/${company.slug}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-teal-700 px-3 text-sm font-semibold text-white">
+                      <Link href={`/app/companies/${company.slug}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-teal-700 px-3 text-sm font-semibold text-white">
                         <ExternalLink aria-hidden className="size-4" />
                         Открыть
                       </Link>
@@ -150,16 +171,16 @@ export default async function PartnersPage({
                       </a>
                     ) : (
                       <Link
-                        href={`/c/${company.slug}`}
+                        href={`/app/companies/${company.slug}`}
                         className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700"
                       >
                         <ExternalLink aria-hidden className="size-4" />
-                        Карта
+                        Карточка
                       </Link>
                     )}
                   </div>
                 </div>
-              </details>
+              </article>
             );
           })}
 

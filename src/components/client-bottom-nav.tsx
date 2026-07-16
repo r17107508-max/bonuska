@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
-import { Clock3, Store, UserRound, WalletCards } from "lucide-react";
+import { Clock3, MapPinned, UserRound, WalletCards } from "lucide-react";
 
 const items = [
   { href: "/app/cards", label: "Мои карты", icon: WalletCards },
-  { href: "/app/partners", label: "Партнёры", icon: Store },
+  { href: "/app/partners", label: "Карта", icon: MapPinned },
   { href: "/app/history", label: "История", icon: Clock3 },
   { href: "/app/account", label: "Аккаунт", icon: UserRound },
 ];

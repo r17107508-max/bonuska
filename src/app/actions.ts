@@ -21,6 +21,7 @@ import {
   requireSuperadmin,
 } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { enforceCompanyRatingStatus } from "@/lib/company-reviews";
 import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, phoneLookupValues, slugify } from "@/lib/format";
 import {
   addPurchase,
@@ -44,6 +45,13 @@ function text(formData: FormData, name: string) {
 function numberValue(formData: FormData, name: string, fallback: number) {
   const value = Number(text(formData, name));
   return Number.isFinite(value) ? value : fallback;
+}
+
+function optionalNumber(formData: FormData, name: string) {
+  const raw = text(formData, name).replace(",", ".");
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
 }
 
 function optionalUrl(formData: FormData, name: string) {
@@ -575,6 +583,8 @@ export async function unblockCompany(formData: FormData) {
     data: {
       status: CompanyStatus.PAYMENT_REQUIRED,
       isBlocked: false,
+      ratingLowSince: null,
+      ratingBlockedAt: null,
       auditLogs: { create: { actorUserId: admin.id, action: "COMPANY_UNBLOCKED", entityType: "Company", entityId: companyId } },
     },
   });
@@ -722,6 +732,8 @@ export async function saveCompanySettings(formData: FormData) {
         address: text(formData, "address"),
         website: optionalUrl(formData, "website"),
         logoUrl: optionalUrl(formData, "logoUrl"),
+        latitude: optionalNumber(formData, "latitude"),
+        longitude: optionalNumber(formData, "longitude"),
         ownerPhone: text(formData, "phone") || access.company.ownerPhone,
         loyaltyProgram: {
           upsert: {
@@ -765,6 +777,54 @@ export async function saveCompanySettings(formData: FormData) {
   });
 
   redirect("/company/settings?success=1");
+}
+
+export async function submitCompanyReview(formData: FormData) {
+  const user = await requireUser("/app");
+  const slug = text(formData, "slug");
+  const rating = Math.min(5, Math.max(1, Math.round(numberValue(formData, "rating", 0))));
+  const reviewText = text(formData, "text");
+
+  if (!slug || rating < 1 || rating > 5) {
+    errorRedirect("/app/partners", "Поставьте оценку от 1 до 5");
+  }
+
+  const company = await getDb().company.findUnique({
+    where: { slug },
+    select: { id: true, slug: true, status: true },
+  });
+
+  if (!company || company.status === CompanyStatus.DELETED) {
+    errorRedirect("/app/partners", "Компания не найдена");
+  }
+
+  const membership = await getDb().customerMembership.findFirst({
+    where: { companyId: company.id, userId: user.id },
+    select: { id: true },
+  });
+
+  if (!membership) {
+    errorRedirect(`/app/companies/${company.slug}`, "Оставить отзыв могут клиенты этой точки");
+  }
+
+  await getDb().companyReview.upsert({
+    where: { companyId_userId: { companyId: company.id, userId: user.id } },
+    update: {
+      rating,
+      text: reviewText || null,
+    },
+    create: {
+      companyId: company.id,
+      userId: user.id,
+      rating,
+      text: reviewText || null,
+    },
+  });
+
+  await enforceCompanyRatingStatus(company.id);
+  revalidatePath("/app/partners");
+  revalidatePath(`/app/companies/${company.slug}`);
+  redirect(`/app/companies/${company.slug}?success=review`);
 }
 
 export async function createStaff(formData: FormData) {

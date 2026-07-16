@@ -5,6 +5,7 @@ import { AdminShell, superadminNav } from "@/components/admin-shell";
 import { InlineSubmit } from "@/components/buttons";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { requireSuperadmin } from "@/lib/auth";
+import { getCompanyRatingSummary } from "@/lib/company-reviews";
 import { getDb } from "@/lib/db";
 import { daysLeft, formatDate, formatDateTime, money, statusClass, statusLabel } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
@@ -20,7 +21,7 @@ export default async function SuperadminCompanyPage({
 }) {
   await requireSuperadmin();
   const { id } = await params;
-  const [company, settings, suspiciousLogs] = await Promise.all([
+  const [company, settings, suspiciousLogs, ratingSummary] = await Promise.all([
     getDb().company.findUnique({
       where: { id },
       include: {
@@ -43,6 +44,7 @@ export default async function SuperadminCompanyPage({
       orderBy: { createdAt: "desc" },
       take: 10,
     }),
+    getCompanyRatingSummary(id),
   ]);
 
   if (!company) {
@@ -75,6 +77,9 @@ export default async function SuperadminCompanyPage({
             <Info label="Удалена" value={formatDateTime(company.deletedAt)} />
             <Info label="Клиентов" value={String(company.memberships.length)} />
             <Info label="Операций" value={String(company.transactions.length)} />
+            <Info label="Рейтинг" value={ratingSummary.reviewCount > 0 ? `${ratingSummary.ratingAverage} · ${ratingSummary.reviewCount} отзывов` : "нет отзывов"} />
+            <Info label="Низкий рейтинг с" value={formatDateTime(company.ratingLowSince)} />
+            <Info label="Блокировка по рейтингу" value={formatDateTime(company.ratingBlockedAt)} />
             <Info label="Slug" value={`/c/${company.slug}`} />
           </div>
 

@@ -8,7 +8,13 @@ export async function PATCH(_request: Request, { params }: { params: Promise<{ i
   const { id } = await params;
   const company = await getDb().company.update({
     where: { id },
-    data: { status: CompanyStatus.PAYMENT_REQUIRED, isBlocked: false, auditLogs: { create: { actorUserId: user!.id, action: "COMPANY_UNBLOCKED_API", entityType: "Company", entityId: id } } },
+    data: {
+      status: CompanyStatus.PAYMENT_REQUIRED,
+      isBlocked: false,
+      ratingLowSince: null,
+      ratingBlockedAt: null,
+      auditLogs: { create: { actorUserId: user!.id, action: "COMPANY_UNBLOCKED_API", entityType: "Company", entityId: id } },
+    },
   });
   return ok({ company });
 }

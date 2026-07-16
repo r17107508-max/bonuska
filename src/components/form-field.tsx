@@ -6,6 +6,7 @@ export function FormField({
   placeholder,
   defaultValue,
   required = true,
+  step,
 }: {
   label: string;
   name: string;
@@ -14,6 +15,7 @@ export function FormField({
   placeholder?: string;
   defaultValue?: string | number | null;
   required?: boolean;
+  step?: string;
 }) {
   return (
     <label className="block">
@@ -25,6 +27,7 @@ export function FormField({
         placeholder={placeholder}
         defaultValue={defaultValue ?? ""}
         required={required}
+        step={step}
         className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
       />
     </label>

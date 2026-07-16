@@ -94,6 +94,8 @@ async function main() {
       businessType: "Кофейня",
       city: "Ульяновск",
       address: "Тестовая точка",
+      latitude: 54.3142,
+      longitude: 48.4031,
       ownerName: "Админ ТЕГА",
       ownerPhone: companyAdmin.phone,
       ownerEmail: companyAdmin.email ?? "owner@tega.local",
@@ -110,6 +112,8 @@ async function main() {
       businessType: "Кофейня",
       city: "Ульяновск",
       address: "Тестовая точка",
+      latitude: 54.3142,
+      longitude: 48.4031,
       ownerName: "Админ ТЕГА",
       ownerPhone: companyAdmin.phone,
       ownerEmail: companyAdmin.email ?? "owner@tega.local",
@@ -163,6 +167,20 @@ async function main() {
       qrToken: randomUUID(),
       currentCount: 3,
       totalPurchases: 3,
+    },
+  });
+
+  await prisma.companyReview.upsert({
+    where: { companyId_userId: { companyId: company.id, userId: client.id } },
+    update: {
+      rating: 5,
+      text: "Удобная карта, быстро начисляют покупки.",
+    },
+    create: {
+      companyId: company.id,
+      userId: client.id,
+      rating: 5,
+      text: "Удобная карта, быстро начисляют покупки.",
     },
   });
 

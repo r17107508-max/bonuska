@@ -104,6 +104,8 @@ export default async function CompanySettingsPage({
             <FormField label="Адрес" name="address" defaultValue={access.company.address} required={false} />
             <FormField label="Сайт" name="website" defaultValue={access.company.website} required={false} placeholder="example.ru" />
             <FormField label="Изображение / логотип" name="logoUrl" defaultValue={access.company.logoUrl} required={false} placeholder="https://..." />
+            <FormField label="Широта для карты" name="latitude" type="number" step="any" defaultValue={access.company.latitude} required={false} placeholder="54.3142" />
+            <FormField label="Долгота для карты" name="longitude" type="number" step="any" defaultValue={access.company.longitude} required={false} placeholder="48.4031" />
           </div>
           <div className="mt-4">
             <TextAreaField label="Короткое описание точки" name="description" defaultValue={access.company.description} rows={2} required={false} />

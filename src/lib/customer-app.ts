@@ -1,5 +1,6 @@
 import { CompanyStatus, Prisma } from "@prisma/client";
 import { getDb } from "@/lib/db";
+import { enforceCompaniesRatingStatus, getCompanyRatingSummaries } from "@/lib/company-reviews";
 import { hasActiveAccess } from "@/lib/loyalty";
 
 export type ClientMembership = Prisma.CustomerMembershipGetPayload<{
@@ -88,19 +89,40 @@ export async function getClientDashboardMemberships(userId: string) {
 }
 
 export async function getActivePartnerCompanies(city?: string | null, take?: number) {
+  const where = {
+    isBlocked: false,
+    status: { in: [CompanyStatus.ACTIVE_TRIAL, CompanyStatus.ACTIVE_PAID] },
+    loyaltyProgram: { isNot: null },
+    ...(city ? { city: { equals: city } } : {}),
+  } satisfies Prisma.CompanyWhereInput;
+
+  const candidates = await getDb().company.findMany({
+    where,
+    select: { id: true },
+    ...(take ? { take } : {}),
+  });
+  await enforceCompaniesRatingStatus(candidates.map((company) => company.id));
+
   const companies = await getDb().company.findMany({
     where: {
-      isBlocked: false,
-      status: { in: [CompanyStatus.ACTIVE_TRIAL, CompanyStatus.ACTIVE_PAID] },
-      loyaltyProgram: { isNot: null },
-      ...(city ? { city: { equals: city } } : {}),
+      ...where,
     },
     include: { loyaltyProgram: true },
     orderBy: [{ city: "asc" }, { name: "asc" }],
     ...(take ? { take } : {}),
   });
+  const summaries = await getCompanyRatingSummaries(companies.map((company) => company.id));
 
-  return companies.filter((company) => hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil));
+  return companies
+    .filter((company) => hasActiveAccess(company.status, company.trialEndsAt, company.paidUntil))
+    .map((company) => {
+      const summary = summaries.get(company.id);
+      return {
+        ...company,
+        ratingAverage: summary?.ratingAverage ?? null,
+        reviewCount: summary?.reviewCount ?? 0,
+      };
+    });
 }
 
 export async function getPartnerCities() {

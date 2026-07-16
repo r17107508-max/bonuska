@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppSplash } from "@/components/app-splash";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
