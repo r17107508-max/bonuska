@@ -9,7 +9,7 @@ import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { formatDateTime, statusLabel } from "@/lib/format";
+import { formatDateTime, phoneLookupValues, statusLabel } from "@/lib/format";
 import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
 import { formatKopeks, getActiveCompanyRaffle } from "@/lib/raffles";
 
@@ -30,6 +30,7 @@ export default async function CompanyScanPage({
   const activeRaffle = active ? await getActiveCompanyRaffle(access.companyId) : null;
   const isCashier = access.role === CompanyUserRole.CASHIER;
   const q = params.q?.trim() ?? "";
+  const phoneValues = phoneLookupValues(q);
   const manualMatches = q
     ? await getDb().customerMembership.findMany({
         where: {
@@ -37,6 +38,7 @@ export default async function CompanyScanPage({
           user: {
             OR: [
               { name: { contains: q } },
+              { phone: { in: phoneValues } },
               { phone: { contains: q.replace(/\D/g, "") || q } },
             ],
           },
@@ -228,14 +230,14 @@ export default async function CompanyScanPage({
           <div className="warm-card p-5">
             <h2 className="text-xl font-semibold text-[var(--text)]">Ручной поиск клиента</h2>
             <p className="mt-2 text-sm text-[var(--text-muted)]">Если камера не сработала, найдите клиента по имени или телефону внутри вашей компании.</p>
-            <form className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <form action="/company/scan" method="get" className="mt-4 flex flex-col gap-3 sm:flex-row">
               <input
                 name="q"
                 defaultValue={q}
                 placeholder="Имя или телефон"
                 className="min-h-11 flex-1 rounded-lg border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
               />
-              <button className="min-h-11 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">Найти</button>
+              <button type="submit" className="min-h-11 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">Найти</button>
             </form>
             {q && (
               <div className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">

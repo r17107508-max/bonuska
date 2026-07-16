@@ -1,17 +1,18 @@
 import Link from "next/link";
-import { AdminShell, companyNav } from "@/components/admin-shell";
-import { requireCompanyAdmin } from "@/lib/auth";
+import { AdminShell, companyNavForRole } from "@/components/admin-shell";
+import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, phoneLookupValues } from "@/lib/format";
 
 export default async function CompanyClientsPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const access = await requireCompanyAdmin();
+  const access = await requireCompanyUser();
   const params = await searchParams;
   const q = params.q?.trim();
+  const phoneValues = phoneLookupValues(q ?? "");
   const clients = await getDb().customerMembership.findMany({
     where: {
       companyId: access.companyId,
@@ -20,7 +21,8 @@ export default async function CompanyClientsPage({
             user: {
               OR: [
                 { name: { contains: q } },
-                { phone: { contains: q.replace(/\D/g, "") } },
+                { phone: { in: phoneValues } },
+                { phone: { contains: q.replace(/\D/g, "") || q } },
               ],
             },
           }
@@ -35,10 +37,10 @@ export default async function CompanyClientsPage({
   });
 
   return (
-    <AdminShell title="Клиенты" subtitle="Поиск по имени или телефону, прогресс и последняя операция." nav={companyNav}>
-      <form className="mb-5 flex gap-3">
+    <AdminShell title="Клиенты" subtitle="Поиск по имени или телефону, прогресс и последняя операция." nav={companyNavForRole(access.role)}>
+      <form action="/company/clients" method="get" className="mb-5 flex gap-3">
         <input name="q" defaultValue={q ?? ""} placeholder="Имя или телефон" className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 outline-none focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]" />
-        <button className="rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">Найти</button>
+        <button type="submit" className="rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">Найти</button>
       </form>
       <div className="panel overflow-hidden">
         <div className="overflow-x-auto">

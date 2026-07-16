@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LogOut, ScanLine } from "lucide-react";
+import { Home, LogOut, ScanLine, Users } from "lucide-react";
 import { logout } from "@/app/actions";
 
 const navItems = [
   { href: "/company", label: "Панель", icon: Home, primary: false },
   { href: "/company/scan", label: "Сканер", icon: ScanLine, primary: true },
+  { href: "/company/clients", label: "Клиенты", icon: Users, primary: false },
 ] as const;
 
 export function CashierBottomNav() {
@@ -21,7 +22,7 @@ export function CashierBottomNav() {
         className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--border)] bg-white/95 px-3 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-16px_40px_rgba(25,25,25,0.1)] backdrop-blur lg:hidden"
         aria-label="Навигация кассира"
       >
-        <div className="mx-auto grid max-w-xl grid-cols-3 items-end gap-2">
+        <div className="mx-auto grid max-w-xl grid-cols-4 items-end gap-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.href === "/company" ? pathname === item.href : pathname.startsWith(item.href);

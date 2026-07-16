@@ -134,6 +134,7 @@ export const companyNav = [
 export const cashierCompanyNav = [
   { href: "/company", label: "Панель" },
   { href: "/company/scan", label: "Сканер" },
+  { href: "/company/clients", label: "Клиенты" },
 ];
 
 export function companyNavForRole(role: CompanyUserRole) {
