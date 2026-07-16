@@ -119,26 +119,26 @@ export function SuperadminNotifications({ pendingCount }: { pendingCount: number
     <section className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
             {permission === "granted" ? <BellRing aria-hidden className="size-5" /> : <Bell aria-hidden className="size-5" />}
           </div>
           <div>
             <p className="font-semibold text-slate-950">Уведомления супер-админа</p>
             <p className="mt-1 text-sm text-slate-600">{statusText}</p>
             <p className="mt-1 text-sm text-slate-600">Заявок на проверку сейчас: {pendingCount}</p>
-            {message && <p className="mt-2 text-sm font-semibold text-teal-800">{message}</p>}
+            {message && <p className="mt-2 text-sm font-semibold text-[var(--brand-ink)]">{message}</p>}
           </div>
         </div>
         {permission === "default" ? (
           <button
             type="button"
             onClick={enableNotifications}
-            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-4 text-sm font-semibold text-white"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white"
           >
             Включить уведомления
           </button>
         ) : (
-          <Link href="/superadmin/companies?status=PENDING" className="text-sm font-semibold text-teal-700">
+          <Link href="/superadmin/companies?status=PENDING" className="text-sm font-semibold text-[var(--brand)]">
             Открыть заявки
           </Link>
         )}

@@ -14,7 +14,7 @@ export default async function OfferPage() {
           <BrandMark />
         </Link>
         <section className="panel mt-8 p-6">
-          <p className="badge bg-amber-100 text-amber-900">Версия {settings.offerVersion}</p>
+          <p className="badge bg-[rgba(255,200,87,0.25)] text-[#7a4b00]">Версия {settings.offerVersion}</p>
           <h1 className="mt-4 text-4xl font-semibold text-slate-950">Договор-оферта</h1>
           <div className="prose prose-slate mt-6 max-w-none whitespace-pre-wrap leading-7 text-slate-700">
             {settings.offerText}

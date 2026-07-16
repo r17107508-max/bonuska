@@ -18,7 +18,7 @@ export function CustomerLevelProgress({
     <section className={`panel ${compact ? "p-4" : "p-5"}`}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase text-teal-700">Ваш уровень</p>
+          <p className="text-sm font-semibold uppercase text-[var(--brand)]">Ваш уровень</p>
           <h2 className={`${compact ? "text-xl" : "text-2xl"} mt-1 font-semibold text-slate-950`}>
             {current ? `${current.name} ${current.icon ?? ""}` : "Уровень не настроен"}
           </h2>
@@ -34,7 +34,7 @@ export function CustomerLevelProgress({
       </div>
 
       {current?.benefit && (
-        <div className="mt-4 rounded-lg bg-teal-50 p-3 text-sm text-teal-950">
+        <div className="mt-4 rounded-lg bg-[var(--brand-soft)] p-3 text-sm text-[var(--brand-ink)]">
           <p className="font-semibold">Привилегия уровня</p>
           <p className="mt-1">{current.benefit}</p>
         </div>
@@ -45,12 +45,12 @@ export function CustomerLevelProgress({
           <span className="font-semibold text-slate-700">
             {next ? `До уровня ${next.name}${next.icon ? ` ${next.icon}` : ""} осталось` : "Максимальный уровень"}
           </span>
-          <span className="font-semibold text-teal-700">
+          <span className="font-semibold text-[var(--brand)]">
             {next ? `${progress.remainingToNext} покупок` : "100%"}
           </span>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full rounded-full bg-teal-700" style={{ width: `${progress.progressPercent}%` }} />
+          <div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${progress.progressPercent}%` }} />
         </div>
       </div>
 
@@ -70,7 +70,7 @@ export function CustomerLevelProgress({
               key={level.id}
               className={`flex items-center gap-3 rounded-lg border p-3 text-sm ${
                 isCurrent
-                  ? "border-teal-300 bg-teal-50 text-teal-950"
+                  ? "border-[rgba(255,106,61,0.28)] bg-[var(--brand-soft)] text-[var(--brand-ink)]"
                   : isPassed
                     ? "border-emerald-200 bg-emerald-50 text-emerald-950"
                     : "border-slate-200 bg-slate-50 text-slate-500"
@@ -83,7 +83,7 @@ export function CustomerLevelProgress({
                 <span className="block font-semibold">{level.name}</span>
                 <span className="block text-xs">от {level.minPurchases} покупок</span>
               </span>
-              {isCurrent && <span className="rounded-full bg-teal-700 px-2.5 py-1 text-xs font-bold text-white">текущий</span>}
+              {isCurrent && <span className="rounded-full bg-[var(--brand)] px-2.5 py-1 text-xs font-bold text-white">текущий</span>}
             </div>
           );
         })}

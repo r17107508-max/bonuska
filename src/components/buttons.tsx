@@ -22,7 +22,7 @@ export function ButtonLink({
       href={href}
       className={clsx(
         base,
-        variant === "primary" && "bg-teal-700 text-white shadow-sm hover:bg-teal-800",
+        variant === "primary" && "bg-[var(--brand)] text-white shadow-sm hover:bg-[var(--brand-strong)]",
         variant === "secondary" && "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50",
         variant === "ghost" && "text-slate-700 hover:bg-slate-100",
       )}
@@ -49,7 +49,7 @@ export function SubmitButton({
       disabled={pending}
       className={clsx(
         base,
-        variant === "primary" && "w-full bg-teal-700 text-white shadow-sm hover:bg-teal-800",
+        variant === "primary" && "w-full bg-[var(--brand)] text-white shadow-sm hover:bg-[var(--brand-strong)]",
         variant === "secondary" && "w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50",
         variant === "danger" && "w-full bg-red-700 text-white shadow-sm hover:bg-red-800",
       )}
@@ -79,7 +79,7 @@ export function InlineSubmit({
       onClick={confirmAction}
       className={clsx(
         base,
-        variant === "primary" && "bg-teal-700 text-white hover:bg-teal-800",
+        variant === "primary" && "bg-[var(--brand)] text-white hover:bg-[var(--brand-strong)]",
         variant === "secondary" && "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50",
         variant === "danger" && "bg-red-700 text-white hover:bg-red-800",
       )}

@@ -101,15 +101,15 @@ export function HomeScenarios({
   const isBusiness = scenario === "business";
 
   return (
-    <main className="min-h-screen bg-[#fff8ed] pb-24 text-[#2f1d13] md:pb-0">
+    <main className="min-h-screen bg-[var(--background)] pb-24 text-[var(--text)] md:pb-0">
       <header className="page-shell flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/" className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-lg bg-amber-600 text-white shadow-sm">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-[var(--brand)] text-white shadow-sm">
             <Gift aria-hidden className="size-5" />
           </span>
           <span>
-            <span className="block text-xl font-semibold text-[#2f1d13]">ПроПлюшка</span>
-            <span className="block text-xs font-semibold text-[#7b6a5b]">QR-лояльность для малого бизнеса</span>
+            <span className="block text-xl font-semibold text-[var(--text)]">ПроПлюшка</span>
+            <span className="block text-xs font-semibold text-[var(--text-muted)]">QR-лояльность для малого бизнеса</span>
           </span>
         </Link>
         <nav className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
@@ -142,40 +142,42 @@ export function HomeScenarios({
             </div>
           </div>
 
-          <div className="warm-card p-5 text-[#2f1d13] soft-rise">
+          <div className="digital-card rounded-[28px] p-5 soft-rise">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-[#7b6a5b]">Живая карта клиента</p>
-                <h2 className="mt-1 text-2xl font-semibold">До подарка 3 покупки</h2>
+                <p className="text-sm font-extrabold text-[#5f250f]">Живая карта клиента</p>
+                <h2 className="mt-1 text-2xl font-extrabold text-[var(--text)]">До подарка 3 покупки</h2>
               </div>
-              <span className="flex size-12 items-center justify-center rounded-lg bg-amber-100 text-2xl">🥯</span>
+              <span className="flex size-12 items-center justify-center rounded-[16px] bg-white/45 text-[var(--text)] ring-1 ring-white/50">
+                <Gift aria-hidden className="size-6" />
+              </span>
             </div>
-            <div className="mt-5 h-3 overflow-hidden rounded-full bg-amber-100">
-              <div className="animated-progress h-full w-[70%] rounded-full bg-green-700" />
+            <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/24">
+              <div className="animated-progress h-full w-[70%] rounded-full bg-white" />
             </div>
             <div className="mt-5 grid grid-cols-5 gap-2">
               {Array.from({ length: 10 }).map((_, index) => (
                 <span
                   key={index}
                   className={`flex aspect-square items-center justify-center rounded-lg text-sm font-bold ${
-                    index < 7 ? "bg-green-700 text-white" : "bg-white text-amber-700 ring-1 ring-amber-200"
+                    index < 7 ? "bg-white text-[var(--brand)]" : "bg-white/16 text-white ring-1 ring-white/24"
                   }`}
                 >
-                  {index < 7 ? "✓" : "•"}
+                  {index < 7 ? <Check aria-hidden className="size-4" /> : index + 1}
                 </span>
               ))}
             </div>
-            <div className="mt-5 rounded-lg bg-amber-50 p-4">
+            <div className="mt-5 rounded-[16px] bg-white/16 p-4 ring-1 ring-white/18">
               <p className="font-semibold">Плюшка почти готова</p>
-              <p className="mt-1 text-sm text-[#7b6a5b]">Клиент видит понятный прогресс, а не сухое «7/10».</p>
+              <p className="mt-1 text-sm font-semibold text-[#5f250f]">Клиент видит понятный прогресс, а не сухое «7/10».</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-amber-100 bg-[#fffdf8]">
+      <section className="border-b border-[var(--border)] bg-white">
         <div className="page-shell py-8">
-          <div className="mx-auto grid max-w-md grid-cols-2 rounded-lg bg-amber-50 p-1 ring-1 ring-amber-100">
+          <div className="mx-auto grid max-w-md grid-cols-2 rounded-lg bg-[var(--inactive)] p-1 ring-1 ring-[var(--border)]">
             <TabButton active={isBusiness} onClick={() => setScenario("business")}>
               <Building2 aria-hidden className="size-4" />
               Для бизнеса
@@ -194,15 +196,15 @@ export function HomeScenarios({
         <ClientScenario clientHref={clientHref} partners={partners} />
       )}
 
-      <footer className="border-t border-amber-100 bg-[#fffdf8] py-6">
-        <div className="page-shell flex flex-col gap-4 text-sm text-[#7b6a5b] lg:flex-row lg:items-center lg:justify-between">
+      <footer className="border-t border-[var(--border)] bg-white py-6">
+        <div className="page-shell flex flex-col gap-4 text-sm text-[var(--text-muted)] lg:flex-row lg:items-center lg:justify-between">
           <p>ПроПлюшка. QR-программы лояльности для бизнеса и клиентов.</p>
           <div className="flex flex-wrap gap-x-4 gap-y-2 font-semibold">
-            <Link className="hover:text-green-800" href="/offer">Договор-оферта</Link>
-            <Link className="hover:text-green-800" href="/privacy">Политика данных</Link>
-            <a className="hover:text-green-800" href="mailto:rf173@bk.ru">Контакты</a>
-            <Link className="hover:text-green-800" href={businessLoginHref}>Вход компании</Link>
-            <Link className="hover:text-green-800" href={clientLoginHref}>Вход клиента</Link>
+            <Link className="hover:text-[var(--brand)]" href="/offer">Договор-оферта</Link>
+            <Link className="hover:text-[var(--brand)]" href="/privacy">Политика данных</Link>
+            <a className="hover:text-[var(--brand)]" href="mailto:rf173@bk.ru">Контакты</a>
+            <Link className="hover:text-[var(--brand)]" href={businessLoginHref}>Вход компании</Link>
+            <Link className="hover:text-[var(--brand)]" href={clientLoginHref}>Вход клиента</Link>
           </div>
         </div>
       </footer>
@@ -235,9 +237,9 @@ function BusinessScenario({ businessHref }: { businessHref: string }) {
       <Band>
         <div className="page-shell grid gap-6 py-14 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <p className="text-sm font-semibold uppercase text-green-800">Понятная цена</p>
-            <h2 className="mt-2 text-3xl font-semibold md:text-4xl">499 ₽ <span className="text-xl text-[#7b6a5b]">/ месяц</span></h2>
-            <p className="mt-4 text-[#7b6a5b]">Без комиссии с покупок и без платы за каждого клиента.</p>
+            <p className="text-sm font-semibold uppercase text-[var(--brand)]">Понятная цена</p>
+            <h2 className="mt-2 text-3xl font-semibold md:text-4xl">499 ₽ <span className="text-xl text-[var(--text-muted)]">/ месяц</span></h2>
+            <p className="mt-4 text-[var(--text-muted)]">Без комиссии с покупок и без платы за каждого клиента.</p>
             <div className="mt-7">
               <PrimaryLink href={businessHref}>Подключить компанию</PrimaryLink>
             </div>
@@ -245,8 +247,8 @@ function BusinessScenario({ businessHref }: { businessHref: string }) {
           <div className="grid gap-3 sm:grid-cols-2">
             {priceItems.map((item) => (
               <div key={item} className="warm-card flex items-start gap-3 p-4">
-                <Check aria-hidden className="mt-0.5 size-5 shrink-0 text-green-700" />
-                <p className="font-medium text-[#4a3528]">{item}</p>
+                <Check aria-hidden className="mt-0.5 size-5 shrink-0 text-[var(--brand)]" />
+                <p className="font-medium text-[var(--text)]">{item}</p>
               </div>
             ))}
           </div>
@@ -263,9 +265,9 @@ function ClientScenario({ clientHref, partners }: { clientHref: string; partners
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <IconGrid items={clientBenefits} icon={<Sparkles aria-hidden className="size-5" />} />
           <div className="warm-card p-5">
-            <WalletCards aria-hidden className="size-10 text-green-700" />
+            <WalletCards aria-hidden className="size-10 text-[var(--brand)]" />
             <h3 className="mt-4 text-2xl font-semibold">Один кабинет для подарков</h3>
-            <p className="mt-2 text-[#7b6a5b]">Клиент видит QR, прогресс, доступный подарок и историю без лишних экранов.</p>
+            <p className="mt-2 text-[var(--text-muted)]">Клиент видит QR, прогресс, доступный подарок и историю без лишних экранов.</p>
             <div className="mt-5">
               <PrimaryLink href={clientHref}>Стать клиентом <ArrowRight aria-hidden className="size-4" /></PrimaryLink>
             </div>
@@ -286,19 +288,16 @@ function ClientScenario({ clientHref, partners }: { clientHref: string; partners
               <article key={partner.id} className="warm-card p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="truncate text-xl font-semibold">
-                      <span className="mr-2">{partner.icon}</span>
-                      {partner.name}
-                    </h3>
-                    <p className="mt-1 text-sm font-medium text-[#7b6a5b]">{partner.type}</p>
+                    <h3 className="truncate text-xl font-semibold">{partner.name}</h3>
+                    <p className="mt-1 text-sm font-medium text-[var(--text-muted)]">{partner.type}</p>
                   </div>
-                  <Store aria-hidden className="size-5 shrink-0 text-green-700" />
+                  <Store aria-hidden className="size-5 shrink-0 text-[var(--brand)]" />
                 </div>
-                {partner.address && <p className="mt-3 text-sm leading-6 text-[#4a3528]">{partner.address}</p>}
+                {partner.address && <p className="mt-3 text-sm leading-6 text-[var(--text)]">{partner.address}</p>}
                 <p className="mt-2 text-sm font-semibold">{partner.promo}</p>
                 <Link
                   href={partner.href}
-                  className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-green-700 px-4 text-sm font-semibold text-white hover:bg-green-800"
+                  className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--brand-strong)]"
                 >
                   Открыть
                   <ArrowRight aria-hidden className="size-4" />
@@ -307,7 +306,7 @@ function ClientScenario({ clientHref, partners }: { clientHref: string; partners
             ))}
           </div>
         ) : (
-          <div className="warm-card p-5 text-[#7b6a5b]">
+          <div className="warm-card p-5 text-[var(--text-muted)]">
             Пока нет активных партнёров. Когда компании подключатся, здесь появятся места, где можно копить плюшки.
           </div>
         )}
@@ -322,7 +321,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
       type="button"
       onClick={onClick}
       className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold transition ${
-        active ? "bg-green-700 text-white shadow-sm" : "text-[#5c3521] hover:bg-white"
+        active ? "bg-[var(--brand)] text-white shadow-sm" : "text-[var(--text)] hover:bg-white"
       }`}
     >
       {children}
@@ -332,7 +331,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 
 function NavLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link href={href} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-[#5c3521] hover:bg-amber-50">
+    <Link href={href} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-[var(--text)] hover:bg-[var(--inactive)]">
       <LogIn aria-hidden className="size-4" />
       {children}
     </Link>
@@ -341,7 +340,7 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
 
 function PrimaryLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link href={href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-green-700 px-5 text-sm font-semibold text-white shadow-sm hover:bg-green-800">
+    <Link href={href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-5 text-sm font-semibold text-white shadow-sm hover:bg-[var(--brand-strong)]">
       {children}
     </Link>
   );
@@ -358,7 +357,7 @@ function SecondaryLink({ href, children }: { href: string; children: ReactNode }
 function Section({ eyebrow, title, children }: { eyebrow: string; title: string; children: ReactNode }) {
   return (
     <section className="page-shell py-14">
-      <p className="text-sm font-semibold uppercase text-green-800">{eyebrow}</p>
+      <p className="text-sm font-semibold uppercase text-[var(--brand)]">{eyebrow}</p>
       <h2 className="mt-2 text-3xl font-semibold md:text-4xl">{title}</h2>
       <div className="mt-6">{children}</div>
     </section>
@@ -366,13 +365,13 @@ function Section({ eyebrow, title, children }: { eyebrow: string; title: string;
 }
 
 function Band({ children }: { children: ReactNode }) {
-  return <section className="bg-[#fffdf8]">{children}</section>;
+  return <section className="bg-white">{children}</section>;
 }
 
 function SectionInner({ eyebrow, title, children }: { eyebrow: string; title: string; children: ReactNode }) {
   return (
     <div className="page-shell py-14">
-      <p className="text-sm font-semibold uppercase text-green-800">{eyebrow}</p>
+      <p className="text-sm font-semibold uppercase text-[var(--brand)]">{eyebrow}</p>
       <h2 className="mt-2 text-3xl font-semibold md:text-4xl">{title}</h2>
       <div className="mt-6">{children}</div>
     </div>
@@ -384,8 +383,8 @@ function NumberedList({ items }: { items: string[] }) {
     <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
       {items.map((item, index) => (
         <div key={item} className="warm-card flex items-start gap-4 p-4">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-600 text-sm font-bold text-white">{index + 1}</span>
-          <p className="pt-1 font-medium leading-6 text-[#4a3528]">{item}</p>
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--brand)] text-sm font-bold text-white">{index + 1}</span>
+          <p className="pt-1 font-medium leading-6 text-[var(--text)]">{item}</p>
         </div>
       ))}
     </div>
@@ -397,8 +396,8 @@ function IconGrid({ items, icon }: { items: string[]; icon: ReactNode }) {
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
         <div key={item} className="warm-card flex items-start gap-3 p-4">
-          <span className="mt-0.5 text-green-700">{icon}</span>
-          <p className="font-medium leading-6 text-[#4a3528]">{item}</p>
+          <span className="mt-0.5 text-[var(--brand)]">{icon}</span>
+          <p className="font-medium leading-6 text-[var(--text)]">{item}</p>
         </div>
       ))}
     </div>

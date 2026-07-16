@@ -28,8 +28,8 @@ export default async function CompanyLoginPage({
         <SubmitButton>Войти</SubmitButton>
       </form>
       <div className="mt-5 flex flex-wrap justify-between gap-3 text-sm font-semibold">
-        <Link href="/company/register" className="text-teal-700">Зарегистрировать компанию</Link>
-        <Link href="/forgot-password" className="text-teal-700">Забыли пароль?</Link>
+        <Link href="/company/register" className="text-[var(--brand)]">Зарегистрировать компанию</Link>
+        <Link href="/forgot-password" className="text-[var(--brand)]">Забыли пароль?</Link>
         <Link href="/" className="text-slate-500">На главную</Link>
       </div>
     </AuthShell>

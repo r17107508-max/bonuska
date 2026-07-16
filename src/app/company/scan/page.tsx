@@ -76,13 +76,13 @@ export default async function CompanyScanPage({
       {params.success && <Notice tone="success" text={params.success} />}
 
       {active && rewardClaim && (
-        <section className={`panel mb-5 border-2 p-5 ${rewardClaim.companyId === access.companyId && rewardClaim.status === RewardClaimStatus.OPENED ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-white"}`}>
+        <section className={`panel mb-5 border-2 p-5 ${rewardClaim.companyId === access.companyId && rewardClaim.status === RewardClaimStatus.OPENED ? "border-[var(--border)] bg-[var(--inactive)]" : "border-slate-200 bg-white"}`}>
           <div className="flex items-start gap-3">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-amber-200 text-amber-900">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-[rgba(255,200,87,0.44)] text-[#7a4b00]">
               <Gift aria-hidden className="size-6" />
             </div>
             <div>
-              <p className="text-sm font-semibold uppercase text-amber-800">Подарочный QR распознан</p>
+              <p className="text-sm font-semibold uppercase text-[#7a4b00]">Подарочный QR распознан</p>
               <h2 className="mt-1 text-2xl font-semibold text-slate-950">Подарок клиента</h2>
               <p className="mt-1 text-sm text-slate-700">Проверьте подарок и подтвердите выдачу только после передачи клиенту.</p>
             </div>
@@ -106,7 +106,7 @@ export default async function CompanyScanPage({
                 <p className="mt-4 rounded-lg bg-slate-100 p-3 text-sm font-semibold text-slate-700">Этот подарок уже был выдан.</p>
               )}
               {rewardClaim.companyId === access.companyId && rewardClaim.status === RewardClaimStatus.AVAILABLE && (
-                <p className="mt-4 rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-900">Клиент ещё не открыл подарок.</p>
+                <p className="mt-4 rounded-lg bg-[rgba(255,200,87,0.25)] p-3 text-sm font-semibold text-[#7a4b00]">Клиент ещё не открыл подарок.</p>
               )}
             </div>
             {rewardClaim.companyId === access.companyId && rewardClaim.status === RewardClaimStatus.OPENED && (
@@ -124,8 +124,8 @@ export default async function CompanyScanPage({
       )}
 
       {active && membership && membership.company.loyaltyProgram && (
-        <section className="panel mb-5 border-2 border-green-200 bg-green-50 p-5">
-          <p className="text-sm font-semibold uppercase text-teal-800">QR распознан</p>
+        <section className="panel mb-5 border-2 border-[rgba(255,106,61,0.28)] bg-[var(--brand-soft)] p-5">
+          <p className="text-sm font-semibold uppercase text-[var(--brand-ink)]">QR распознан</p>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-semibold text-slate-950">{membership.user.name}</h2>
@@ -136,8 +136,8 @@ export default async function CompanyScanPage({
             </div>
             <div className="w-full sm:w-72">
               {membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
-                <div className="rounded-lg bg-amber-100 p-3 text-sm text-amber-950">
-                  <p className="font-semibold">🎁 У клиента есть открытый подарок</p>
+                <div className="rounded-lg bg-[rgba(255,200,87,0.25)] p-3 text-sm text-[#5f3a00]">
+                  <p className="font-semibold">У клиента есть открытый подарок</p>
                   <p className="mt-1 font-semibold">{openedRewardClaim.title ?? "Подарок"}</p>
                   {openedRewardClaim.description && <p className="mt-1">{openedRewardClaim.description}</p>}
                   <form action={redeemRewardClaim} className="mt-3">
@@ -150,7 +150,7 @@ export default async function CompanyScanPage({
                   </form>
                 </div>
               ) : membership.rewardAvailable && scannedMembershipUsesGiftBox ? (
-                <div className="rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-950">
+                <div className="rounded-lg bg-[rgba(255,200,87,0.25)] p-3 text-sm font-semibold text-[#5f3a00]">
                   Попросите клиента открыть подарок и показать подарочный QR-код. По обычному QR видно только прогресс карты.
                 </div>
               ) : membership.rewardAvailable ? (
@@ -181,9 +181,9 @@ export default async function CompanyScanPage({
       )}
 
       {active && globalCustomerWithoutMembership && (
-        <form action={joinScannedCustomerAndConfirmPurchase} className="panel mb-5 border-2 border-amber-200 bg-amber-50 p-5">
+        <form action={joinScannedCustomerAndConfirmPurchase} className="panel mb-5 border-2 border-[var(--border)] bg-[var(--inactive)] p-5">
           <input type="hidden" name="token" value={token} />
-          <p className="text-sm font-semibold uppercase text-amber-900">Новый клиент для этой компании</p>
+          <p className="text-sm font-semibold uppercase text-[#7a4b00]">Новый клиент для этой компании</p>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-semibold text-slate-950">{globalCustomerWithoutMembership.name}</h2>
@@ -205,17 +205,17 @@ export default async function CompanyScanPage({
         {token ? (
           <section className="warm-card p-5">
             <div className="flex items-start gap-3">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-800">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
                 <ScanLine aria-hidden className="size-5" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-[#2f1d13]">QR считан</h2>
-                <p className="mt-2 text-sm text-[#7b6a5b]">
+                <h2 className="text-xl font-semibold text-[var(--text)]">QR считан</h2>
+                <p className="mt-2 text-sm text-[var(--text-muted)]">
                   Камера остановлена, чтобы не запрашивать доступ повторно на экране результата.
                 </p>
               </div>
             </div>
-            <Link href="/company/scan" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-700 px-4 font-semibold text-white">
+            <Link href="/company/scan" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">
               <ScanLine aria-hidden className="size-5" />
               Сканировать другой QR
             </Link>
@@ -226,16 +226,16 @@ export default async function CompanyScanPage({
 
         <section className="space-y-5">
           <div className="warm-card p-5">
-            <h2 className="text-xl font-semibold text-[#2f1d13]">Ручной поиск клиента</h2>
-            <p className="mt-2 text-sm text-[#7b6a5b]">Если камера не сработала, найдите клиента по имени или телефону внутри вашей компании.</p>
+            <h2 className="text-xl font-semibold text-[var(--text)]">Ручной поиск клиента</h2>
+            <p className="mt-2 text-sm text-[var(--text-muted)]">Если камера не сработала, найдите клиента по имени или телефону внутри вашей компании.</p>
             <form className="mt-4 flex flex-col gap-3 sm:flex-row">
               <input
                 name="q"
                 defaultValue={q}
                 placeholder="Имя или телефон"
-                className="min-h-11 flex-1 rounded-lg border border-amber-200 bg-white px-3 outline-none focus:border-green-700 focus:ring-4 focus:ring-green-700/15"
+                className="min-h-11 flex-1 rounded-lg border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
               />
-              <button className="min-h-11 rounded-lg bg-green-700 px-4 font-semibold text-white">Найти</button>
+              <button className="min-h-11 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">Найти</button>
             </form>
             {q && (
               <div className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
@@ -245,7 +245,7 @@ export default async function CompanyScanPage({
                       <span className="font-semibold text-slate-950">{item.user.name}</span>
                       <span className="ml-2 text-sm text-slate-500">{item.user.phone}</span>
                     </span>
-                    <span className="text-sm font-semibold text-teal-700">Открыть</span>
+                    <span className="text-sm font-semibold text-[var(--brand)]">Открыть</span>
                   </a>
                 ))}
                 {manualMatches.length === 0 && <p className="p-3 text-sm text-slate-500">Клиент в вашей компании не найден.</p>}
@@ -254,8 +254,8 @@ export default async function CompanyScanPage({
           </div>
 
           {!token && (
-            <div className="warm-card p-5 text-[#5c3521]">
-              <h2 className="text-xl font-semibold text-[#2f1d13]">Ожидаем QR клиента</h2>
+            <div className="warm-card p-5 text-[var(--text)]">
+              <h2 className="text-xl font-semibold text-[var(--text)]">Ожидаем QR клиента</h2>
               <p className="mt-2">Отсканируйте QR-код или введите токен вручную. После этого здесь появится карточка клиента и кнопка действия.</p>
             </div>
           )}
@@ -274,7 +274,7 @@ export default async function CompanyScanPage({
           {globalCustomerWithoutMembership && (
             <div className="panel p-5">
               <div className="flex items-start gap-3">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-[var(--inactive)] text-[var(--brand)]">
                   <UserRound aria-hidden className="size-6" />
                 </div>
                 <div>
@@ -283,7 +283,7 @@ export default async function CompanyScanPage({
                   <p className="text-slate-600">{globalCustomerWithoutMembership.phone}</p>
                 </div>
               </div>
-              <p className="mt-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+              <p className="mt-4 rounded-lg bg-[var(--inactive)] p-4 text-sm text-[#7a4b00]">
                 Клиент уже зарегистрирован в сервисе «ПроПлюшка», но ещё не участвует в программе вашей компании.
               </p>
               {active && (
@@ -304,7 +304,7 @@ export default async function CompanyScanPage({
             <>
               <div className="panel p-5">
                 <div className="flex items-start gap-3">
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
                     <UserRound aria-hidden className="size-6" />
                   </div>
                   <div>
@@ -342,8 +342,8 @@ export default async function CompanyScanPage({
                     </ul>
                   </div>
                   {membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
-                    <div className="rounded-lg bg-amber-100 p-4 text-sm text-amber-950">
-                      <p className="text-base font-semibold">🎁 У клиента есть открытый подарок</p>
+                    <div className="rounded-lg bg-[rgba(255,200,87,0.25)] p-4 text-sm text-[#5f3a00]">
+                      <p className="text-base font-semibold">У клиента есть открытый подарок</p>
                       <p className="mt-2 text-lg font-semibold text-slate-950">{openedRewardClaim.title ?? "Подарок"}</p>
                       {openedRewardClaim.description && <p className="mt-1">{openedRewardClaim.description}</p>}
                       {openedRewardClaim.openedAt && <p className="mt-2 text-slate-700">Открыт: {formatDateTime(openedRewardClaim.openedAt)}</p>}
@@ -357,7 +357,7 @@ export default async function CompanyScanPage({
                       </form>
                     </div>
                   ) : membership.rewardAvailable && scannedMembershipUsesGiftBox ? (
-                    <div className="rounded-lg bg-amber-100 p-4 text-sm font-semibold text-amber-950">
+                    <div className="rounded-lg bg-[rgba(255,200,87,0.25)] p-4 text-sm font-semibold text-[#5f3a00]">
                       Попросите клиента нажать «Открыть подарок» в приложении и показать подарочный QR-код. После сканирования подарочного QR здесь появится конкретный подарок и кнопка выдачи.
                     </div>
                   ) : membership.rewardAvailable ? (
@@ -407,7 +407,7 @@ function PurchaseAmountFields({ activeRaffle }: { activeRaffle: Awaited<ReturnTy
           inputMode="decimal"
           placeholder="Например, 450"
           required={Boolean(activeRaffle)}
-          className="mt-1.5 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+          className="mt-1.5 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
         />
       </label>
       <p className="mt-1 text-xs leading-5 text-slate-600">

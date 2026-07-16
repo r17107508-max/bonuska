@@ -29,7 +29,7 @@ export default async function AccountPage({
 
         <section className="panel p-3.5">
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
               <UserRound aria-hidden className="size-5" />
             </div>
             <div>
@@ -51,7 +51,7 @@ export default async function AccountPage({
                 name="name"
                 defaultValue={user.name}
                 required
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
               />
             </label>
             <ReadonlyField label="Телефон" value={formatPhone(user.phone)} />
@@ -62,7 +62,7 @@ export default async function AccountPage({
                 type="email"
                 defaultValue={user.email ?? ""}
                 placeholder="email@example.ru"
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
               />
             </label>
             <label className="block">
@@ -72,7 +72,7 @@ export default async function AccountPage({
                 list="account-city-options"
                 defaultValue={user.city ?? ""}
                 required
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
               />
               <datalist id="account-city-options">
                 {cities.map((city) => (
@@ -94,7 +94,7 @@ export default async function AccountPage({
                 type="password"
                 autoComplete="current-password"
                 required
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
               />
             </label>
             <label className="block">
@@ -105,7 +105,7 @@ export default async function AccountPage({
                 autoComplete="new-password"
                 required
                 minLength={6}
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
               />
             </label>
             <SubmitButton variant="secondary">Сменить пароль</SubmitButton>
@@ -115,14 +115,14 @@ export default async function AccountPage({
         <section className="panel p-4">
           <div className="space-y-3">
             <Link href="/privacy" className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
-              <ShieldCheck aria-hidden className="size-5 text-teal-700" />
+              <ShieldCheck aria-hidden className="size-5 text-[var(--brand)]" />
               Политика персональных данных
             </Link>
             <Link
               href="/app/support"
               className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
             >
-              <HelpCircle aria-hidden className="size-5 text-teal-700" />
+              <HelpCircle aria-hidden className="size-5 text-[var(--brand)]" />
               Поддержка
             </Link>
           </div>

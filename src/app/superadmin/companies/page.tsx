@@ -62,12 +62,12 @@ export default async function SuperadminCompaniesPage({
           name="q"
           defaultValue={q}
           placeholder="Поиск: название, город, владелец, телефон, email"
-          className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+          className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
         />
         <select
           name="status"
           defaultValue={selectedStatus ?? "ALL"}
-          className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+          className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
         >
           {statusOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -75,7 +75,7 @@ export default async function SuperadminCompaniesPage({
             </option>
           ))}
         </select>
-        <button className="min-h-11 rounded-lg bg-teal-700 px-5 font-semibold text-white">Показать</button>
+        <button className="min-h-11 rounded-lg bg-[var(--brand)] px-5 font-semibold text-white">Показать</button>
       </form>
 
       <div className="panel overflow-hidden">
@@ -111,7 +111,7 @@ export default async function SuperadminCompaniesPage({
                   <td className="px-4 py-3 text-slate-600">{formatDate(company.trialEndsAt)} · {daysLeft(company.trialEndsAt)} дн.</td>
                   <td className="px-4 py-3 text-slate-600">{formatDate(company.paidUntil)} · {daysLeft(company.paidUntil)} дн.</td>
                   <td className="px-4 py-3">
-                    <Link href={`/superadmin/companies/${company.id}`} className="font-semibold text-teal-700">Открыть</Link>
+                    <Link href={`/superadmin/companies/${company.id}`} className="font-semibold text-[var(--brand)]">Открыть</Link>
                   </td>
                 </tr>
               ))}
@@ -136,7 +136,7 @@ function AttentionLink({
   tone: "warning" | "info" | "danger";
 }) {
   const tones = {
-    warning: "bg-amber-50 text-amber-900 ring-amber-200",
+    warning: "bg-[var(--inactive)] text-[#7a4b00] ring-[var(--border)]",
     info: "bg-sky-50 text-sky-900 ring-sky-200",
     danger: "bg-rose-50 text-rose-900 ring-rose-200",
   };

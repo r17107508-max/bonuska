@@ -38,19 +38,19 @@ export default async function ClientHistoryPage({
   });
 
   return (
-    <main className="min-h-screen bg-[#fff8ed] px-4 pb-28 pt-3">
+    <main className="min-h-screen bg-[var(--background)] px-4 pb-28 pt-3">
       <section className="mx-auto max-w-md space-y-3">
         <ClientBrandHeader />
 
         <section className="warm-card p-4">
           <div className="flex items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-800">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
               <Clock3 aria-hidden className="size-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase text-green-800">Прозрачность</p>
-              <h1 className="mt-1 text-2xl font-bold text-[#2f1d13]">История</h1>
-              <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">Покупки, подарки и уровни по всем картам.</p>
+              <p className="text-xs font-semibold uppercase text-[var(--brand)]">Прозрачность</p>
+              <h1 className="mt-1 text-2xl font-bold text-[var(--text)]">История</h1>
+              <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">Покупки, подарки и уровни по всем картам.</p>
             </div>
           </div>
         </section>
@@ -61,7 +61,7 @@ export default async function ClientHistoryPage({
               key={tab.key}
               href={tab.key === "all" ? "/app/history" : `/app/history?filter=${tab.key}`}
               className={`inline-flex min-h-10 shrink-0 items-center rounded-lg px-4 text-sm font-bold ${
-                filter === tab.key ? "bg-green-700 text-white" : "border border-amber-100 bg-white/80 text-[#5c3521]"
+                filter === tab.key ? "bg-[var(--brand)] text-white" : "border border-[var(--border)] bg-white/80 text-[var(--text)]"
               }`}
             >
               {tab.label}
@@ -83,25 +83,25 @@ export default async function ClientHistoryPage({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-[#2f1d13]">{transaction.company.name}</p>
-                        <p className="mt-1 text-sm font-semibold text-[#5c3521]">{meta.label}</p>
+                        <p className="truncate font-semibold text-[var(--text)]">{transaction.company.name}</p>
+                        <p className="mt-1 text-sm font-semibold text-[var(--text)]">{meta.label}</p>
                       </div>
-                      <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[#7b6a5b]">
+                      <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[var(--text-muted)]">
                         {formatDate(transaction.createdAt)}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm leading-5 text-[#7b6a5b]">
+                    <p className="mt-2 text-sm leading-5 text-[var(--text-muted)]">
                       {transaction.type === "LEVEL_UP"
                         ? `Покупок всего: ${transaction.countAfter}`
                         : `Прогресс: ${transaction.countAfter} из ${goal}`}
                     </p>
                     {transaction.rewardTitle && (
-                      <p className="mt-1 text-sm font-semibold text-amber-800">
+                      <p className="mt-1 text-sm font-semibold text-[#7a4b00]">
                         {transaction.type === "LEVEL_UP" ? `Уровень: ${transaction.rewardTitle}` : `Подарок: ${transaction.rewardTitle}`}
                       </p>
                     )}
                     {transaction.type === "REWARD_OPENED" && (
-                      <p className="mt-1 text-sm font-semibold text-amber-900">Покажите QR подарка кассиру.</p>
+                      <p className="mt-1 text-sm font-semibold text-[#7a4b00]">Покажите QR подарка кассиру.</p>
                     )}
                   </div>
                 </div>
@@ -111,11 +111,11 @@ export default async function ClientHistoryPage({
 
           {transactions.length === 0 && (
             <div className="warm-card p-5 text-center">
-              <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+              <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-[rgba(255,200,87,0.25)] text-[#7a4b00]">
                 <Clock3 aria-hidden className="size-6" />
               </div>
-              <h2 className="mt-3 text-lg font-semibold text-[#2f1d13]">Операций пока нет</h2>
-              <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">
+              <h2 className="mt-3 text-lg font-semibold text-[var(--text)]">Операций пока нет</h2>
+              <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">
                 Когда кассир начислит покупку или выдаст подарок, запись появится здесь.
               </p>
             </div>
@@ -128,11 +128,11 @@ export default async function ClientHistoryPage({
 
 function operationMeta(type: LoyaltyTransactionType) {
   const labels: Record<LoyaltyTransactionType, { label: string; icon: typeof ShoppingBag; iconBg: string }> = {
-    PURCHASE: { label: "Начислена покупка", icon: ShoppingBag, iconBg: "bg-green-50 text-green-800" },
+    PURCHASE: { label: "Начислена покупка", icon: ShoppingBag, iconBg: "bg-[var(--brand-soft)] text-[var(--brand)]" },
     LEVEL_UP: { label: "Достигнут новый уровень", icon: Trophy, iconBg: "bg-blue-50 text-blue-800" },
-    REWARD_OPENED: { label: "Открыт подарок", icon: Sparkles, iconBg: "bg-amber-100 text-amber-900" },
-    REWARD_REDEEMED: { label: "Выдан подарок", icon: Gift, iconBg: "bg-amber-100 text-amber-900" },
-    REWARD_GRANTED: { label: "Выдан подарок", icon: Gift, iconBg: "bg-amber-100 text-amber-900" },
+    REWARD_OPENED: { label: "Открыт подарок", icon: Sparkles, iconBg: "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]" },
+    REWARD_REDEEMED: { label: "Выдан подарок", icon: Gift, iconBg: "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]" },
+    REWARD_GRANTED: { label: "Выдан подарок", icon: Gift, iconBg: "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]" },
     MANUAL_ADJUSTMENT: { label: "Ручное изменение", icon: Clock3, iconBg: "bg-slate-100 text-slate-700" },
   };
 

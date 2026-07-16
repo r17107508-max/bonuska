@@ -84,26 +84,26 @@ export function RegistrationQrPoster(props: RegistrationQrPosterProps) {
   return (
     <section className="warm-card p-5">
       <div className="grid gap-5 lg:grid-cols-[220px_1fr] lg:items-center">
-        <div className="rounded-lg bg-white p-4 ring-1 ring-amber-100">
+        <div className="rounded-lg bg-white p-4 ring-1 ring-[var(--border)]">
           <img src={props.qrDataUrl} alt="QR для регистрации клиентов" className="mx-auto aspect-square w-full max-w-[220px]" />
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase text-green-800">QR для клиентов</p>
-          <h2 className="mt-2 text-2xl font-semibold text-[#2f1d13]">Плакат для стойки</h2>
-          <p className="mt-2 text-[#7b6a5b]">
+          <p className="text-sm font-semibold uppercase text-[var(--brand)]">QR для клиентов</p>
+          <h2 className="mt-2 text-2xl font-semibold text-[var(--text)]">Плакат для стойки</h2>
+          <p className="mt-2 text-[var(--text-muted)]">
             Распечатайте QR и поставьте его на стойку. Клиент сканирует код, попадает на страницу вашей компании и регистрируется в программе лояльности.
           </p>
-          <div className="mt-4 break-all rounded-lg bg-amber-50 p-3 text-sm font-semibold text-[#5c3521]">{props.clientUrl}</div>
+          <div className="mt-4 break-all rounded-lg bg-[var(--inactive)] p-3 text-sm font-semibold text-[var(--text)]">{props.clientUrl}</div>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button type="button" onClick={printPoster} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-green-700 px-4 font-semibold text-white">
+            <button type="button" onClick={printPoster} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">
               <Printer aria-hidden className="size-5" />
               Печать плаката
             </button>
-            <button type="button" onClick={downloadQr} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-amber-200 px-4 font-semibold text-[#5c3521]">
+            <button type="button" onClick={downloadQr} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--border)] px-4 font-semibold text-[var(--text)]">
               <Download aria-hidden className="size-5" />
               Скачать QR
             </button>
-            <button type="button" onClick={copyLink} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-amber-200 px-4 font-semibold text-[#5c3521]">
+            <button type="button" onClick={copyLink} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--border)] px-4 font-semibold text-[var(--text)]">
               <Copy aria-hidden className="size-5" />
               Скопировать ссылку
             </button>

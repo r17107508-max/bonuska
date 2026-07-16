@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Manrope } from "next/font/google";
 import { AppSplash } from "@/components/app-splash";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
+
+const manrope = Manrope({
+  subsets: ["cyrillic", "latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "ПроПлюшка - QR-программа лояльности",
@@ -30,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" className={manrope.variable}>
       <body className="antialiased">
         <AppSplash />
         {children}

@@ -24,19 +24,19 @@ export default async function SuperadminPaymentsPage() {
       <section className="panel mb-6 p-5">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-slate-950">Компании сообщили об оплате</h2>
-          <span className="badge bg-amber-100 text-amber-800">{reviewRequests.length}</span>
+          <span className="badge bg-[rgba(255,200,87,0.25)] text-[#7a4b00]">{reviewRequests.length}</span>
         </div>
         <div className="mt-4 divide-y divide-slate-200">
           {reviewRequests.map((request) => (
             <div key={request.id} className="grid gap-3 py-3 text-sm md:grid-cols-[1fr_auto] md:items-center">
               <div>
-                <Link href={`/superadmin/companies/${request.companyId}`} className="font-semibold text-teal-700">
+                <Link href={`/superadmin/companies/${request.companyId}`} className="font-semibold text-[var(--brand)]">
                   {request.company?.name ?? "Компания"}
                 </Link>
                 <p className="mt-1 text-slate-600">{formatDateTime(request.createdAt)} · {request.actor?.name ?? "пользователь"}</p>
                 {request.metadataJson && <p className="mt-1 text-slate-500">{paymentRequestComment(request.metadataJson)}</p>}
               </div>
-              <Link href={`/superadmin/companies/${request.companyId}`} className="inline-flex min-h-10 items-center justify-center rounded-lg bg-teal-700 px-4 font-semibold text-white">
+              <Link href={`/superadmin/companies/${request.companyId}`} className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">
                 Открыть
               </Link>
             </div>
@@ -60,7 +60,7 @@ export default async function SuperadminPaymentsPage() {
             <tbody className="divide-y divide-slate-200">
               {payments.map((payment) => (
                 <tr key={payment.id} className="bg-white">
-                  <td className="px-4 py-3"><Link href={`/superadmin/companies/${payment.companyId}`} className="font-semibold text-teal-700">{payment.company.name}</Link></td>
+                  <td className="px-4 py-3"><Link href={`/superadmin/companies/${payment.companyId}`} className="font-semibold text-[var(--brand)]">{payment.company.name}</Link></td>
                   <td className="px-4 py-3 font-semibold">{money(payment.amount)}</td>
                   <td className="px-4 py-3 text-slate-600">{formatDateTime(payment.paidAt)}</td>
                   <td className="px-4 py-3 text-slate-600">{formatDate(payment.periodStart)} - {formatDate(payment.periodEnd)}</td>

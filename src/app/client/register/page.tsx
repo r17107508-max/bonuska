@@ -38,13 +38,13 @@ export default async function ClientRegisterPage({
         <FormField label="Пароль" name="password" type="password" autoComplete="new-password" />
         <label className="flex gap-3 text-sm font-medium text-slate-700">
           <input name="privacyAccepted" type="checkbox" required className="mt-1 size-4" />
-          <span>Согласен на обработку персональных данных. <Link href="/privacy" className="font-semibold text-teal-700" target="_blank">Политика</Link></span>
+          <span>Согласен на обработку персональных данных. <Link href="/privacy" className="font-semibold text-[var(--brand)]" target="_blank">Политика</Link></span>
         </label>
         <SubmitButton>Стать клиентом</SubmitButton>
       </form>
       <div className="mt-5 flex flex-wrap justify-between gap-3 text-sm font-semibold">
-        <Link href="/client/login" className="text-teal-700">Уже есть аккаунт</Link>
-        <Link href="/partners" className="text-teal-700">Посмотреть партнёров</Link>
+        <Link href="/client/login" className="text-[var(--brand)]">Уже есть аккаунт</Link>
+        <Link href="/partners" className="text-[var(--brand)]">Посмотреть партнёров</Link>
         <Link href="/" className="text-slate-500">На главную</Link>
       </div>
     </AuthShell>

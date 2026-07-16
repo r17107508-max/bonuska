@@ -72,7 +72,7 @@ export default async function PublicCompanyPage({
         <section className="panel p-5">
           <div className="rounded-xl bg-slate-50 p-4 text-slate-700">
             <p className="flex items-center gap-2 text-xl font-semibold text-slate-950">
-              <Gift aria-hidden className="size-5 text-teal-700" />
+              <Gift aria-hidden className="size-5 text-[var(--brand)]" />
               {company.loyaltyProgram.rewardTitle}
             </p>
             <p className="mt-2">Нужно покупок до подарка: <span className="font-semibold text-slate-950">{company.loyaltyProgram.goalCount}</span></p>
@@ -98,7 +98,7 @@ export default async function PublicCompanyPage({
               <FormField label="Пароль для входа на другом телефоне" name="password" type="password" autoComplete="new-password" />
               <label className="flex gap-3 text-sm font-medium text-slate-700">
                 <input name="privacyAccepted" type="checkbox" required className="mt-1 size-4" />
-                <span>Согласен на обработку персональных данных. <Link href="/privacy" className="font-semibold text-teal-700" target="_blank">Политика</Link></span>
+                <span>Согласен на обработку персональных данных. <Link href="/privacy" className="font-semibold text-[var(--brand)]" target="_blank">Политика</Link></span>
               </label>
               <SubmitButton>Получить QR-код</SubmitButton>
             </form>
@@ -130,7 +130,7 @@ export default async function PublicCompanyPage({
 function MiniStep({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <div className="rounded-lg bg-slate-50 p-3">
-      <div className="mx-auto flex size-9 items-center justify-center rounded-lg bg-white text-teal-700 shadow-sm">{icon}</div>
+      <div className="mx-auto flex size-9 items-center justify-center rounded-lg bg-white text-[var(--brand)] shadow-sm">{icon}</div>
       <p className="mt-2">{text}</p>
     </div>
   );

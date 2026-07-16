@@ -53,9 +53,9 @@ export default async function ClientCompanyPage({
   const isUnavailable = company.isBlocked || company.status === CompanyStatus.BLOCKED;
 
   return (
-    <main className="min-h-screen bg-[#fff8ed] px-4 pb-28 pt-4">
+    <main className="min-h-screen bg-[var(--background)] px-4 pb-28 pt-4">
       <section className="mx-auto max-w-md space-y-4">
-        <Link href="/app/partners" className="inline-flex items-center gap-2 text-sm font-semibold text-[#7b6a5b]">
+        <Link href="/app/partners" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)]">
           <ArrowLeft aria-hidden className="size-4" />
           Назад к карте
         </Link>
@@ -70,10 +70,10 @@ export default async function ClientCompanyPage({
             </div>
           )}
           <div className="p-4">
-            <p className="text-xs font-semibold uppercase text-green-800">{company.businessType}</p>
-            <h1 className="mt-1 text-2xl font-semibold text-[#2f1d13]">{company.name}</h1>
-            <p className="mt-2 text-sm leading-5 text-[#7b6a5b]">{company.description || company.loyaltyProgram.rewardDescription}</p>
-            <div className="mt-3 flex items-center gap-2 text-sm font-bold text-amber-700">
+            <p className="text-xs font-semibold uppercase text-[var(--brand)]">{company.businessType}</p>
+            <h1 className="mt-1 text-2xl font-semibold text-[var(--text)]">{company.name}</h1>
+            <p className="mt-2 text-sm leading-5 text-[var(--text-muted)]">{company.description || company.loyaltyProgram.rewardDescription}</p>
+            <div className="mt-3 flex items-center gap-2 text-sm font-bold text-[var(--brand)]">
               <Star aria-hidden className="size-4 fill-current" />
               {summary.reviewCount > 0 ? `${summary.ratingAverage?.toFixed(1)} из 5 · ${summary.reviewCount} отзывов` : "Пока нет отзывов"}
             </div>
@@ -93,26 +93,26 @@ export default async function ClientCompanyPage({
           <div className="mt-3 space-y-2 text-sm text-slate-700">
             {address && (
               <p className="flex gap-2">
-                <MapPinned aria-hidden className="mt-0.5 size-4 shrink-0 text-teal-700" />
+                <MapPinned aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
                 <span>{address}</span>
               </p>
             )}
             {company.ownerPhone && (
               <p className="flex gap-2">
-                <Phone aria-hidden className="mt-0.5 size-4 shrink-0 text-teal-700" />
+                <Phone aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
                 <span>{company.ownerPhone}</span>
               </p>
             )}
             {website && (
               <p className="flex gap-2">
-                <Globe2 aria-hidden className="mt-0.5 size-4 shrink-0 text-teal-700" />
+                <Globe2 aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
                 <span className="break-all">{website.replace(/^https?:\/\//i, "")}</span>
               </p>
             )}
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2">
             {phoneHref && (
-              <a href={phoneHref} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-teal-700 px-3 text-sm font-semibold text-white">
+              <a href={phoneHref} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 text-sm font-semibold text-white">
                 <Phone aria-hidden className="size-4" />
                 Позвонить
               </a>
@@ -146,7 +146,7 @@ export default async function ClientCompanyPage({
                 <select
                   name="rating"
                   defaultValue={myReview?.rating ?? 5}
-                  className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+                  className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
                 >
                   <option value="5">5 звёзд</option>
                   <option value="4">4 звезды</option>
@@ -164,21 +164,21 @@ export default async function ClientCompanyPage({
         </section>
 
         <section className="space-y-2.5">
-          <h2 className="text-lg font-semibold text-[#2f1d13]">Отзывы клиентов</h2>
+          <h2 className="text-lg font-semibold text-[var(--text)]">Отзывы клиентов</h2>
           {company.reviews.map((review) => (
             <article key={review.id} className="warm-card p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-semibold text-[#2f1d13]">{review.user.name}</p>
-                <p className="flex items-center gap-1 text-sm font-bold text-amber-700">
+                <p className="font-semibold text-[var(--text)]">{review.user.name}</p>
+                <p className="flex items-center gap-1 text-sm font-bold text-[var(--brand)]">
                   <Star aria-hidden className="size-4 fill-current" />
                   {review.rating}
                 </p>
               </div>
-              {review.text && <p className="mt-2 text-sm leading-5 text-[#7b6a5b]">{review.text}</p>}
+              {review.text && <p className="mt-2 text-sm leading-5 text-[var(--text-muted)]">{review.text}</p>}
             </article>
           ))}
           {company.reviews.length === 0 && (
-            <div className="warm-card p-4 text-sm leading-5 text-[#7b6a5b]">Отзывов пока нет.</div>
+            <div className="warm-card p-4 text-sm leading-5 text-[var(--text-muted)]">Отзывов пока нет.</div>
           )}
         </section>
       </section>

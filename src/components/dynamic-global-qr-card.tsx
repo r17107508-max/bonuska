@@ -21,7 +21,7 @@ export function DynamicGlobalQrCard({
   initialPayload,
   initialExpiresAt,
   manualCodeToken,
-  color = "#0f172a",
+  color = "#FF6A3D",
 }: DynamicGlobalQrCardProps) {
   const [payload, setPayload] = useState(initialPayload);
   const [expiresAt, setExpiresAt] = useState(initialExpiresAt);
@@ -98,10 +98,10 @@ export function DynamicGlobalQrCard({
 
   return (
     <section className="warm-card p-4 text-center">
-      <p className="text-sm font-semibold uppercase text-green-800">QR для кассы</p>
-      <h2 className="mt-1 text-xl font-semibold text-[#2f1d13]">Мой QR для всех компаний</h2>
+      <p className="text-sm font-semibold uppercase text-[var(--brand)]">QR для кассы</p>
+      <h2 className="mt-1 text-xl font-semibold text-[var(--text)]">Мой QR для всех компаний</h2>
 
-      <div className="mx-auto mt-4 flex max-w-80 items-center justify-center rounded-lg bg-white p-3 shadow-inner ring-1 ring-amber-100">
+      <div className="mx-auto mt-4 flex max-w-80 items-center justify-center rounded-lg bg-white p-3 shadow-inner ring-1 ring-[var(--border)]">
         {qrDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={qrDataUrl} alt="Динамический QR-код клиента" className="w-full" />
@@ -112,11 +112,11 @@ export function DynamicGlobalQrCard({
         )}
       </div>
 
-      <p className="mt-4 text-base font-semibold text-[#2f1d13]">Покажите QR-код кассиру</p>
-      <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">QR обновляется автоматически и не содержит телефон</p>
-      <div className="mt-4 rounded-lg bg-white p-3 ring-1 ring-amber-100">
-        <p className="text-xs font-semibold uppercase text-[#7b6a5b]">Код для ручного ввода</p>
-        <p className="mt-1 font-mono text-2xl font-semibold tracking-normal text-[#2f1d13]">
+      <p className="mt-4 text-base font-semibold text-[var(--text)]">Покажите QR-код кассиру</p>
+      <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">QR обновляется автоматически и не содержит телефон</p>
+      <div className="mt-4 rounded-lg bg-white p-3 ring-1 ring-[var(--border)]">
+        <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">Код для ручного ввода</p>
+        <p className="mt-1 font-mono text-2xl font-semibold tracking-normal text-[var(--text)]">
           {buildManualScanCode(manualCodeToken, "customer")}
         </p>
       </div>
@@ -126,12 +126,12 @@ export function DynamicGlobalQrCard({
           type="button"
           onClick={() => void refreshQr()}
           disabled={loading}
-          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-green-700 px-4 font-semibold text-white disabled:opacity-60"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white disabled:opacity-60"
         >
           <RefreshCw aria-hidden className={`size-5 ${loading ? "animate-spin" : ""}`} />
           Обновить QR
         </button>
-        <span className="min-w-28 text-right text-sm font-semibold leading-5 text-[#7b6a5b]">
+        <span className="min-w-28 text-right text-sm font-semibold leading-5 text-[var(--text-muted)]">
           Обновится через {secondsLeft} сек.
         </span>
       </div>

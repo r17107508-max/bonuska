@@ -46,7 +46,7 @@ export default async function CompanyRafflesPage({
 
       <form action={createCompanyRaffle} className="panel mb-6 grid gap-4 p-5">
         <div>
-          <p className="text-xs font-semibold uppercase text-teal-700">Новый розыгрыш</p>
+          <p className="text-xs font-semibold uppercase text-[var(--brand)]">Новый розыгрыш</p>
           <h2 className="mt-1 text-xl font-semibold text-slate-950">Условия участия и призы</h2>
           <p className="mt-1 text-sm text-slate-600">Один клиент получает один трёхзначный номер в рамках одного розыгрыша.</p>
         </div>
@@ -59,7 +59,7 @@ export default async function CompanyRafflesPage({
           <FormField label="Приз за 2 место" name="secondPrizeTitle" placeholder="Второй приз" />
           <FormField label="Приз за 3 место" name="thirdPrizeTitle" placeholder="Третий приз" />
         </div>
-        <div className="rounded-lg bg-amber-50 p-4 text-sm leading-5 text-amber-950">
+        <div className="rounded-lg bg-[var(--inactive)] p-4 text-sm leading-5 text-[#5f3a00]">
           Максимум участников при номерах 100-999: {MAX_RAFFLE_TICKETS}. Слово “лотерея” в интерфейсе не используется.
         </div>
         <SubmitButton>Создать розыгрыш</SubmitButton>
@@ -179,8 +179,8 @@ function Winner({
   const resolvedPlace = ticketWinningPlace(ticket.id, raffle) ?? place;
 
   return (
-    <div className="rounded-lg border border-teal-100 bg-teal-50 p-4 text-sm">
-      <p className="text-xs font-bold uppercase text-teal-800">{resolvedPlace} место</p>
+    <div className="rounded-lg border border-[rgba(255,106,61,0.2)] bg-[var(--brand-soft)] p-4 text-sm">
+      <p className="text-xs font-bold uppercase text-[var(--brand-ink)]">{resolvedPlace} место</p>
       <p className="mt-1 text-lg font-semibold text-slate-950">№ {ticket.number}</p>
       <p className="mt-1 font-semibold text-slate-950">{ticket.user.name}</p>
       <p className="text-slate-600">{ticket.user.phone}</p>

@@ -22,7 +22,7 @@ export default async function ResetPasswordTokenPage({
         <SubmitButton>Сохранить пароль</SubmitButton>
       </form>
       <div className="mt-5 flex justify-between text-sm font-semibold">
-        <Link href="/forgot-password" className="text-teal-700">Запросить новую ссылку</Link>
+        <Link href="/forgot-password" className="text-[var(--brand)]">Запросить новую ссылку</Link>
         <Link href="/" className="text-slate-500">На главную</Link>
       </div>
     </AuthShell>

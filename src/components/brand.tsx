@@ -3,7 +3,7 @@ import { Gift } from "lucide-react";
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex size-10 items-center justify-center rounded-lg bg-teal-700 text-white shadow-sm">
+      <div className="flex size-10 items-center justify-center rounded-lg bg-[var(--brand)] text-white shadow-sm">
         <Gift aria-hidden className="size-5" />
       </div>
       <div>

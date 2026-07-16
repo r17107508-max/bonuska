@@ -98,7 +98,7 @@ export default async function CompanyClientPage({
                 inputMode="decimal"
                 placeholder="Например, 450"
                 required={Boolean(activeRaffle)}
-                className="mt-1.5 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+                className="mt-1.5 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
               />
             </label>
             <p className="mt-1 text-xs leading-5 text-slate-600">

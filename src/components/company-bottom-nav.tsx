@@ -28,7 +28,7 @@ export function CompanyBottomNav() {
   return (
     <>
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-amber-100 bg-[#fffdf8]/95 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-16px_40px_rgba(92,53,33,0.14)] backdrop-blur"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--border)] bg-white/95 px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-16px_40px_rgba(25,25,25,0.1)] backdrop-blur lg:hidden"
         aria-label="Навигация компании"
       >
         <div className="mx-auto grid max-w-xl grid-cols-5 items-end gap-1">
@@ -43,11 +43,11 @@ export function CompanyBottomNav() {
                 aria-current={active ? "page" : undefined}
                 className={
                   item.primary
-                    ? `flex min-h-16 -translate-y-2 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-bold text-white shadow-lg ring-1 ring-white/35 transition hover:bg-green-900 focus-visible:outline focus-visible:outline-4 focus-visible:outline-green-700/25 active:scale-95 ${
-                        active ? "bg-green-900" : "bg-green-800"
+                    ? `flex min-h-16 -translate-y-2 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-bold text-white shadow-lg ring-1 ring-white/35 transition hover:bg-[var(--brand-strong)] focus-visible:outline focus-visible:outline-4 focus-visible:outline-[rgba(255,106,61,0.25)] active:scale-95 ${
+                        active ? "bg-[var(--brand-strong)]" : "bg-[var(--brand-strong)]"
                       }`
-                    : `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold transition focus-visible:outline focus-visible:outline-4 focus-visible:outline-green-700/20 active:scale-95 ${
-                        active ? "bg-green-50 text-green-800" : "text-[#7b6a5b] hover:bg-amber-50 hover:text-[#2f1d13]"
+                    : `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold transition focus-visible:outline focus-visible:outline-4 focus-visible:outline-[rgba(255,106,61,0.20)] active:scale-95 ${
+                        active ? "bg-[var(--brand-soft)] text-[var(--brand)]" : "text-[var(--text-muted)] hover:bg-[var(--inactive)] hover:text-[var(--text)]"
                       }`
                 }
               >
@@ -60,7 +60,7 @@ export function CompanyBottomNav() {
           <button
             type="button"
             onClick={() => setIsMoreOpen(true)}
-            className="flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold text-[#7b6a5b] transition hover:bg-amber-50 hover:text-[#2f1d13] focus-visible:outline focus-visible:outline-4 focus-visible:outline-green-700/20 active:scale-95"
+            className="flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-semibold text-[var(--text-muted)] transition hover:bg-[var(--inactive)] hover:text-[var(--text)] focus-visible:outline focus-visible:outline-4 focus-visible:outline-[rgba(255,106,61,0.20)] active:scale-95"
           >
             <Menu aria-hidden className="size-5" />
             <span className="leading-none">Ещё</span>
@@ -70,7 +70,7 @@ export function CompanyBottomNav() {
 
       {isMoreOpen && (
         <div className="fixed inset-0 z-[60] flex items-end bg-[#2f1d13]/45 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:items-center sm:justify-center">
-          <div role="dialog" aria-modal="true" aria-labelledby="company-more-title" className="w-full rounded-xl bg-[#fffdf8] p-5 shadow-2xl sm:max-w-sm">
+          <div role="dialog" aria-modal="true" aria-labelledby="company-more-title" className="w-full rounded-xl bg-white p-5 shadow-2xl sm:max-w-sm">
             <div className="flex items-center justify-between gap-3">
               <h2 id="company-more-title" className="text-xl font-semibold text-slate-950">
                 Ещё
@@ -91,16 +91,16 @@ export function CompanyBottomNav() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setIsMoreOpen(false)}
-                    className="flex min-h-12 items-center gap-3 rounded-lg border border-amber-100 bg-white px-4 font-semibold text-[#5c3521]"
+                    className="flex min-h-12 items-center gap-3 rounded-lg border border-[var(--border)] bg-white px-4 font-semibold text-[var(--text)]"
                   >
-                    <Icon aria-hidden className="size-5 text-green-700" />
+                    <Icon aria-hidden className="size-5 text-[var(--brand)]" />
                     {item.label}
                   </Link>
                 );
               })}
               <form action={logout}>
-                <button type="submit" className="flex min-h-12 w-full items-center gap-3 rounded-lg border border-amber-100 bg-white px-4 font-semibold text-[#5c3521]">
-                  <LogOut aria-hidden className="size-5 text-green-700" />
+                <button type="submit" className="flex min-h-12 w-full items-center gap-3 rounded-lg border border-[var(--border)] bg-white px-4 font-semibold text-[var(--text)]">
+                  <LogOut aria-hidden className="size-5 text-[var(--brand)]" />
                   Выйти
                 </button>
               </form>

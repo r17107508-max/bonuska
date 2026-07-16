@@ -174,12 +174,12 @@ export default async function CompanyDashboardPage() {
         <section className="panel mb-6 p-5">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
             <div>
-              <p className="text-sm font-semibold uppercase text-teal-700">Первый запуск</p>
+              <p className="text-sm font-semibold uppercase text-[var(--brand)]">Первый запуск</p>
               <h2 className="mt-1 text-2xl font-semibold text-slate-950">Чек-лист запуска: {completedSteps}/{setupProgress.length}</h2>
               <p className="mt-2 text-slate-600">Выполните эти шаги, чтобы за trial получить первых клиентов и понять ценность сервиса.</p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              <Link href="/company/settings#registration-qr" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white">
+              <Link href="/company/settings#registration-qr" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">
                 <QrCode aria-hidden className="size-5" />
                 Распечатать QR
               </Link>
@@ -203,7 +203,7 @@ export default async function CompanyDashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="stat-card p-5">
-          <p className="text-sm font-semibold text-[#7b6a5b]">Статус подписки</p>
+          <p className="text-sm font-semibold text-[var(--text-muted)]">Статус подписки</p>
           <p className="mt-3"><span className={`badge ${statusClass(company?.status ?? access.company.status)}`}>{statusLabel(company?.status ?? access.company.status)}</span></p>
         </div>
         <Metric icon={<Clock3 aria-hidden className="size-5" />} label="Дней осталось" value={left} description="до оплаты или конца trial" />
@@ -219,13 +219,13 @@ export default async function CompanyDashboardPage() {
       <section className="panel mt-6 p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
-            <p className="text-sm font-semibold uppercase text-green-700">Что сделать дальше</p>
-            <h2 className="mt-1 text-2xl font-semibold text-[#2f1d13]">Рекомендации для роста</h2>
-            <p className="mt-2 text-sm leading-5 text-[#7b6a5b]">
+            <p className="text-sm font-semibold uppercase text-[var(--brand)]">Что сделать дальше</p>
+            <h2 className="mt-1 text-2xl font-semibold text-[var(--text)]">Рекомендации для роста</h2>
+            <p className="mt-2 text-sm leading-5 text-[var(--text-muted)]">
               Простые следующие шаги по текущим данным компании.
             </p>
           </div>
-          <span className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-amber-100 px-3 text-sm font-bold text-amber-900">
+          <span className="inline-flex min-h-9 items-center gap-2 rounded-lg bg-[rgba(255,200,87,0.25)] px-3 text-sm font-bold text-[#7a4b00]">
             <Lightbulb aria-hidden className="size-4" />
             {recommendations.length} совета
           </span>
@@ -293,7 +293,7 @@ export default async function CompanyDashboardPage() {
               <h3 className="text-lg font-semibold text-slate-950">Быстрые шаблоны</h3>
               <p className="mt-1 text-sm text-slate-600">Выберите готовый сценарий или откройте полные настройки.</p>
             </div>
-            <Link href="/company/settings" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-4 text-sm font-semibold text-white">
+            <Link href="/company/settings" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white">
               Все настройки
             </Link>
           </div>
@@ -303,7 +303,7 @@ export default async function CompanyDashboardPage() {
                 <Link key={template.id} href={`/company/settings?template=${template.id}`} className="rounded-lg border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-3xl">{template.icon}</span>
-                    <Gift aria-hidden className="size-5 text-teal-700" />
+                    <Gift aria-hidden className="size-5 text-[var(--brand)]" />
                   </div>
                   <h3 className="mt-3 font-semibold text-slate-950">{template.title}</h3>
                   <p className="mt-1 text-sm text-slate-600">{template.goalCount} покупок · {template.rewardTitle}</p>
@@ -367,11 +367,11 @@ function Metric({
     <div className="stat-card p-5">
       <div className="relative z-10">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-[#7b6a5b]">{label}</p>
-          <span className="flex size-9 items-center justify-center rounded-lg bg-white text-green-700 shadow-sm ring-1 ring-amber-100">{icon}</span>
+          <p className="text-sm font-semibold text-[var(--text-muted)]">{label}</p>
+          <span className="flex size-9 items-center justify-center rounded-lg bg-white text-[var(--brand)] shadow-sm ring-1 ring-[var(--border)]">{icon}</span>
         </div>
-        <p className="mt-3 text-3xl font-semibold text-[#2f1d13]">{value}</p>
-        <p className="mt-1 text-sm text-[#7b6a5b]">{description}</p>
+        <p className="mt-3 text-3xl font-semibold text-[var(--text)]">{value}</p>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">{description}</p>
       </div>
     </div>
   );
@@ -511,21 +511,21 @@ function buildOwnerRecommendations({
 
 function RecommendationCard({ recommendation }: { recommendation: OwnerRecommendation }) {
   const styles = {
-    green: "bg-green-50 text-green-800",
-    amber: "bg-amber-100 text-amber-900",
+    green: "bg-[var(--brand-soft)] text-[var(--brand)]",
+    amber: "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]",
     blue: "bg-blue-50 text-blue-800",
   };
 
   return (
-    <Link href={recommendation.href} className="rounded-lg border border-amber-100 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+    <Link href={recommendation.href} className="rounded-lg border border-[var(--border)] bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start gap-3">
         <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${styles[recommendation.tone]}`}>
           {recommendation.icon}
         </div>
         <div className="min-w-0">
-          <h3 className="font-semibold text-[#2f1d13]">{recommendation.title}</h3>
-          <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">{recommendation.text}</p>
-          <span className="mt-3 inline-flex min-h-9 items-center rounded-lg bg-green-700 px-3 text-sm font-bold text-white">
+          <h3 className="font-semibold text-[var(--text)]">{recommendation.title}</h3>
+          <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">{recommendation.text}</p>
+          <span className="mt-3 inline-flex min-h-9 items-center rounded-lg bg-[var(--brand)] px-3 text-sm font-bold text-white">
             {recommendation.action}
           </span>
         </div>
@@ -538,13 +538,13 @@ function Action({ href, icon, title, text, emphasis = false }: { href: string; i
   return (
     <Link
       href={href}
-      className={`panel block p-5 transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-4 focus-visible:outline-green-700/25 ${
-        emphasis ? "border-2 border-green-700 bg-[#fffdf8] shadow-[0_18px_46px_rgba(21,128,61,0.14)]" : ""
+      className={`panel block p-5 transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline focus-visible:outline-4 focus-visible:outline-[rgba(255,106,61,0.25)] ${
+        emphasis ? "border-2 border-[var(--brand)] bg-white shadow-[0_18px_46px_rgba(21,128,61,0.14)]" : ""
       }`}
     >
-      <div className={`flex size-12 items-center justify-center rounded-lg ${emphasis ? "bg-green-100 text-green-900 ring-1 ring-green-700/25" : "bg-green-50 text-green-800"}`}>{icon}</div>
-      <h2 className="mt-4 text-xl font-semibold text-[#2f1d13]">{title}</h2>
-      <p className={`mt-2 ${emphasis ? "text-[#5c3521]" : "text-slate-600"}`}>{text}</p>
+      <div className={`flex size-12 items-center justify-center rounded-lg ${emphasis ? "bg-[var(--brand-soft)] text-[var(--brand-ink)] ring-1 ring-[rgba(255,106,61,0.25)]" : "bg-[var(--brand-soft)] text-[var(--brand)]"}`}>{icon}</div>
+      <h2 className="mt-4 text-xl font-semibold text-[var(--text)]">{title}</h2>
+      <p className={`mt-2 ${emphasis ? "text-[var(--text)]" : "text-slate-600"}`}>{text}</p>
     </Link>
   );
 }
@@ -561,16 +561,16 @@ function AccordionSection({
   children: React.ReactNode;
 }) {
   return (
-    <details className="group rounded-lg border border-amber-100 bg-[#fffdf8] shadow-[0_16px_40px_rgba(92,53,33,0.08)]">
+    <details className="group rounded-lg border border-[var(--border)] bg-white shadow-[0_16px_40px_rgba(92,53,33,0.08)]">
       <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-800">{icon}</div>
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">{icon}</div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-[#2f1d13]">{title}</h2>
-          <p className="mt-0.5 text-sm text-[#7b6a5b]">{description}</p>
+          <h2 className="font-semibold text-[var(--text)]">{title}</h2>
+          <p className="mt-0.5 text-sm text-[var(--text-muted)]">{description}</p>
         </div>
         <ChevronDown aria-hidden className="size-5 shrink-0 text-slate-400 transition group-open:rotate-180" />
       </summary>
-      <div className="border-t border-amber-100 p-4">{children}</div>
+      <div className="border-t border-[var(--border)] p-4">{children}</div>
     </details>
   );
 }
@@ -582,7 +582,7 @@ function SectionAction({ href, title, text }: { href: string; title: string; tex
         <span className="block font-semibold text-slate-950">{title}</span>
         <span className="mt-1 block text-sm text-slate-600">{text}</span>
       </span>
-      <span className="shrink-0 text-sm font-semibold text-teal-700">Открыть</span>
+      <span className="shrink-0 text-sm font-semibold text-[var(--brand)]">Открыть</span>
     </Link>
   );
 }
@@ -610,7 +610,7 @@ function SubscriptionNotice({
 }) {
   const styles = {
     success: "bg-emerald-50 text-emerald-900",
-    warning: "bg-amber-50 text-amber-950",
+    warning: "bg-[var(--inactive)] text-[#5f3a00]",
     danger: "bg-red-50 text-red-900",
   };
 

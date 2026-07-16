@@ -15,23 +15,23 @@ export default async function SupportPage() {
   const body = encodeURIComponent("Здравствуйте. Нужна помощь с приложением ПроПлюшка.");
 
   return (
-    <main className="min-h-screen bg-[#fff8ed] px-4 pb-28 pt-3">
+    <main className="min-h-screen bg-[var(--background)] px-4 pb-28 pt-3">
       <section className="mx-auto max-w-md space-y-3">
         <ClientBrandHeader />
 
-        <Link href="/app/account" className="inline-flex items-center gap-2 text-sm font-semibold text-[#7b6a5b]">
+        <Link href="/app/account" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)]">
           <ArrowLeft aria-hidden className="size-4" />
           Назад
         </Link>
 
         <section className="warm-card p-4">
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-800">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
               <MessageCircle aria-hidden className="size-5" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-[#2f1d13]">Поддержка</h1>
-              <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">Выберите удобный способ связи.</p>
+              <h1 className="text-xl font-semibold text-[var(--text)]">Поддержка</h1>
+              <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">Выберите удобный способ связи.</p>
             </div>
           </div>
         </section>
@@ -42,7 +42,7 @@ export default async function SupportPage() {
               href={`mailto:${settings.supportEmail}?subject=${subject}&body=${body}`}
               className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800"
             >
-              <Mail aria-hidden className="size-5 text-teal-700" />
+              <Mail aria-hidden className="size-5 text-[var(--brand)]" />
               <span className="min-w-0">
                 <span className="block">Написать на почту</span>
                 <span className="block truncate text-xs font-medium text-slate-500">{settings.supportEmail}</span>
@@ -55,7 +55,7 @@ export default async function SupportPage() {
               href={`sms:${supportPhone}?body=${body}`}
               className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800"
             >
-              <MessageCircle aria-hidden className="size-5 text-teal-700" />
+              <MessageCircle aria-hidden className="size-5 text-[var(--brand)]" />
               <span className="min-w-0">
                 <span className="block">SMS на номер поддержки</span>
                 <span className="block truncate text-xs font-medium text-slate-500">{supportPhoneLabel}</span>
@@ -66,13 +66,13 @@ export default async function SupportPage() {
               href={`tel:${supportPhone}`}
               className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800"
             >
-              <Phone aria-hidden className="size-5 text-teal-700" />
+              <Phone aria-hidden className="size-5 text-[var(--brand)]" />
               Позвонить: {supportPhoneLabel}
             </a>
           </div>
         </section>
 
-        <section className="warm-card p-4 text-sm leading-5 text-[#7b6a5b]">
+        <section className="warm-card p-4 text-sm leading-5 text-[var(--text-muted)]">
           В MAX откройте поиск контакта по номеру {supportPhoneLabel}. Кнопка «Написать в MAX» откроет меню телефона, где можно выбрать MAX, если он установлен.
         </section>
       </section>

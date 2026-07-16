@@ -90,7 +90,7 @@ export function InstallPwaButton({ placement = "inline" }: InstallPwaButtonProps
   ) : null;
 
   const hint = showIosHint ? (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--inactive)] p-3 text-sm font-medium text-[#7a4b00]">
       На iPhone нажмите «Поделиться» → «На экран Домой».
     </div>
   ) : null;

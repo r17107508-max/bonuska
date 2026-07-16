@@ -24,7 +24,7 @@ export function ConfirmSubmit({
         type="button"
         onClick={() => setOpen(true)}
         className={`inline-flex min-h-12 w-full items-center justify-center rounded-lg px-4 text-base font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60 ${
-          danger ? "bg-red-700 hover:bg-red-800" : "bg-teal-700 hover:bg-teal-800"
+          danger ? "bg-red-700 hover:bg-red-800" : "bg-[var(--brand)] hover:bg-[var(--brand-strong)]"
         }`}
       >
         {buttonText}
@@ -73,7 +73,7 @@ function ModalSubmitButton({
       type="submit"
       disabled={pending}
       className={`min-h-12 rounded-lg px-4 font-semibold text-white disabled:opacity-60 ${
-        danger ? "bg-red-700" : "bg-teal-700"
+        danger ? "bg-red-700" : "bg-[var(--brand)]"
       }`}
     >
       {pending ? "Отправляем..." : confirmButtonText}

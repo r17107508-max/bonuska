@@ -14,7 +14,7 @@ export default async function AccountDeletePage() {
           <BrandMark />
         </Link>
         <section className="panel mt-8 p-6">
-          <p className="badge bg-teal-50 text-teal-800">Удаление аккаунта</p>
+          <p className="badge bg-[var(--brand-soft)] text-[var(--brand-ink)]">Удаление аккаунта</p>
           <h1 className="mt-4 text-4xl font-semibold text-slate-950">Как удалить аккаунт и данные</h1>
           <div className="mt-6 space-y-5 leading-7 text-slate-700">
             <p>
@@ -33,7 +33,7 @@ export default async function AccountDeletePage() {
             </p>
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <p className="text-sm font-semibold text-slate-500">Поддержка</p>
-              <a className="mt-1 inline-block font-semibold text-teal-700" href={`mailto:${settings.supportEmail}`}>
+              <a className="mt-1 inline-block font-semibold text-[var(--brand)]" href={`mailto:${settings.supportEmail}`}>
                 {settings.supportEmail}
               </a>
             </div>
@@ -43,7 +43,7 @@ export default async function AccountDeletePage() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
-                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-teal-700 px-4 font-semibold text-white"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-4 font-semibold text-white"
                 href="/app/account"
               >
                 Открыть аккаунт

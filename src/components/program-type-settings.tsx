@@ -84,7 +84,7 @@ export function ProgramTypeSettings({
           name="programType"
           value={programType}
           onChange={(event) => setProgramType(event.target.value as ProgramType)}
-          className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+          className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
         >
           {availableProgramTypes.map((type) => (
             <option key={type} value={type}>
@@ -94,13 +94,13 @@ export function ProgramTypeSettings({
         </select>
       </label>
 
-      <section className="rounded-lg border border-teal-100 bg-teal-50 p-4 text-sm leading-6 text-slate-700">
+      <section className="rounded-lg border border-[rgba(255,106,61,0.2)] bg-[var(--brand-soft)] p-4 text-sm leading-6 text-slate-700">
         <p className="font-semibold text-slate-950">Как работает выбранный тип программы</p>
         <p className="mt-2">{selected.description}</p>
         <ul className="mt-3 grid gap-1">
           {selected.logic.map((item) => (
             <li key={item} className="flex gap-2">
-              <span className="mt-2 size-1.5 shrink-0 rounded-full bg-teal-700" />
+              <span className="mt-2 size-1.5 shrink-0 rounded-full bg-[var(--brand)]" />
               <span>{item}</span>
             </li>
           ))}
@@ -110,7 +110,7 @@ export function ProgramTypeSettings({
       <label className="block">
         <span className="text-sm font-semibold text-slate-700">Подарки для коробки, по одному в строке</span>
         {programType === "GIFT_BOX" && (
-          <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+          <p className="mt-2 rounded-lg bg-[var(--inactive)] p-3 text-sm leading-6 text-[#7a4b00]">
             Введите подарки по одному в строке. Когда клиент накопит нужное количество покупок, он сам откроет коробку в кабинете.
           </p>
         )}
@@ -118,7 +118,7 @@ export function ProgramTypeSettings({
           name="giftOptions"
           rows={Math.max(5, giftLines.length)}
           defaultValue={giftOptionsDefaultValue}
-          className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+          className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
         />
       </label>
     </div>

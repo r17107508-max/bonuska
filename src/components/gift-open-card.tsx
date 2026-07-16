@@ -60,17 +60,17 @@ export function GiftOpenCard({
 
   return (
     <>
-      <section className={`panel overflow-hidden p-4 ${hasOpenedGift ? "border-amber-300 bg-white" : "border-amber-200 bg-amber-50"}`}>
+      <section className={`panel overflow-hidden p-4 ${hasOpenedGift ? "border-[var(--gold)] bg-white" : "border-[var(--border)] bg-[var(--inactive)]"}`}>
         <div className="flex items-start gap-3">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-amber-200 text-amber-900">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-[rgba(255,200,87,0.44)] text-[#7a4b00]">
             {hasOpenedGift ? <PartyPopper aria-hidden className="size-6" /> : <Gift aria-hidden className="size-6" />}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase text-amber-800">Подарок</p>
+            <p className="text-xs font-semibold uppercase text-[#7a4b00]">Подарок</p>
             <h2 className="mt-1 text-xl font-semibold text-slate-950">
               {hasOpenedGift ? `Ваш подарок: ${claim?.title}` : "Откройте коробку"}
             </h2>
-            <p className="mt-1 text-sm leading-5 text-amber-900">
+            <p className="mt-1 text-sm leading-5 text-[#7a4b00]">
               {hasOpenedGift
                 ? "Покажите QR кассиру."
                 : `Узнайте подарок от ${companyName}.`}
@@ -78,14 +78,14 @@ export function GiftOpenCard({
 
             {hasOpenedGift ? (
               <div className="mt-4">
-                {claim?.description && <p className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{claim.description}</p>}
+                {claim?.description && <p className="mb-3 rounded-lg bg-[var(--inactive)] p-3 text-sm text-[#7a4b00]">{claim.description}</p>}
                 <div className="flex justify-center rounded-lg bg-white p-4 shadow-inner ring-1 ring-slate-200">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className="size-56" src={claim?.qrDataUrl ?? ""} alt="QR-код подарка" />
                 </div>
                 {claim?.rewardQrToken && (
-                  <div className="mt-3 rounded-lg bg-white p-3 text-center ring-1 ring-amber-100">
-                    <p className="text-xs font-semibold uppercase text-amber-800">Код подарка для ручного ввода</p>
+                  <div className="mt-3 rounded-lg bg-white p-3 text-center ring-1 ring-[var(--border)]">
+                    <p className="text-xs font-semibold uppercase text-[#7a4b00]">Код подарка для ручного ввода</p>
                     <p className="mt-1 font-mono text-2xl font-semibold tracking-normal text-slate-950">
                       {buildManualScanCode(claim.rewardQrToken, "reward")}
                     </p>
@@ -97,7 +97,7 @@ export function GiftOpenCard({
               <button
                 type="button"
                 onClick={openGift}
-                className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 font-semibold text-white shadow-sm transition active:scale-[0.99]"
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white shadow-sm transition active:scale-[0.99]"
               >
                 <Sparkles aria-hidden className="size-4" />
                 Открыть подарок
@@ -131,7 +131,7 @@ export function GiftOpenCard({
               {loading && (
                 <div className="mt-6">
                   <h2 className="text-xl font-semibold text-slate-950">Открываем подарок</h2>
-                  <Loader2 aria-hidden className="mx-auto mt-4 size-6 animate-spin text-amber-600" />
+                  <Loader2 aria-hidden className="mx-auto mt-4 size-6 animate-spin text-[var(--brand)]" />
                 </div>
               )}
 
@@ -144,7 +144,7 @@ export function GiftOpenCard({
 
               {!loading && hasOpenedGift && (
                 <div className="mt-6">
-                  <p className="text-sm font-semibold uppercase text-amber-700">Поздравляем!</p>
+                  <p className="text-sm font-semibold uppercase text-[var(--brand)]">Поздравляем!</p>
                   <h2 className="mt-2 text-xl font-semibold text-slate-950">{claim?.title}</h2>
                   {claim?.description && <p className="mt-2 text-sm text-slate-600">{claim.description}</p>}
                   <div className="mx-auto mt-5 flex max-w-64 items-center justify-center rounded-lg bg-white p-4 shadow-inner ring-1 ring-slate-200">
@@ -152,8 +152,8 @@ export function GiftOpenCard({
                     <img src={claim?.qrDataUrl ?? ""} alt="QR-код подарка" />
                   </div>
                   {claim?.rewardQrToken && (
-                    <div className="mx-auto mt-3 max-w-64 rounded-lg bg-amber-50 p-3 ring-1 ring-amber-100">
-                      <p className="text-xs font-semibold uppercase text-amber-800">Код подарка</p>
+                    <div className="mx-auto mt-3 max-w-64 rounded-lg bg-[var(--inactive)] p-3 ring-1 ring-[var(--border)]">
+                      <p className="text-xs font-semibold uppercase text-[#7a4b00]">Код подарка</p>
                       <p className="mt-1 font-mono text-2xl font-semibold tracking-normal text-slate-950">
                         {buildManualScanCode(claim.rewardQrToken, "reward")}
                       </p>

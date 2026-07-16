@@ -104,10 +104,10 @@ export function PartnersMap({ points }: { points: PartnerMapPoint[] }) {
   }, [visiblePoints]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-amber-100 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-sm">
       <div ref={mapElementRef} className="h-[360px] w-full" aria-label="Карта точек ПроПлюшка" />
       {visiblePoints.length === 0 && (
-        <div className="border-t border-amber-100 bg-white px-4 py-3 text-sm font-medium text-[#7b6a5b]">
+        <div className="border-t border-[var(--border)] bg-white px-4 py-3 text-sm font-medium text-[var(--text-muted)]">
           У партнёров этого города пока не указаны координаты для карты.
         </div>
       )}

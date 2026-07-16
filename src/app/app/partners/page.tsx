@@ -23,44 +23,44 @@ export default async function PartnersPage({
   const partners = await getActivePartnerCompanies(selectedCity || null, undefined, selectedCategory || null);
 
   return (
-    <main className="min-h-screen bg-[#fff8ed] px-4 pb-28 pt-3">
+    <main className="min-h-screen bg-[var(--background)] px-4 pb-28 pt-3">
       <section className="mx-auto max-w-md space-y-3">
         <ClientBrandHeader />
 
         <section className="warm-card p-4">
           <div className="flex items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-800">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
               <Store aria-hidden className="size-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase text-green-800">Партнёры рядом</p>
-              <h1 className="mt-1 text-2xl font-bold text-[#2f1d13]">Карта точек</h1>
-              <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">Выберите место, посмотрите правила и постройте маршрут.</p>
+              <p className="text-xs font-semibold uppercase text-[var(--brand)]">Партнёры рядом</p>
+              <h1 className="mt-1 text-2xl font-bold text-[var(--text)]">Карта точек</h1>
+              <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">Выберите место, посмотрите правила и постройте маршрут.</p>
             </div>
           </div>
         </section>
 
         <section className="warm-card p-4">
           <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[rgba(255,200,87,0.25)] text-[#7a4b00]">
               <MapPinned aria-hidden className="size-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase text-[#7b6a5b]">Город</p>
-              <p className="mt-1 truncate text-lg font-semibold text-[#2f1d13]">{selectedCity || "Не выбран"}</p>
+              <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">Город</p>
+              <p className="mt-1 truncate text-lg font-semibold text-[var(--text)]">{selectedCity || "Не выбран"}</p>
             </div>
           </div>
 
           <form className="mt-3 grid gap-3">
             <input type="hidden" name="category" value={selectedCategory} />
             <label className="block">
-              <span className="text-xs font-semibold uppercase text-[#7b6a5b]">Изменить город</span>
+              <span className="text-xs font-semibold uppercase text-[var(--text-muted)]">Изменить город</span>
               <input
                 name="city"
                 list="partner-city-options"
                 defaultValue={selectedCity}
                 placeholder="Введите город"
-                className="mt-1.5 min-h-11 w-full rounded-lg border border-amber-100 bg-white px-3 text-sm text-[#2f1d13] outline-none transition focus:border-green-700 focus:ring-4 focus:ring-green-700/15"
+                className="mt-1.5 min-h-11 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
               />
               <datalist id="partner-city-options">
                 {cities.map((city) => (
@@ -69,10 +69,10 @@ export default async function PartnersPage({
               </datalist>
             </label>
             <div className="grid grid-cols-2 gap-2">
-              <button className="min-h-11 rounded-lg bg-green-700 px-4 text-sm font-bold text-white">Показать</button>
+              <button className="min-h-11 rounded-lg bg-[var(--brand)] px-4 text-sm font-bold text-white">Показать</button>
               <Link
                 href={myCity ? `/app/partners?city=${encodeURIComponent(myCity)}${selectedCategory ? `&category=${encodeURIComponent(selectedCategory)}` : ""}` : "/app/account"}
-                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-amber-100 bg-white px-4 text-sm font-bold text-[#5c3521]"
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--border)] bg-white px-4 text-sm font-bold text-[var(--text)]"
               >
                 Мой город
               </Link>
@@ -81,8 +81,8 @@ export default async function PartnersPage({
         </section>
 
         <section className="warm-card p-3">
-          <div className="mb-3 flex items-center gap-2 px-1 text-sm font-bold text-[#2f1d13]">
-            <Filter aria-hidden className="size-4 text-green-800" />
+          <div className="mb-3 flex items-center gap-2 px-1 text-sm font-bold text-[var(--text)]">
+            <Filter aria-hidden className="size-4 text-[var(--brand)]" />
             Категории
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -146,7 +146,7 @@ function CategoryLink({ active, href, children }: { active: boolean; href: strin
     <Link
       href={href}
       className={`inline-flex min-h-10 max-w-48 shrink-0 items-center rounded-lg px-4 text-sm font-bold ${
-        active ? "bg-green-700 text-white" : "border border-amber-100 bg-white/80 text-[#5c3521]"
+        active ? "bg-[var(--brand)] text-white" : "border border-[var(--border)] bg-white/80 text-[var(--text)]"
       }`}
     >
       <span className="truncate">{children}</span>

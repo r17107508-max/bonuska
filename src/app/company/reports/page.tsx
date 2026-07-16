@@ -164,7 +164,7 @@ export default async function CompanyReportsPage() {
             {repeatClients} из {clientsTotal} клиентов сделали больше одной покупки. Это главный показатель, что акция возвращает людей.
           </p>
           <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-green-700" style={{ width: `${repeatRate}%` }} />
+            <div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${repeatRate}%` }} />
           </div>
         </section>
 
@@ -239,7 +239,7 @@ export default async function CompanyReportsPage() {
                   <span className="font-semibold">{client.user.name}</span>
                   <span className="ml-2 text-sm text-slate-500">{client.user.phone}</span>
                 </span>
-                <span className="font-semibold text-amber-700">{client.currentCount}/{program?.goalCount ?? 6}</span>
+                <span className="font-semibold text-[var(--brand)]">{client.currentCount}/{program?.goalCount ?? 6}</span>
               </div>
             ))}
             {nearRewardClients.length === 0 && <p className="py-3 text-sm text-slate-500">Пока нет клиентов в шаге от подарка.</p>}
@@ -274,7 +274,7 @@ export default async function CompanyReportsPage() {
                   <span className="font-semibold">{client.user.name}</span>
                   <span className="ml-2 text-sm text-slate-500">{client.user.phone}</span>
                 </span>
-                  <span className="font-semibold text-teal-700">{client.totalPurchases}</span>
+                  <span className="font-semibold text-[var(--brand)]">{client.totalPurchases}</span>
                 </div>
               ))}
               {topClients.length === 0 && <p className="py-3 text-sm text-slate-500">Покупок пока нет.</p>}
@@ -289,7 +289,7 @@ export default async function CompanyReportsPage() {
                     <span className="font-semibold">{client.user.name}</span>
                     <span className="ml-2 text-sm text-slate-500">{client.user.phone}</span>
                   </span>
-                  <span className="font-semibold text-amber-700">{client.totalRewards}</span>
+                  <span className="font-semibold text-[var(--brand)]">{client.totalRewards}</span>
                 </div>
               ))}
               {topRewardClients.length === 0 && <p className="py-3 text-sm text-slate-500">Выданных подарков пока нет.</p>}

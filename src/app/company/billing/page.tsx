@@ -44,10 +44,10 @@ export default async function CompanyBillingPage({
             </div>
           </div>
 
-          <div className="mt-6 rounded-xl bg-teal-50 p-5 text-teal-950">
+          <div className="mt-6 rounded-xl bg-[var(--brand-soft)] p-5 text-[var(--brand-ink)]">
             <p className="text-sm font-semibold uppercase">Тариф</p>
-            <p className="mt-2 text-4xl font-semibold">{money(settings.subscriptionPrice)} <span className="text-lg text-teal-800">/ месяц</span></p>
-            <p className="mt-2 text-sm text-teal-800">Без комиссии с покупок, без оплаты за каждого клиента. После подтверждения оплаты доступ продлевается на 30 дней.</p>
+            <p className="mt-2 text-4xl font-semibold">{money(settings.subscriptionPrice)} <span className="text-lg text-[var(--brand-ink)]">/ месяц</span></p>
+            <p className="mt-2 text-sm text-[var(--brand-ink)]">Без комиссии с покупок, без оплаты за каждого клиента. После подтверждения оплаты доступ продлевается на 30 дней.</p>
           </div>
 
           <div className="mt-6">

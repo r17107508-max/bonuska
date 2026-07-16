@@ -25,19 +25,19 @@ export default async function ClientRewardsPage({
   });
 
   return (
-    <main className="min-h-screen bg-[#fff8ed] px-4 pb-28 pt-3">
+    <main className="min-h-screen bg-[var(--background)] px-4 pb-28 pt-3">
       <section className="mx-auto max-w-md space-y-3">
         <ClientBrandHeader />
 
         <section className="warm-card p-4">
           <div className="flex items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[rgba(255,200,87,0.25)] text-[#7a4b00]">
               <Gift aria-hidden className="size-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase text-amber-800">Каталог плюшек</p>
-              <h1 className="mt-1 text-2xl font-bold text-[#2f1d13]">Награды</h1>
-              <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">
+              <p className="text-xs font-semibold uppercase text-[#7a4b00]">Каталог плюшек</p>
+              <h1 className="mt-1 text-2xl font-bold text-[var(--text)]">Награды</h1>
+              <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">
                 Здесь собраны доступные и ближайшие подарки по вашим картам.
               </p>
             </div>
@@ -76,14 +76,14 @@ export default async function ClientRewardsPage({
 
           {filteredRewards.length === 0 && (
             <div className="warm-card p-5 text-center">
-              <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+              <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-[rgba(255,200,87,0.25)] text-[#7a4b00]">
                 <Search aria-hidden className="size-6" />
               </div>
-              <h2 className="mt-3 text-lg font-semibold text-[#2f1d13]">Наград пока нет в этом фильтре</h2>
-              <p className="mt-1 text-sm leading-5 text-[#7b6a5b]">
+              <h2 className="mt-3 text-lg font-semibold text-[var(--text)]">Наград пока нет в этом фильтре</h2>
+              <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">
                 Покупайте у партнёров, чтобы открыть подарки и видеть ближайшие цели.
               </p>
-              <Link href="/app/partners" className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-green-700 px-4 text-sm font-bold text-white">
+              <Link href="/app/partners" className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 text-sm font-bold text-white">
                 <MapPinned aria-hidden className="size-4" />
                 Карта партнёров
               </Link>
@@ -136,7 +136,7 @@ function TabLink({ active, href, children }: { active: boolean; href: string; ch
     <Link
       href={href}
       className={`inline-flex min-h-10 shrink-0 items-center rounded-lg px-4 text-sm font-bold ${
-        active ? "bg-green-700 text-white" : "border border-amber-100 bg-white/80 text-[#5c3521]"
+        active ? "bg-[var(--brand)] text-white" : "border border-[var(--border)] bg-white/80 text-[var(--text)]"
       }`}
     >
       {children}
@@ -149,7 +149,7 @@ function CompanyFilter({ active, href, children }: { active: boolean; href: stri
     <Link
       href={href}
       className={`inline-flex min-h-9 max-w-44 shrink-0 items-center rounded-lg px-3 text-xs font-bold ${
-        active ? "bg-amber-100 text-amber-900" : "border border-amber-100 bg-white/70 text-[#7b6a5b]"
+        active ? "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]" : "border border-[var(--border)] bg-white/70 text-[var(--text-muted)]"
       }`}
     >
       <span className="truncate">{children}</span>
@@ -167,10 +167,10 @@ function RewardCard({
   return (
     <Link
       href={`/app/cards/${reward.membershipId}`}
-      className={`warm-card block p-4 transition active:scale-[0.99] ${reward.rewardAvailable ? "border-amber-300 bg-amber-50" : ""}`}
+      className={`warm-card block p-4 transition active:scale-[0.99] ${reward.rewardAvailable ? "border-[var(--gold)] bg-[var(--inactive)]" : ""}`}
     >
       <div className="flex items-start gap-3">
-        <div className={`flex size-12 shrink-0 items-center justify-center rounded-lg ${reward.rewardAvailable ? "bg-amber-200 text-amber-950" : "bg-green-50 text-green-800"}`}>
+        <div className={`flex size-12 shrink-0 items-center justify-center rounded-lg ${reward.rewardAvailable ? "bg-[rgba(255,200,87,0.44)] text-[#5f3a00]" : "bg-[var(--brand-soft)] text-[var(--brand)]"}`}>
           <span className="text-xl" aria-hidden>
             {reward.icon}
           </span>
@@ -178,27 +178,27 @@ function RewardCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-semibold text-[#2f1d13]">{reward.title}</h2>
-              <p className="mt-1 flex items-center gap-1 truncate text-sm font-semibold text-[#7b6a5b]">
+              <h2 className="truncate text-lg font-semibold text-[var(--text)]">{reward.title}</h2>
+              <p className="mt-1 flex items-center gap-1 truncate text-sm font-semibold text-[var(--text-muted)]">
                 <Store aria-hidden className="size-4 shrink-0" />
                 {reward.companyName}
               </p>
             </div>
-            <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${reward.rewardAvailable ? "bg-amber-100 text-amber-900" : "bg-white text-[#7b6a5b]"}`}>
+            <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${reward.rewardAvailable ? "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]" : "bg-white text-[var(--text-muted)]"}`}>
               {reward.rewardAvailable ? <Sparkles aria-hidden className="size-3.5" /> : <LockKeyhole aria-hidden className="size-3.5" />}
               {reward.rewardAvailable ? "Доступно" : `${reward.left} до цели`}
             </span>
           </div>
-          {reward.description && <p className="mt-2 line-clamp-2 text-sm leading-5 text-[#7b6a5b]">{reward.description}</p>}
+          {reward.description && <p className="mt-2 line-clamp-2 text-sm leading-5 text-[var(--text-muted)]">{reward.description}</p>}
         </div>
       </div>
 
-      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-amber-100">
-        <div className={`h-full rounded-full ${reward.rewardAvailable ? "bg-amber-500" : "bg-green-700"}`} style={{ width: `${progress}%` }} />
+      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-[rgba(255,200,87,0.25)]">
+        <div className={`h-full rounded-full ${reward.rewardAvailable ? "bg-[var(--gold)]" : "bg-[var(--brand)]"}`} style={{ width: `${progress}%` }} />
       </div>
       <div className="mt-2 flex items-center justify-between gap-3 text-sm font-semibold">
-        <span className="text-[#5c3521]">{reward.rewardAvailable ? "Можно забрать" : `${reward.current}/${reward.goal}`}</span>
-        <span className="text-green-800">{reward.isGiftBox && reward.rewardAvailable ? "Открыть подарок" : "Открыть карту"}</span>
+        <span className="text-[var(--text)]">{reward.rewardAvailable ? "Можно забрать" : `${reward.current}/${reward.goal}`}</span>
+        <span className="text-[var(--brand)]">{reward.isGiftBox && reward.rewardAvailable ? "Открыть подарок" : "Открыть карту"}</span>
       </div>
     </Link>
   );

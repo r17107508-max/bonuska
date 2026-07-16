@@ -32,7 +32,7 @@ export function SupportShareButton() {
       <button
         type="button"
         onClick={shareToMessenger}
-        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm active:scale-[0.99]"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white shadow-sm active:scale-[0.99]"
       >
         <MessageCircle aria-hidden className="size-5" />
         Написать в MAX

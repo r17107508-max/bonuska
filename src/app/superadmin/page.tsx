@@ -89,7 +89,7 @@ export default async function SuperadminPage() {
       )}
 
       {pendingCompanies.length > 0 && (
-        <Link href="/superadmin/companies" className="mb-5 block rounded-lg bg-amber-50 p-4 font-semibold text-amber-900">
+        <Link href="/superadmin/companies" className="mb-5 block rounded-lg bg-[var(--inactive)] p-4 font-semibold text-[#7a4b00]">
           Новые заявки на подтверждение: {pendingCompanies.length}. Откройте список компаний, чтобы проверить и подтвердить регистрацию.
         </Link>
       )}
@@ -108,7 +108,7 @@ export default async function SuperadminPage() {
             <h2 className="text-xl font-semibold text-slate-950">Воронка trial → оплата</h2>
             <p className="mt-2 text-sm text-slate-600">Показывает, сколько компаний дошли от заявки и trial до реальной оплаты.</p>
           </div>
-          <Link href="/superadmin/payments" className="text-sm font-semibold text-teal-700">Оплаты</Link>
+          <Link href="/superadmin/payments" className="text-sm font-semibold text-[var(--brand)]">Оплаты</Link>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
           {funnelCards.map(([label, value]) => (
@@ -123,7 +123,7 @@ export default async function SuperadminPage() {
             <h2 className="text-xl font-semibold text-slate-950">Операционное здоровье</h2>
             <p className="mt-2 text-sm text-slate-600">Быстрые сигналы: кому нужна помощь с запуском, где не сработали письма, где нет кассиров.</p>
           </div>
-          <Link href="/superadmin/companies" className="text-sm font-semibold text-teal-700">Все компании</Link>
+          <Link href="/superadmin/companies" className="text-sm font-semibold text-[var(--brand)]">Все компании</Link>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
           {healthCards.map(([label, value]) => (
@@ -142,7 +142,7 @@ export default async function SuperadminPage() {
                   <span className="font-semibold text-slate-950">{company.name}</span>
                   <span className="ml-2 text-sm text-slate-500">{company.city}</span>
                 </span>
-                <span className="text-sm font-semibold text-teal-700">Открыть</span>
+                <span className="text-sm font-semibold text-[var(--brand)]">Открыть</span>
               </Link>
             ))}
           </div>
@@ -152,7 +152,7 @@ export default async function SuperadminPage() {
       <section className="panel mt-6 p-5">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-slate-950">Заявки на подтверждение</h2>
-          <Link href="/superadmin/companies" className="text-sm font-semibold text-teal-700">Все компании</Link>
+          <Link href="/superadmin/companies" className="text-sm font-semibold text-[var(--brand)]">Все компании</Link>
         </div>
         <div className="mt-4 divide-y divide-slate-200">
           {pendingCompanies.slice(0, 6).map((company) => (
@@ -161,7 +161,7 @@ export default async function SuperadminPage() {
                 <span className="font-semibold text-slate-950">{company.name}</span>
                 <span className="ml-2 text-sm text-slate-500">{company.city}</span>
               </span>
-              <span className="text-sm font-semibold text-teal-700">Открыть</span>
+              <span className="text-sm font-semibold text-[var(--brand)]">Открыть</span>
             </Link>
           ))}
           {pendingCompanies.length === 0 && <p className="py-3 text-slate-500">Новых заявок нет.</p>}

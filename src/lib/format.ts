@@ -97,7 +97,7 @@ export function statusLabel(status: CompanyStatus) {
 
 export function statusClass(status: CompanyStatus) {
   const classes: Record<CompanyStatus, string> = {
-    PENDING: "bg-amber-100 text-amber-800",
+    PENDING: "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]",
     ACTIVE_TRIAL: "bg-sky-100 text-sky-800",
     ACTIVE_PAID: "bg-emerald-100 text-emerald-800",
     PAYMENT_REQUIRED: "bg-rose-100 text-rose-800",

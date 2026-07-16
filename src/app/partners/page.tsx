@@ -11,7 +11,7 @@ export default async function PublicPartnersPage() {
         <div className="page-shell flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
           <Link href="/" className="text-xl font-semibold text-slate-950">ПроПлюшка</Link>
           <div className="flex flex-wrap gap-2">
-            <Link href="/client/register" className="inline-flex min-h-10 items-center justify-center rounded-lg bg-teal-700 px-4 text-sm font-semibold text-white">
+            <Link href="/client/register" className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white">
               Стать клиентом
             </Link>
             <Link href="/client/login" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700">
@@ -23,7 +23,7 @@ export default async function PublicPartnersPage() {
 
       <section className="page-shell py-10">
         <div className="max-w-3xl">
-          <p className="text-sm font-semibold uppercase text-teal-700">Партнёры</p>
+          <p className="text-sm font-semibold uppercase text-[var(--brand)]">Партнёры</p>
           <h1 className="mt-2 text-4xl font-semibold leading-tight text-slate-950">Где можно копить плюшки</h1>
           <p className="mt-4 text-lg leading-8 text-slate-600">
             Активные компании, где можно использовать один QR-код сервиса «ПроПлюшка».
@@ -47,7 +47,7 @@ export default async function PublicPartnersPage() {
                       </h2>
                       <p className="mt-1 text-sm font-medium text-slate-500">{company.businessType}</p>
                     </div>
-                    <Store aria-hidden className="size-5 shrink-0 text-teal-700" />
+                    <Store aria-hidden className="size-5 shrink-0 text-[var(--brand)]" />
                   </div>
 
                   {address && <p className="mt-3 text-sm leading-6 text-slate-700">{address}</p>}
@@ -56,7 +56,7 @@ export default async function PublicPartnersPage() {
                   <div className="mt-4 grid gap-2 sm:grid-cols-2">
                     <Link
                       href={`/c/${company.slug}`}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 text-sm font-semibold text-white hover:bg-teal-800"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--brand-strong)]"
                     >
                       Открыть
                       <ArrowRight aria-hidden className="size-4" />

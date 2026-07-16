@@ -178,25 +178,25 @@ function RaffleTicketCard({
   const isDrawn = ticket.raffle.status === RaffleStatus.DRAWN;
 
   return (
-    <section className={`warm-card p-4 ${place ? "border-amber-300 bg-amber-50" : ""}`}>
+    <section className={`warm-card p-4 ${place ? "border-[var(--gold)] bg-[var(--inactive)]" : ""}`}>
       <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[rgba(255,200,87,0.25)] text-[#7a4b00]">
           <Trophy aria-hidden className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase text-amber-800">
+          <p className="text-xs font-semibold uppercase text-[#7a4b00]">
             {isDrawn ? "Итоги розыгрыша" : "Ваш номер в розыгрыше"}
           </p>
-          <h2 className="mt-1 text-xl font-semibold text-[#2f1d13]">№ {ticket.number}</h2>
-          <p className="mt-1 text-sm font-semibold text-[#5c3521]">{ticket.raffle.title}</p>
+          <h2 className="mt-1 text-xl font-semibold text-[var(--text)]">№ {ticket.number}</h2>
+          <p className="mt-1 text-sm font-semibold text-[var(--text)]">{ticket.raffle.title}</p>
           {isDrawn ? (
-            <p className="mt-2 text-sm leading-5 text-[#7b6a5b]">
+            <p className="mt-2 text-sm leading-5 text-[var(--text-muted)]">
               {place
                 ? `Вы выиграли ${place} место: ${prizeTitleForPlace(place, ticket.raffle)}`
                 : "Ваш номер не попал в победители."}
             </p>
           ) : (
-            <p className="mt-2 text-sm leading-5 text-[#7b6a5b]">
+            <p className="mt-2 text-sm leading-5 text-[var(--text-muted)]">
               Розыгрыш: {formatDateTime(ticket.raffle.drawAt)}. Покупка: {formatKopeks(ticket.purchaseAmountKopeks)}.
             </p>
           )}

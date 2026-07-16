@@ -249,7 +249,7 @@ export function QrScanner() {
   return (
     <div className="space-y-5">
       {showIosPwaHint && (
-        <section className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-5 text-amber-950">
+        <section className="rounded-lg border border-[var(--border)] bg-[var(--inactive)] p-4 text-sm leading-5 text-[#5f3a00]">
           <p className="font-semibold">На iPhone установленное веб-приложение может повторно запрашивать доступ к камере.</p>
           <p className="mt-1">
             Это ограничение iOS. Чтобы ускорить работу, можно открыть сканер в Safari или использовать ручной ввод кода.
@@ -258,7 +258,7 @@ export function QrScanner() {
             href={safariHref}
             target="_blank"
             rel="noreferrer"
-            className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-amber-700 px-4 font-semibold text-white"
+            className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white"
           >
             <ExternalLink aria-hidden className="size-4" />
             Открыть сканер в Safari
@@ -268,7 +268,7 @@ export function QrScanner() {
 
       <section className="panel p-4">
         <div className="mb-4 flex items-center gap-3 text-slate-700">
-          <div className="flex size-11 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+          <div className="flex size-11 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
             <ScanLine aria-hidden className="size-5" />
           </div>
           <div>
@@ -279,7 +279,7 @@ export function QrScanner() {
 
         <div
           id={QR_READER_ID}
-          className="min-h-0 overflow-hidden rounded-lg bg-slate-950 [&_button]:rounded-lg [&_button]:bg-teal-700 [&_button]:px-3 [&_button]:py-2 [&_button]:font-semibold [&_button]:text-white"
+          className="min-h-0 overflow-hidden rounded-lg bg-slate-950 [&_button]:rounded-lg [&_button]:bg-[var(--brand)] [&_button]:px-3 [&_button]:py-2 [&_button]:font-semibold [&_button]:text-white"
         />
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -287,7 +287,7 @@ export function QrScanner() {
             type="button"
             onClick={() => void startScanner()}
             disabled={isStarting || isCameraActive}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Camera aria-hidden className="size-5" />
             {isStarting ? "Включаем..." : "Включить сканер"}
@@ -319,14 +319,14 @@ export function QrScanner() {
             setManualError("");
           }}
           placeholder="C-1A2B3C4D"
-          className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono text-lg uppercase tracking-normal outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15"
+          className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-mono text-lg uppercase tracking-normal outline-none focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
         />
         <p className="mt-2 text-xs font-semibold text-slate-500">{manualHint}</p>
         {manualError && <p className="mt-2 text-sm font-semibold text-red-700">{manualError}</p>}
         <button
           type="button"
           onClick={openManualClient}
-          className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 font-semibold text-white"
+          className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 font-semibold text-white"
         >
           <Keyboard aria-hidden className="size-5" />
           Найти клиента

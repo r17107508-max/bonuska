@@ -37,8 +37,8 @@ export default async function CompanyClientsPage({
   return (
     <AdminShell title="Клиенты" subtitle="Поиск по имени или телефону, прогресс и последняя операция." nav={companyNav}>
       <form className="mb-5 flex gap-3">
-        <input name="q" defaultValue={q ?? ""} placeholder="Имя или телефон" className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-600/15" />
-        <button className="rounded-lg bg-teal-700 px-4 font-semibold text-white">Найти</button>
+        <input name="q" defaultValue={q ?? ""} placeholder="Имя или телефон" className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 outline-none focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]" />
+        <button className="rounded-lg bg-[var(--brand)] px-4 font-semibold text-white">Найти</button>
       </form>
       <div className="panel overflow-hidden">
         <div className="overflow-x-auto">
@@ -66,7 +66,7 @@ export default async function CompanyClientsPage({
                   <td className="px-4 py-3 text-slate-600">{client.totalPurchases}</td>
                   <td className="px-4 py-3 text-slate-600">{client.totalRewards}</td>
                   <td className="px-4 py-3 text-slate-600">{formatDateTime(client.transactions[0]?.createdAt)}</td>
-                  <td className="px-4 py-3"><Link href={`/company/client/${client.id}`} className="font-semibold text-teal-700">Открыть</Link></td>
+                  <td className="px-4 py-3"><Link href={`/company/client/${client.id}`} className="font-semibold text-[var(--brand)]">Открыть</Link></td>
                 </tr>
               ))}
             </tbody>

@@ -37,8 +37,8 @@ export default async function ClientLoginPage({
         <SubmitButton>Войти как клиент</SubmitButton>
       </form>
       <div className="mt-5 flex flex-wrap justify-between gap-3 text-sm font-semibold">
-        <Link href="/client/register" className="text-teal-700">Стать клиентом</Link>
-        <Link href="/forgot-password" className="text-teal-700">Забыли пароль?</Link>
+        <Link href="/client/register" className="text-[var(--brand)]">Стать клиентом</Link>
+        <Link href="/forgot-password" className="text-[var(--brand)]">Забыли пароль?</Link>
         <Link href="/" className="text-slate-500">На главную</Link>
       </div>
     </AuthShell>

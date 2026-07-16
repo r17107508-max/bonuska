@@ -1,5 +1,6 @@
 import Link from "next/link";
 import QRCode from "qrcode";
+import { Gift } from "lucide-react";
 import { saveCompanySettings, showCompanyOnboardingChecklist } from "@/app/actions";
 import { AdminShell, companyNav } from "@/components/admin-shell";
 import { RegistrationQrPoster } from "@/components/registration-qr-poster";
@@ -12,7 +13,18 @@ import { findLoyaltyTemplate, loyaltyTemplates } from "@/lib/loyalty-templates";
 import { getCompanyRegistrationUrl } from "@/lib/request-url";
 
 const businessTypes = ["Кофейня", "Шаурмичная", "Пекарня", "Напитки", "Фастфуд", "Пиццерия", "Кондитерская", "Барбершоп", "Другое"];
-const icons = ["☕ кофе", "🌯 шаурма", "🥐 круассан", "🧋 напиток", "🍔 бургер", "🍕 пицца", "🍩 пончик", "🍦 мороженое", "⭐ звезда", "🎁 подарок"];
+const icons = [
+  { value: "☕", label: "Кофе" },
+  { value: "🌯", label: "Шаурма" },
+  { value: "🥐", label: "Круассан" },
+  { value: "🧋", label: "Напиток" },
+  { value: "🍔", label: "Бургер" },
+  { value: "🍕", label: "Пицца" },
+  { value: "🍩", label: "Десерт" },
+  { value: "🍦", label: "Мороженое" },
+  { value: "⭐", label: "Звезда" },
+  { value: "🎁", label: "Подарок" },
+];
 
 export default async function CompanySettingsPage({
   searchParams,
@@ -68,7 +80,7 @@ export default async function CompanySettingsPage({
       <section className="panel mb-5 p-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <p className="text-xs font-semibold uppercase text-teal-700">Шаблоны</p>
+            <p className="text-xs font-semibold uppercase text-[var(--brand)]">Шаблоны</p>
             <h2 className="mt-1 text-xl font-semibold text-slate-950">Выберите основу акции</h2>
             <p className="mt-1 text-sm text-slate-600">Шаблон можно изменить перед сохранением.</p>
           </div>
@@ -78,10 +90,12 @@ export default async function CompanySettingsPage({
             <Link
               key={template.id}
               href={`/company/settings?template=${template.id}`}
-              className={`rounded-lg border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${selectedTemplate?.id === template.id ? "border-teal-600 bg-teal-50" : "border-slate-200 bg-white"}`}
+              className={`rounded-lg border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${selectedTemplate?.id === template.id ? "border-[var(--brand)] bg-[var(--brand-soft)]" : "border-slate-200 bg-white"}`}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="text-3xl">{template.icon}</span>
+                <span className="flex size-11 items-center justify-center rounded-[14px] bg-[var(--brand-soft)] text-[var(--brand)]">
+                  <Gift aria-hidden className="size-5" />
+                </span>
                 <span className="text-xs font-semibold uppercase text-slate-500">{template.business}</span>
               </div>
               <h3 className="mt-3 font-semibold text-slate-950">{template.title}</h3>
@@ -115,7 +129,7 @@ export default async function CompanySettingsPage({
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Slug компании" name="slug" defaultValue={access.company.slug} />
           <SelectField label="Тип бизнеса" name="businessType" defaultValue={defaults.businessType} options={businessTypes.map((item) => ({ value: item, label: item }))} />
-          <SelectField label="Иконка прогресса" name="icon" defaultValue={defaults.icon} options={icons.map((item) => ({ value: item.split(" ")[0] ?? "🎁", label: item }))} />
+          <SelectField label="Иконка прогресса" name="icon" defaultValue={defaults.icon} options={icons} />
           <FormField label="Цветовая тема" name="themeColor" type="color" defaultValue={defaults.themeColor} />
           <FormField label="Количество покупок до подарка" name="goalCount" type="number" defaultValue={defaults.goalCount} />
         </div>

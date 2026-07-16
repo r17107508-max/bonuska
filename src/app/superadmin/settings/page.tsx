@@ -19,7 +19,7 @@ export default async function SuperadminSettingsPage({
     <AdminShell title="Настройки сервиса" subtitle="Тариф, trial, реквизиты, оферта, политика и версия документов." nav={superadminNav}>
       {params.success && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">Настройки сохранены.</p>}
 
-      <section className={`mb-5 rounded-lg p-4 ${mailStatus.ready ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
+      <section className={`mb-5 rounded-lg p-4 ${mailStatus.ready ? "bg-emerald-50 text-emerald-900" : "bg-[var(--inactive)] text-[#7a4b00]"}`}>
         <p className="font-semibold">{mailStatus.ready ? "Email-уведомления настроены" : "Email-уведомления не настроены"}</p>
         {mailStatus.ready ? (
           <p className="mt-1 text-sm">SMTP: {mailStatus.host}:{mailStatus.port ?? "587"}, отправитель: {mailStatus.from}</p>

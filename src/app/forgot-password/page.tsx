@@ -20,7 +20,7 @@ export default async function ForgotPasswordPage({
         <SubmitButton>Отправить ссылку</SubmitButton>
       </form>
       <div className="mt-5 flex justify-between text-sm font-semibold">
-        <Link href="/company/login" className="text-teal-700">Вернуться ко входу</Link>
+        <Link href="/company/login" className="text-[var(--brand)]">Вернуться ко входу</Link>
         <Link href="/" className="text-slate-500">На главную</Link>
       </div>
     </AuthShell>
