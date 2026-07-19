@@ -5,7 +5,6 @@ import { DynamicGlobalQrCard } from "@/components/dynamic-global-qr-card";
 import { requireUser } from "@/lib/auth";
 import { getClientDashboardMemberships, pickNearestGift, rewardGoal } from "@/lib/customer-app";
 import { createDynamicCustomerQr } from "@/lib/dynamic-qr";
-import { ensureGlobalQrToken } from "@/lib/loyalty";
 
 export default async function ClientQrPage() {
   const currentUser = await requireUser("/company/login");
@@ -13,7 +12,6 @@ export default async function ClientQrPage() {
     createDynamicCustomerQr(currentUser.id),
     getClientDashboardMemberships(currentUser.id),
   ]);
-  const globalQrToken = await ensureGlobalQrToken(currentUser);
   const nearest = pickNearestGift(memberships);
   const goal = nearest ? rewardGoal(nearest) : 1;
   const progress = nearest ? Math.min(100, Math.round((nearest.currentCount / goal) * 100)) : 0;
@@ -41,7 +39,6 @@ export default async function ClientQrPage() {
         <DynamicGlobalQrCard
           initialPayload={dynamicQr.payload}
           initialExpiresAt={dynamicQr.expiresAt}
-          manualCodeToken={globalQrToken}
           color="#FF6A3D"
         />
 

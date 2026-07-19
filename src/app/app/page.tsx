@@ -7,9 +7,8 @@ import { GiftOpenCard } from "@/components/gift-open-card";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { buildManualScanCode } from "@/lib/scan-codes";
 import { getClientDashboardMemberships, pickNearestGift, rewardGoal } from "@/lib/customer-app";
-import { buildRewardQrPayload, ensureGlobalQrToken, isGiftBoxProgram } from "@/lib/loyalty";
+import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
 import { finalizeDueRafflesForUser, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
 
 export default async function ClientDashboardPage({
@@ -20,10 +19,9 @@ export default async function ClientDashboardPage({
   const [currentUser, params] = await Promise.all([requireUser("/company/login"), searchParams]);
   const user = await getDb().user.findUniqueOrThrow({
     where: { id: currentUser.id },
-    select: { id: true, name: true, globalQrToken: true },
+    select: { id: true, name: true },
   });
 
-  const globalQrToken = await ensureGlobalQrToken(user);
   await finalizeDueRafflesForUser(user.id);
 
   const [memberships, nearestRaffleTicket, recentTransactions] = await Promise.all([
@@ -141,9 +139,7 @@ export default async function ClientDashboardPage({
           <Link href="/app/qr" className="mt-5 flex min-h-14 items-center justify-between gap-3 rounded-[16px] bg-white px-4 text-[var(--text)] shadow-lg shadow-black/10">
             <span>
               <span className="block text-sm font-bold">Показать QR кассиру</span>
-              <span className="mt-0.5 block font-mono text-xs font-semibold text-[var(--text-muted)]">
-                Код: {buildManualScanCode(globalQrToken, "customer")}
-              </span>
+              <span className="mt-0.5 block text-xs font-semibold text-[var(--text-muted)]">Открыть QR-код</span>
             </span>
             <QrCode aria-hidden className="size-6 shrink-0 text-[var(--brand)]" />
           </Link>

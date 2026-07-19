@@ -3,12 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { RefreshCw } from "lucide-react";
-import { buildManualScanCode } from "@/lib/scan-codes";
 
 type DynamicGlobalQrCardProps = {
   initialPayload: string;
   initialExpiresAt: string;
-  manualCodeToken: string;
   color?: string;
 };
 
@@ -20,7 +18,6 @@ type QrTokenResponse = {
 export function DynamicGlobalQrCard({
   initialPayload,
   initialExpiresAt,
-  manualCodeToken,
   color = "#FF6A3D",
 }: DynamicGlobalQrCardProps) {
   const [payload, setPayload] = useState(initialPayload);
@@ -114,12 +111,6 @@ export function DynamicGlobalQrCard({
 
       <p className="mt-4 text-base font-semibold text-[var(--text)]">Покажите QR-код кассиру</p>
       <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">QR обновляется автоматически и не содержит телефон</p>
-      <div className="mt-4 rounded-lg bg-white p-3 ring-1 ring-[var(--border)]">
-        <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">Код для ручного ввода</p>
-        <p className="mt-1 font-mono text-2xl font-semibold tracking-normal text-[var(--text)]">
-          {buildManualScanCode(manualCodeToken, "customer")}
-        </p>
-      </div>
 
       <div className="mt-4 flex items-center gap-3">
         <button

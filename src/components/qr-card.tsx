@@ -16,7 +16,7 @@ export async function QrCard({
 }) {
   const payload =
     mode === "global" ? buildGlobalQrPayload(token) : mode === "reward" ? buildRewardQrPayload(token) : buildQrPayload(token);
-  const manualCode = buildManualScanCode(token, mode === "reward" ? "reward" : "customer");
+  const manualCode = mode === "reward" ? buildManualScanCode(token, "reward") : null;
   const qrDataUrl = await QRCode.toDataURL(payload, {
     margin: 1,
     width: 360,
@@ -42,10 +42,12 @@ export async function QrCard({
             ? "Для получения подарка."
             : "Для начисления покупки."}
       </p>
-      <div className="mt-3 rounded-lg bg-white p-3 text-center ring-1 ring-[var(--border)]">
-        <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">Код для ручного ввода</p>
-        <p className="mt-1 font-mono text-xl font-semibold tracking-normal text-[var(--text)]">{manualCode}</p>
-      </div>
+      {manualCode && (
+        <div className="mt-3 rounded-lg bg-white p-3 text-center ring-1 ring-[var(--border)]">
+          <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">Код подарка</p>
+          <p className="mt-1 font-mono text-xl font-semibold tracking-normal text-[var(--text)]">{manualCode}</p>
+        </div>
+      )}
       <CustomerQrActions qrDataUrl={qrDataUrl} companyName={companyName} />
     </section>
   );
