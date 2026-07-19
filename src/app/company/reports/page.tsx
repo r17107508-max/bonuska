@@ -25,9 +25,9 @@ export default async function CompanyReportsPage() {
     clientsTotal,
     newClients7,
     newClientsMonth,
-    purchasesToday,
-    purchasesWeek,
-    purchasesMonth,
+    purchasesTodayAggregate,
+    purchasesWeekAggregate,
+    purchasesMonthAggregate,
     rewardsMonth,
     repeatClients,
     sleepingClients,
@@ -44,9 +44,9 @@ export default async function CompanyReportsPage() {
     getDb().customerMembership.count({ where: { companyId: access.companyId } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, createdAt: { gte: weekStart } } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, createdAt: { gte: monthStart } } }),
-    getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: today } } }),
-    getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: weekStart } } }),
-    getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: monthStart } } }),
+    getDb().loyaltyTransaction.aggregate({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: today } }, _sum: { quantity: true } }),
+    getDb().loyaltyTransaction.aggregate({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: weekStart } }, _sum: { quantity: true } }),
+    getDb().loyaltyTransaction.aggregate({ where: { companyId: access.companyId, type: "PURCHASE", createdAt: { gte: monthStart } }, _sum: { quantity: true } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access.companyId, type: { in: ["REWARD_REDEEMED", "REWARD_GRANTED"] }, createdAt: { gte: monthStart } } }),
     getDb().customerMembership.count({ where: { companyId: access.companyId, totalPurchases: { gt: 1 } } }),
     getDb().customerMembership.findMany({
@@ -105,6 +105,9 @@ export default async function CompanyReportsPage() {
       take: 30,
     }),
   ]);
+  const purchasesToday = purchasesTodayAggregate._sum.quantity ?? 0;
+  const purchasesWeek = purchasesWeekAggregate._sum.quantity ?? 0;
+  const purchasesMonth = purchasesMonthAggregate._sum.quantity ?? 0;
   const activeClients7 = new Set(weekTransactions.map((transaction) => transaction.membershipId)).size;
   const repeatRate = clientsTotal > 0 ? Math.round((repeatClients / clientsTotal) * 100) : 0;
   const cashierStats = Array.from(
@@ -120,9 +123,9 @@ export default async function CompanyReportsPage() {
         rewards: 0,
         total: 0,
       };
-      current.total += 1;
+      current.total += transaction.type === "PURCHASE" ? transaction.quantity : 1;
       if (transaction.type === "PURCHASE") {
-        current.purchases += 1;
+        current.purchases += transaction.quantity;
       }
       if (transaction.type === "REWARD_REDEEMED" || transaction.type === "REWARD_GRANTED") {
         current.rewards += 1;

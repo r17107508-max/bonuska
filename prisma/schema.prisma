@@ -308,6 +308,7 @@ model LoyaltyTransaction {
   membershipId String
   cashierId    String
   type         LoyaltyTransactionType
+  quantity     Int                    @default(1)
   countBefore  Int
   countAfter   Int
   rewardTitle  String?

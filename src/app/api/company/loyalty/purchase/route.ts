@@ -7,9 +7,10 @@ export async function POST(request: Request) {
   if (error) return error;
   const body = await request.json();
   const membershipId = String(body.membershipId ?? "");
+  const quantity = Number(body.quantity ?? 1);
   const purchaseAmountKopeks = parseRublesToKopeks(body.purchaseAmount ?? body.purchaseAmountRubles ?? "");
   try {
-    const result = await addPurchase(access!.companyId, membershipId, access!.userId, purchaseAmountKopeks);
+    const result = await addPurchase(access!.companyId, membershipId, access!.userId, quantity, purchaseAmountKopeks);
     return ok({ ok: true, ...result });
   } catch (err) {
     const suspiciousReason = getSuspiciousLoyaltyReason(err);

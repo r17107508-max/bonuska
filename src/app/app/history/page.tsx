@@ -72,7 +72,7 @@ export default async function ClientHistoryPage({
         <section className="space-y-3">
           {transactions.map((transaction) => {
             const goal = transaction.company.loyaltyProgram?.goalCount ?? Math.max(transaction.countAfter, 1);
-            const meta = operationMeta(transaction.type);
+            const meta = operationMeta(transaction.type, transaction.quantity);
 
             return (
               <div key={transaction.id} className="warm-card p-4">
@@ -126,9 +126,13 @@ export default async function ClientHistoryPage({
   );
 }
 
-function operationMeta(type: LoyaltyTransactionType) {
+function operationMeta(type: LoyaltyTransactionType, quantity = 1) {
   const labels: Record<LoyaltyTransactionType, { label: string; icon: typeof ShoppingBag; iconBg: string }> = {
-    PURCHASE: { label: "Начислена покупка", icon: ShoppingBag, iconBg: "bg-[var(--brand-soft)] text-[var(--brand)]" },
+    PURCHASE: {
+      label: quantity > 1 ? `Начислено покупок: ${quantity}` : "Начислена покупка",
+      icon: ShoppingBag,
+      iconBg: "bg-[var(--brand-soft)] text-[var(--brand)]",
+    },
     LEVEL_UP: { label: "Достигнут новый уровень", icon: Trophy, iconBg: "bg-blue-50 text-blue-800" },
     REWARD_OPENED: { label: "Открыт подарок", icon: Sparkles, iconBg: "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]" },
     REWARD_REDEEMED: { label: "Выдан подарок", icon: Gift, iconBg: "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]" },

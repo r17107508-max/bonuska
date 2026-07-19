@@ -1014,10 +1014,11 @@ export async function confirmPurchase(formData: FormData) {
   const token = text(formData, "token");
   const fallbackPath = `/company/scan?token=${encodeURIComponent(token)}`;
   const returnTo = safeCompanyReturnPath(text(formData, "returnTo"), fallbackPath);
+  const quantity = numberValue(formData, "quantity", 1);
   const purchaseAmountKopeks = parseRublesToKopeks(formData.get("purchaseAmount"));
   let successMessage = "Начислено";
   try {
-    const result = await addPurchase(access.companyId, membershipId, access.userId, purchaseAmountKopeks);
+    const result = await addPurchase(access.companyId, membershipId, access.userId, quantity, purchaseAmountKopeks);
     successMessage = purchaseSuccessMessage(result);
   } catch (error) {
     const suspiciousReason = getSuspiciousLoyaltyReason(error);
@@ -1043,6 +1044,7 @@ export async function confirmPurchase(formData: FormData) {
 export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) {
   const access = await requireCompanyUser();
   const token = text(formData, "token");
+  const quantity = numberValue(formData, "quantity", 1);
   const purchaseAmountKopeks = parseRublesToKopeks(formData.get("purchaseAmount"));
   let membershipIdForLog = "";
   let successMessage = "Клиент подключён, покупка начислена";
@@ -1058,7 +1060,7 @@ export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) 
 
     const membership = await joinCompanyProgram(access.companyId, customer.id, access.userId);
     membershipIdForLog = membership.id;
-    const result = await addPurchase(access.companyId, membership.id, access.userId, purchaseAmountKopeks);
+    const result = await addPurchase(access.companyId, membership.id, access.userId, quantity, purchaseAmountKopeks);
     successMessage = `Клиент подключён. ${purchaseSuccessMessage(result)}`;
   } catch (error) {
     const suspiciousReason = getSuspiciousLoyaltyReason(error);
@@ -1081,7 +1083,12 @@ export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) 
 }
 
 function purchaseSuccessMessage(result: Awaited<ReturnType<typeof addPurchase>>) {
-  const base = result.levelUp ? `🎉 Клиент достиг нового уровня: ${result.levelUp.name}` : "Начислено";
+  const base = result.levelUp
+    ? `🎉 Клиент достиг нового уровня: ${result.levelUp.name}`
+    : result.rewardAvailable
+      ? `Начислено: ${result.quantity}. Подарок доступен`
+      : `Начислено: ${result.quantity}`;
+
   return result.raffleTicket
     ? `${base}. Номер для розыгрыша: ${result.raffleTicket.number}`
     : base;

@@ -19,9 +19,9 @@ export async function GET() {
     clientsTotal,
     newClients7,
     newClientsMonth,
-    purchasesToday,
-    purchasesWeek,
-    purchasesMonth,
+    purchasesTodayAggregate,
+    purchasesWeekAggregate,
+    purchasesMonthAggregate,
     rewardsGranted,
     repeatClients,
     rewardReadyClients,
@@ -32,9 +32,9 @@ export async function GET() {
     getDb().customerMembership.count({ where: { companyId: access!.companyId } }),
     getDb().customerMembership.count({ where: { companyId: access!.companyId, createdAt: { gte: weekStart } } }),
     getDb().customerMembership.count({ where: { companyId: access!.companyId, createdAt: { gte: monthStart } } }),
-    getDb().loyaltyTransaction.count({ where: { companyId: access!.companyId, type: "PURCHASE", createdAt: { gte: today } } }),
-    getDb().loyaltyTransaction.count({ where: { companyId: access!.companyId, type: "PURCHASE", createdAt: { gte: weekStart } } }),
-    getDb().loyaltyTransaction.count({ where: { companyId: access!.companyId, type: "PURCHASE", createdAt: { gte: monthStart } } }),
+    getDb().loyaltyTransaction.aggregate({ where: { companyId: access!.companyId, type: "PURCHASE", createdAt: { gte: today } }, _sum: { quantity: true } }),
+    getDb().loyaltyTransaction.aggregate({ where: { companyId: access!.companyId, type: "PURCHASE", createdAt: { gte: weekStart } }, _sum: { quantity: true } }),
+    getDb().loyaltyTransaction.aggregate({ where: { companyId: access!.companyId, type: "PURCHASE", createdAt: { gte: monthStart } }, _sum: { quantity: true } }),
     getDb().loyaltyTransaction.count({ where: { companyId: access!.companyId, type: { in: ["REWARD_REDEEMED", "REWARD_GRANTED"] }, createdAt: { gte: monthStart } } }),
     getDb().customerMembership.count({ where: { companyId: access!.companyId, totalPurchases: { gt: 1 } } }),
     getDb().customerMembership.count({ where: { companyId: access!.companyId, rewardAvailable: true } }),
@@ -43,6 +43,9 @@ export async function GET() {
     getDb().customerMembership.findMany({ where: { companyId: access!.companyId }, include: { user: true }, orderBy: { totalPurchases: "desc" }, take: 10 }),
   ]);
   const activeClients7 = new Set(weekTransactions.map((transaction) => transaction.membershipId)).size;
+  const purchasesToday = purchasesTodayAggregate._sum.quantity ?? 0;
+  const purchasesWeek = purchasesWeekAggregate._sum.quantity ?? 0;
+  const purchasesMonth = purchasesMonthAggregate._sum.quantity ?? 0;
 
   return ok({
     clientsTotal,

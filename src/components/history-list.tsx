@@ -22,23 +22,28 @@ export function HistoryList({
 
   return (
     <div className="space-y-3">
-      {transactions.map((transaction) => (
-        <div key={transaction.id} className="panel p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="font-semibold text-slate-950">{operationLabel(transaction.type)}</p>
-              <p className="mt-1 text-sm text-slate-500">
-                {transaction.type === "REWARD_OPENED" ? `Клиент: ${transaction.cashier.name}` : `Кассир: ${transaction.cashier.name}`}
-              </p>
+      {transactions.map((transaction) => {
+        const quantity = transaction.type === "PURCHASE" ? transaction.quantity : 0;
+
+        return (
+          <div key={transaction.id} className="panel p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-slate-950">{operationLabel(transaction.type)}</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {transaction.type === "REWARD_OPENED" ? `Клиент: ${transaction.cashier.name}` : `Кассир: ${transaction.cashier.name}`}
+                </p>
+              </div>
+              <p className="text-right text-xs font-medium text-slate-500">{formatDateTime(transaction.createdAt)}</p>
             </div>
-            <p className="text-right text-xs font-medium text-slate-500">{formatDateTime(transaction.createdAt)}</p>
+            <p className="mt-3 font-mono text-xs text-slate-500">
+              {transaction.countBefore} → {transaction.countAfter}
+              {quantity > 1 ? ` · +${quantity}` : ""}
+              {transaction.rewardTitle ? ` · ${transaction.rewardTitle}` : ""}
+            </p>
           </div>
-          <p className="mt-3 font-mono text-xs text-slate-500">
-            {transaction.countBefore} → {transaction.countAfter}
-            {transaction.rewardTitle ? ` · ${transaction.rewardTitle}` : ""}
-          </p>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

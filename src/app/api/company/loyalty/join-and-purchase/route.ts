@@ -14,6 +14,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const token = String(body.token ?? "");
+  const quantity = Number(body.quantity ?? 1);
   const purchaseAmountKopeks = parseRublesToKopeks(body.purchaseAmount ?? body.purchaseAmountRubles ?? "");
   let membershipId = "";
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
     const membership = await joinCompanyProgram(access!.companyId, customer.id, access!.userId);
     membershipId = membership.id;
-    const result = await addPurchase(access!.companyId, membership.id, access!.userId, purchaseAmountKopeks);
+    const result = await addPurchase(access!.companyId, membership.id, access!.userId, quantity, purchaseAmountKopeks);
 
     return ok({ membershipId: membership.id, ...result });
   } catch (err) {

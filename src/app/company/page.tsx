@@ -123,7 +123,10 @@ export default async function CompanyDashboardPage() {
             {recentTransactions.map((transaction) => (
               <div key={transaction.id} className="grid gap-1 p-4 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
                 <div>
-                  <p className="font-semibold text-slate-950">{operationLabel(transaction.type)}</p>
+                  <p className="font-semibold text-slate-950">
+                    {operationLabel(transaction.type)}
+                    {transaction.type === "PURCHASE" && transaction.quantity > 1 ? ` · +${transaction.quantity}` : ""}
+                  </p>
                   <p className="text-slate-500">
                     {transaction.membership.user.name} · {transaction.type === "REWARD_OPENED" ? "открыл клиент" : `кассир: ${transaction.cashier.name}`}
                   </p>
@@ -326,7 +329,10 @@ export default async function CompanyDashboardPage() {
               {recentTransactions.map((transaction) => (
                 <div key={transaction.id} className="grid gap-1 p-4 text-sm sm:grid-cols-[1fr_auto] sm:items-center">
                   <div>
-                    <p className="font-semibold text-slate-950">{operationLabel(transaction.type)}</p>
+                    <p className="font-semibold text-slate-950">
+                      {operationLabel(transaction.type)}
+                      {transaction.type === "PURCHASE" && transaction.quantity > 1 ? ` · +${transaction.quantity}` : ""}
+                    </p>
                     <p className="text-slate-500">
                       {transaction.membership.user.name} · {transaction.type === "REWARD_OPENED" ? "открыл клиент" : `кассир: ${transaction.cashier.name}`}
                     </p>

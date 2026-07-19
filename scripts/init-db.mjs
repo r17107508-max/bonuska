@@ -110,6 +110,7 @@ CREATE TABLE "LoyaltyTransaction" (
   "membershipId" TEXT NOT NULL,
   "cashierId" TEXT NOT NULL,
   "type" TEXT NOT NULL,
+  "quantity" INTEGER NOT NULL DEFAULT 1,
   "countBefore" INTEGER NOT NULL,
   "countAfter" INTEGER NOT NULL,
   "rewardTitle" TEXT,

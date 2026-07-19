@@ -18,10 +18,12 @@ import { parseManualScanCode } from "@/lib/scan-codes";
 
 export const REPEAT_GUARD_SECONDS = 30;
 export const DAILY_PURCHASE_LIMIT_PER_CUSTOMER = 5;
+export const MAX_PURCHASE_QUANTITY_PER_OPERATION = DAILY_PURCHASE_LIMIT_PER_CUSTOMER;
 const REPEAT_GUARD_MS = REPEAT_GUARD_SECONDS * 1_000;
 const REPEAT_GUARD_MESSAGE = `Повторное начисление этому клиенту доступно через ${REPEAT_GUARD_SECONDS} секунд`;
 const DAILY_LIMIT_MESSAGE = `Дневной лимит начислений этому клиенту исчерпан: максимум ${DAILY_PURCHASE_LIMIT_PER_CUSTOMER} покупок в день`;
 const SELF_OPERATION_MESSAGE = "Кассир не может начислять покупки или выдавать подарки самому себе";
+const PURCHASE_QUANTITY_MESSAGE = `Укажите количество покупок от 1 до ${MAX_PURCHASE_QUANTITY_PER_OPERATION}`;
 
 export type SuspiciousLoyaltyReason = "repeat_purchase_guard" | "daily_purchase_limit" | "cashier_self_operation";
 
@@ -392,7 +394,17 @@ export async function joinCompanyProgram(companyId: string, userId: string, acto
   return membership;
 }
 
-export async function addPurchase(companyId: string, membershipId: string, cashierId: string, purchaseAmountKopeks = 0) {
+function normalizePurchaseQuantity(quantity: number) {
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_PURCHASE_QUANTITY_PER_OPERATION) {
+    throw new Error(PURCHASE_QUANTITY_MESSAGE);
+  }
+
+  return quantity;
+}
+
+export async function addPurchase(companyId: string, membershipId: string, cashierId: string, quantity = 1, purchaseAmountKopeks = 0) {
+  const purchaseQuantity = normalizePurchaseQuantity(quantity);
+
   return getDb().$transaction(async (tx: Prisma.TransactionClient) => {
     const membership = await tx.customerMembership.findFirst({
       where: { id: membershipId, companyId },
@@ -428,16 +440,18 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
 
     const dayStart = new Date();
     dayStart.setHours(0, 0, 0, 0);
-    const purchasesToday = await tx.loyaltyTransaction.count({
+    const purchasesToday = await tx.loyaltyTransaction.aggregate({
       where: {
         companyId,
         membershipId,
         type: LoyaltyTransactionType.PURCHASE,
         createdAt: { gte: dayStart },
       },
+      _sum: { quantity: true },
     });
+    const purchaseCountToday = purchasesToday._sum.quantity ?? 0;
 
-    if (purchasesToday >= DAILY_PURCHASE_LIMIT_PER_CUSTOMER) {
+    if (purchaseCountToday + purchaseQuantity > DAILY_PURCHASE_LIMIT_PER_CUSTOMER) {
       throw new Error(DAILY_LIMIT_MESSAGE);
     }
 
@@ -445,7 +459,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       const now = new Date();
       const levels = await ensureDefaultLoyaltyLevels(tx, companyId);
       const totalBefore = membership.totalPurchases;
-      const totalAfter = totalBefore + 1;
+      const totalAfter = totalBefore + purchaseQuantity;
       const previousLevel = calculateLoyaltyLevel(totalBefore, levels).current;
       const levelProgress = calculateLoyaltyLevel(totalAfter, levels);
       const currentLevel = levelProgress.current;
@@ -475,6 +489,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
           membershipId,
           cashierId,
           type: LoyaltyTransactionType.PURCHASE,
+          quantity: purchaseQuantity,
           countBefore: totalBefore,
           countAfter: totalAfter,
         },
@@ -512,6 +527,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
             countBefore: totalBefore,
             countAfter: totalAfter,
             totalPurchases: totalAfter,
+            quantity: purchaseQuantity,
             levelId: currentLevel?.id ?? null,
             levelName: currentLevel?.name ?? null,
             raffleTicketNumber: raffleTicket?.number ?? null,
@@ -522,6 +538,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       });
 
       return {
+        quantity: purchaseQuantity,
         totalPurchases: totalAfter,
         level: currentLevel,
         levelUp: reachedNewLevel ? currentLevel : null,
@@ -532,7 +549,16 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
     }
 
     const countBefore = membership.currentCount;
-    const countAfter = countBefore + 1;
+    const remainingToReward = Math.max(program.goalCount - countBefore, 0);
+    if (remainingToReward <= 0) {
+      throw new Error("Сначала выдайте доступный подарок");
+    }
+
+    if (purchaseQuantity > remainingToReward) {
+      throw new Error(`Можно начислить не больше ${remainingToReward} покупок: после этого клиент получает подарок`);
+    }
+
+    const countAfter = countBefore + purchaseQuantity;
     const rewardAvailable = countAfter >= program.goalCount;
     const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
     const pendingReward = rewardAvailable && !isGiftBox ? rewardTitle(program, membership.company.giftOptions) : null;
@@ -541,7 +567,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       where: { id: membership.id },
       data: {
         currentCount: countAfter,
-        totalPurchases: { increment: 1 },
+        totalPurchases: { increment: purchaseQuantity },
         rewardAvailable,
         pendingReward,
         lastActionAt: new Date(),
@@ -554,6 +580,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
         membershipId,
         cashierId,
         type: LoyaltyTransactionType.PURCHASE,
+        quantity: purchaseQuantity,
         countBefore,
         countAfter,
         rewardTitle: pendingReward,
@@ -589,7 +616,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
         action: "LOYALTY_PURCHASE",
         entityType: "CustomerMembership",
         entityId: membershipId,
-        metadataJson: JSON.stringify({ countBefore, countAfter, rewardAvailable }),
+        metadataJson: JSON.stringify({ countBefore, countAfter, quantity: purchaseQuantity, rewardAvailable }),
       },
     });
 
@@ -618,7 +645,7 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
       });
     }
 
-    return { rewardAvailable, levelUp: null, raffleTicket };
+    return { quantity: purchaseQuantity, rewardAvailable, levelUp: null, raffleTicket };
   });
 }
 

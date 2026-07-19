@@ -1,4 +1,4 @@
-import { CompanyUserRole, RewardClaimStatus } from "@prisma/client";
+import { CompanyUserRole, LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Gift, ScanLine, UserRound } from "lucide-react";
 import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase, redeemRewardClaim } from "@/app/actions";
@@ -10,7 +10,7 @@ import { ProgressIcons } from "@/components/progress-cups";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDateTime, phoneLookupValues, statusLabel } from "@/lib/format";
-import { findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
+import { DAILY_PURCHASE_LIMIT_PER_CUSTOMER, findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
 import { formatKopeks, getActiveCompanyRaffle } from "@/lib/raffles";
 
 export default async function CompanyScanPage({
@@ -65,6 +65,16 @@ export default async function CompanyScanPage({
         orderBy: [{ openedAt: "desc" }, { createdAt: "desc" }],
       })
     : null;
+  const purchaseQuantityMax = membership && membership.company.loyaltyProgram && !membership.rewardAvailable
+    ? await getAvailablePurchaseQuantity({
+        companyId: access.companyId,
+        membershipId: membership.id,
+        currentCount: membership.currentCount,
+        goalCount: membership.company.loyaltyProgram.goalCount,
+        isCustomerLevels: membership.company.loyaltyProgram.programType === LoyaltyProgramType.CUSTOMER_LEVELS,
+      })
+    : 0;
+  const newCustomerPurchaseQuantityMax = getNewCustomerPurchaseQuantityLimit(access.company.loyaltyProgram);
 
   return (
     <AdminShell
@@ -169,11 +179,12 @@ export default async function CompanyScanPage({
                 <form action={confirmPurchase}>
                   <input type="hidden" name="membershipId" value={membership.id} />
                   <input type="hidden" name="token" value={token} />
-                  <PurchaseAmountFields activeRaffle={activeRaffle} />
-                  <ConfirmSubmit
-                    title="Начислить покупку?"
-                    confirmText="Подтвердите, что клиент совершил покупку сейчас. Повторное начисление одному клиенту временно блокируется."
-                    buttonText="Начислить покупку"
+                  <PurchaseControls
+                    maxQuantity={purchaseQuantityMax}
+                    activeRaffle={activeRaffle}
+                    title="Начислить покупки?"
+                    confirmText="Проверьте количество кофе в чеке. После подтверждения выбранное количество покупок будет начислено сразу."
+                    buttonText="Начислить покупки"
                   />
                 </form>
               )}
@@ -192,10 +203,11 @@ export default async function CompanyScanPage({
               <p className="text-sm text-slate-700">Подключить к программе и сразу начислить покупку.</p>
             </div>
             <div className="w-full sm:w-80">
-              <PurchaseAmountFields activeRaffle={activeRaffle} />
-              <ConfirmSubmit
+              <PurchaseControls
+                maxQuantity={newCustomerPurchaseQuantityMax}
+                activeRaffle={activeRaffle}
                 title="Подключить клиента?"
-                confirmText="Клиент будет подключён к программе вашей компании, после этого первая покупка будет начислена."
+                confirmText="Клиент будет подключён к программе вашей компании. После подтверждения выбранное количество покупок будет начислено сразу."
                 buttonText="Подключить и начислить"
               />
             </div>
@@ -291,10 +303,11 @@ export default async function CompanyScanPage({
               {active && (
                 <form action={joinScannedCustomerAndConfirmPurchase} className="mt-4">
                   <input type="hidden" name="token" value={token} />
-                  <PurchaseAmountFields activeRaffle={activeRaffle} />
-                  <ConfirmSubmit
+                  <PurchaseControls
+                    maxQuantity={newCustomerPurchaseQuantityMax}
+                    activeRaffle={activeRaffle}
                     title="Подключить клиента?"
-                    confirmText="Клиент будет подключён к программе вашей компании, после этого первая покупка будет начислена."
+                    confirmText="Клиент будет подключён к программе вашей компании. После подтверждения выбранное количество покупок будет начислено сразу."
                     buttonText="Подключить и начислить покупку"
                   />
                 </form>
@@ -373,14 +386,15 @@ export default async function CompanyScanPage({
                       />
                     </form>
                   ) : (
-                  <form action={confirmPurchase}>
-                    <input type="hidden" name="membershipId" value={membership.id} />
-                    <input type="hidden" name="token" value={token} />
-                    <PurchaseAmountFields activeRaffle={activeRaffle} />
-                    <ConfirmSubmit
-                        title="Начислить покупку?"
-                        confirmText="Подтвердите, что клиент действительно совершил покупку. Повторное начисление одному клиенту временно блокируется."
-                        buttonText="Начислить покупку"
+                    <form action={confirmPurchase}>
+                      <input type="hidden" name="membershipId" value={membership.id} />
+                      <input type="hidden" name="token" value={token} />
+                      <PurchaseControls
+                        maxQuantity={purchaseQuantityMax}
+                        activeRaffle={activeRaffle}
+                        title="Начислить покупки?"
+                        confirmText="Проверьте количество кофе в чеке. После подтверждения выбранное количество покупок будет начислено сразу."
+                        buttonText="Начислить покупки"
                       />
                     </form>
                   )}
@@ -399,24 +413,96 @@ export default async function CompanyScanPage({
   );
 }
 
-function PurchaseAmountFields({ activeRaffle }: { activeRaffle: Awaited<ReturnType<typeof getActiveCompanyRaffle>> }) {
+async function getAvailablePurchaseQuantity({
+  companyId,
+  membershipId,
+  currentCount,
+  goalCount,
+  isCustomerLevels,
+}: {
+  companyId: string;
+  membershipId: string;
+  currentCount: number;
+  goalCount: number;
+  isCustomerLevels: boolean;
+}) {
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const purchasesToday = await getDb().loyaltyTransaction.aggregate({
+    where: {
+      companyId,
+      membershipId,
+      type: "PURCHASE",
+      createdAt: { gte: dayStart },
+    },
+    _sum: { quantity: true },
+  });
+  const dailyRemaining = Math.max(DAILY_PURCHASE_LIMIT_PER_CUSTOMER - (purchasesToday._sum.quantity ?? 0), 0);
+  const rewardRemaining = isCustomerLevels ? DAILY_PURCHASE_LIMIT_PER_CUSTOMER : Math.max(goalCount - currentCount, 0);
+
+  return Math.min(DAILY_PURCHASE_LIMIT_PER_CUSTOMER, dailyRemaining, rewardRemaining);
+}
+
+function getNewCustomerPurchaseQuantityLimit(program: { programType: LoyaltyProgramType; goalCount: number } | null | undefined) {
+  const rewardRemaining = program?.programType === LoyaltyProgramType.CUSTOMER_LEVELS
+    ? DAILY_PURCHASE_LIMIT_PER_CUSTOMER
+    : Math.max(program?.goalCount ?? DAILY_PURCHASE_LIMIT_PER_CUSTOMER, 0);
+
+  return Math.min(DAILY_PURCHASE_LIMIT_PER_CUSTOMER, rewardRemaining);
+}
+
+function PurchaseControls({
+  maxQuantity,
+  activeRaffle,
+  title,
+  confirmText,
+  buttonText,
+}: {
+  maxQuantity: number;
+  activeRaffle: Awaited<ReturnType<typeof getActiveCompanyRaffle>>;
+  title: string;
+  confirmText: string;
+  buttonText: string;
+}) {
+  if (maxQuantity <= 0) {
+    return (
+      <div className="rounded-lg bg-amber-100 p-3 text-sm font-semibold text-amber-950">
+        Сейчас этому клиенту нельзя начислить ещё покупки: достигнут дневной лимит или уже доступен подарок.
+      </div>
+    );
+  }
+
   return (
-    <div className="mb-3">
+    <div className="space-y-3">
       <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">Сумма покупки</span>
+        <span className="mb-1 block text-sm font-semibold text-slate-700">Кофе в чеке</span>
+        <input
+          type="number"
+          name="quantity"
+          min={1}
+          max={maxQuantity}
+          defaultValue={1}
+          inputMode="numeric"
+          className="min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-base font-semibold text-slate-950 outline-none focus:border-teal-700 focus:ring-4 focus:ring-teal-700/15"
+        />
+        <span className="mt-1 block text-xs font-medium text-slate-500">Доступно сейчас: до {maxQuantity}</span>
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-sm font-semibold text-slate-700">Сумма покупки</span>
         <input
           name="purchaseAmount"
           inputMode="decimal"
           placeholder="Например, 450"
           required={Boolean(activeRaffle)}
-          className="mt-1.5 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
+          className="min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-base font-semibold text-slate-950 outline-none focus:border-teal-700 focus:ring-4 focus:ring-teal-700/15"
         />
+        <span className="mt-1 block text-xs font-medium text-slate-500">
+          {activeRaffle
+            ? `Для розыгрыша «${activeRaffle.title}» нужен чек от ${formatKopeks(activeRaffle.minPurchaseAmountKopeks)}.`
+            : "Если активного розыгрыша нет, поле можно оставить пустым."}
+        </span>
       </label>
-      <p className="mt-1 text-xs leading-5 text-slate-600">
-        {activeRaffle
-          ? `Для розыгрыша «${activeRaffle.title}» нужен чек от ${formatKopeks(activeRaffle.minPurchaseAmountKopeks)}.`
-          : "Если активного розыгрыша нет, поле можно оставить пустым."}
-      </p>
+      <ConfirmSubmit title={title} confirmText={confirmText} buttonText={buttonText} />
     </div>
   );
 }
