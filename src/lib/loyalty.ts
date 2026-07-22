@@ -17,7 +17,7 @@ import { issueRaffleTicketForPurchase } from "@/lib/raffles";
 import { parseManualScanCode } from "@/lib/scan-codes";
 
 export const REPEAT_GUARD_SECONDS = 30;
-export const DAILY_PURCHASE_LIMIT_PER_CUSTOMER = 5;
+export const DAILY_PURCHASE_LIMIT_PER_CUSTOMER = 10;
 export const MAX_PURCHASE_QUANTITY_PER_OPERATION = DAILY_PURCHASE_LIMIT_PER_CUSTOMER;
 const REPEAT_GUARD_MS = REPEAT_GUARD_SECONDS * 1_000;
 const REPEAT_GUARD_MESSAGE = `Повторное начисление этому клиенту доступно через ${REPEAT_GUARD_SECONDS} секунд`;
@@ -549,15 +549,6 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
     }
 
     const countBefore = membership.currentCount;
-    const remainingToReward = Math.max(program.goalCount - countBefore, 0);
-    if (remainingToReward <= 0) {
-      throw new Error("Сначала выдайте доступный подарок");
-    }
-
-    if (purchaseQuantity > remainingToReward) {
-      throw new Error(`Можно начислить не больше ${remainingToReward} покупок: после этого клиент получает подарок`);
-    }
-
     const countAfter = countBefore + purchaseQuantity;
     const rewardAvailable = countAfter >= program.goalCount;
     const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
@@ -854,6 +845,8 @@ export async function grantReward(companyId: string, membershipId: string, cashi
       cashierId,
       claimId: null,
       rewardTitle: membership.pendingReward ?? program.rewardTitle,
+      goalCount: program.goalCount,
+      nextRewardTitle: rewardTitle(program, membership.company.giftOptions),
     });
   });
 }
@@ -953,6 +946,8 @@ export async function redeemRewardClaimByToken(companyId: string, token: string,
       cashierId,
       claimId: claim.id,
       rewardTitle: claim.title ?? claim.membership.pendingReward ?? claim.membership.company.loyaltyProgram?.rewardTitle ?? "Подарок",
+      goalCount: claim.membership.company.loyaltyProgram?.goalCount ?? 1,
+      nextRewardTitle: null,
     });
   });
 }
@@ -965,23 +960,30 @@ async function redeemMembershipRewardInTransaction(
     cashierId,
     claimId,
     rewardTitle,
+    goalCount,
+    nextRewardTitle,
   }: {
     companyId: string;
     membership: Pick<CustomerMembership, "id" | "currentCount" | "pendingReward">;
     cashierId: string;
     claimId: string | null;
     rewardTitle: string;
+    goalCount: number;
+    nextRewardTitle: string | null;
   },
 ) {
   const countBefore = membership.currentCount;
   const redeemedAt = new Date();
+  const safeGoal = Math.max(goalCount, 1);
+  const countAfter = Math.max(countBefore - safeGoal, 0);
+  const nextRewardAvailable = countAfter >= safeGoal;
 
   await tx.customerMembership.update({
     where: { id: membership.id },
     data: {
-      currentCount: 0,
-      rewardAvailable: false,
-      pendingReward: null,
+      currentCount: countAfter,
+      rewardAvailable: nextRewardAvailable,
+      pendingReward: nextRewardAvailable ? nextRewardTitle : null,
       totalRewards: { increment: 1 },
       lastActionAt: redeemedAt,
     },
@@ -1005,7 +1007,7 @@ async function redeemMembershipRewardInTransaction(
       cashierId,
       type: claimId ? LoyaltyTransactionType.REWARD_REDEEMED : LoyaltyTransactionType.REWARD_GRANTED,
       countBefore,
-      countAfter: 0,
+      countAfter,
       rewardTitle,
     },
   });
@@ -1022,6 +1024,8 @@ async function redeemMembershipRewardInTransaction(
         rewardClaimId: claimId,
         rewardTitle,
         redeemedAt: redeemedAt.toISOString(),
+        remainingCount: countAfter,
+        nextRewardAvailable,
       }),
     },
   });

@@ -1,4 +1,4 @@
-import { CompanyUserRole, LoyaltyProgramType, RewardClaimStatus } from "@prisma/client";
+import { CompanyUserRole, RewardClaimStatus } from "@prisma/client";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Gift, ScanLine, UserRound } from "lucide-react";
 import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase, redeemRewardClaim } from "@/app/actions";
@@ -69,12 +69,9 @@ export default async function CompanyScanPage({
     ? await getAvailablePurchaseQuantity({
         companyId: access.companyId,
         membershipId: membership.id,
-        currentCount: membership.currentCount,
-        goalCount: membership.company.loyaltyProgram.goalCount,
-        isCustomerLevels: membership.company.loyaltyProgram.programType === LoyaltyProgramType.CUSTOMER_LEVELS,
       })
     : 0;
-  const newCustomerPurchaseQuantityMax = getNewCustomerPurchaseQuantityLimit(access.company.loyaltyProgram);
+  const newCustomerPurchaseQuantityMax = DAILY_PURCHASE_LIMIT_PER_CUSTOMER;
 
   return (
     <AdminShell
@@ -416,15 +413,9 @@ export default async function CompanyScanPage({
 async function getAvailablePurchaseQuantity({
   companyId,
   membershipId,
-  currentCount,
-  goalCount,
-  isCustomerLevels,
 }: {
   companyId: string;
   membershipId: string;
-  currentCount: number;
-  goalCount: number;
-  isCustomerLevels: boolean;
 }) {
   const dayStart = new Date();
   dayStart.setHours(0, 0, 0, 0);
@@ -438,17 +429,8 @@ async function getAvailablePurchaseQuantity({
     _sum: { quantity: true },
   });
   const dailyRemaining = Math.max(DAILY_PURCHASE_LIMIT_PER_CUSTOMER - (purchasesToday._sum.quantity ?? 0), 0);
-  const rewardRemaining = isCustomerLevels ? DAILY_PURCHASE_LIMIT_PER_CUSTOMER : Math.max(goalCount - currentCount, 0);
 
-  return Math.min(DAILY_PURCHASE_LIMIT_PER_CUSTOMER, dailyRemaining, rewardRemaining);
-}
-
-function getNewCustomerPurchaseQuantityLimit(program: { programType: LoyaltyProgramType; goalCount: number } | null | undefined) {
-  const rewardRemaining = program?.programType === LoyaltyProgramType.CUSTOMER_LEVELS
-    ? DAILY_PURCHASE_LIMIT_PER_CUSTOMER
-    : Math.max(program?.goalCount ?? DAILY_PURCHASE_LIMIT_PER_CUSTOMER, 0);
-
-  return Math.min(DAILY_PURCHASE_LIMIT_PER_CUSTOMER, rewardRemaining);
+  return Math.min(DAILY_PURCHASE_LIMIT_PER_CUSTOMER, dailyRemaining);
 }
 
 function PurchaseControls({
