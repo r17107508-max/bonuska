@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type * as Leaflet from "leaflet";
 
 export type PartnerMapPoint = {
@@ -15,14 +15,77 @@ export type PartnerMapPoint = {
   reviewCount: number;
 };
 
+type Coordinates = {
+  latitude: number;
+  longitude: number;
+};
+
+type VisiblePartnerMapPoint = PartnerMapPoint & Coordinates;
+
+const GEOCODE_CACHE_PREFIX = "partner-map-geocode";
+const GEOCODE_CACHE_VERSION = "v1";
+
 export function PartnersMap({ points }: { points: PartnerMapPoint[] }) {
   const mapElementRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Leaflet.Map | null>(null);
   const markersRef = useRef<Leaflet.LayerGroup | null>(null);
+  const [resolvedCoordinates, setResolvedCoordinates] = useState<Record<string, Coordinates>>({});
+  const [isResolvingCoordinates, setIsResolvingCoordinates] = useState(false);
+
   const visiblePoints = useMemo(
-    () => points.filter((point) => typeof point.latitude === "number" && typeof point.longitude === "number"),
-    [points],
+    () =>
+      points
+        .map((point): VisiblePartnerMapPoint | null => {
+          if (hasCoordinates(point)) {
+            return { ...point, latitude: point.latitude, longitude: point.longitude };
+          }
+
+          const resolved = resolvedCoordinates[point.id];
+          return resolved ? { ...point, ...resolved } : null;
+        })
+        .filter((point): point is VisiblePartnerMapPoint => Boolean(point)),
+    [points, resolvedCoordinates],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function resolveMissingCoordinates() {
+      const missingPoints = points.filter((point) => !hasCoordinates(point) && !resolvedCoordinates[point.id]);
+      if (missingPoints.length === 0) {
+        setIsResolvingCoordinates(false);
+        return;
+      }
+
+      setIsResolvingCoordinates(true);
+      const resolved: Record<string, Coordinates> = {};
+
+      for (const point of missingPoints) {
+        const cached = readCachedCoordinates(point);
+        const coordinates = cached ?? await geocodePoint(point, controller.signal);
+
+        if (coordinates) {
+          resolved[point.id] = coordinates;
+          writeCachedCoordinates(point, coordinates);
+        }
+      }
+
+      if (!cancelled) {
+        if (Object.keys(resolved).length > 0) {
+          setResolvedCoordinates((current) => ({ ...current, ...resolved }));
+        }
+        setIsResolvingCoordinates(false);
+      }
+    }
+
+    void resolveMissingCoordinates();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [points, resolvedCoordinates]);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +108,7 @@ export function PartnersMap({ points }: { points: PartnerMapPoint[] }) {
         markersRef.current = L.layerGroup().addTo(mapRef.current);
       }
 
+      mapRef.current.invalidateSize();
       markersRef.current?.clearLayers();
       const bounds: Leaflet.LatLngTuple[] = [];
 
@@ -55,9 +119,9 @@ export function PartnersMap({ points }: { points: PartnerMapPoint[] }) {
         const marker = L.marker(position, {
           icon: L.divIcon({
             className: "pro-marker",
-            html: `<span>${point.ratingAverage ? point.ratingAverage.toFixed(1) : "★"}</span>`,
-            iconSize: [38, 46],
-            iconAnchor: [19, 44],
+            html: storeMarkerHtml(),
+            iconSize: [44, 52],
+            iconAnchor: [22, 50],
             popupAnchor: [0, -38],
           }),
           title: point.name,
@@ -106,11 +170,91 @@ export function PartnersMap({ points }: { points: PartnerMapPoint[] }) {
   return (
     <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-sm">
       <div ref={mapElementRef} className="h-[360px] w-full" aria-label="Карта точек ПроПлюшка" />
-      {visiblePoints.length === 0 && (
+      {visiblePoints.length === 0 && isResolvingCoordinates && (
+        <div className="border-t border-[var(--border)] bg-white px-4 py-3 text-sm font-medium text-[var(--text-muted)]">
+          Определяем координаты точек по адресам...
+        </div>
+      )}
+      {visiblePoints.length === 0 && !isResolvingCoordinates && (
         <div className="border-t border-[var(--border)] bg-white px-4 py-3 text-sm font-medium text-[var(--text-muted)]">
           У партнёров этого города пока не указаны координаты для карты.
         </div>
       )}
     </div>
   );
+}
+
+function hasCoordinates(point: PartnerMapPoint): point is PartnerMapPoint & Coordinates {
+  return typeof point.latitude === "number" && typeof point.longitude === "number";
+}
+
+function coordinateCacheKey(point: PartnerMapPoint) {
+  return `${GEOCODE_CACHE_PREFIX}:${GEOCODE_CACHE_VERSION}:${point.id}:${point.city}:${point.address}`;
+}
+
+function readCachedCoordinates(point: PartnerMapPoint): Coordinates | null {
+  try {
+    const raw = window.localStorage.getItem(coordinateCacheKey(point));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<Coordinates>;
+
+    if (typeof parsed.latitude === "number" && typeof parsed.longitude === "number") {
+      return { latitude: parsed.latitude, longitude: parsed.longitude };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function writeCachedCoordinates(point: PartnerMapPoint, coordinates: Coordinates) {
+  try {
+    window.localStorage.setItem(coordinateCacheKey(point), JSON.stringify(coordinates));
+  } catch {
+    // Map markers can still render for the current session without cache.
+  }
+}
+
+async function geocodePoint(point: PartnerMapPoint, signal: AbortSignal): Promise<Coordinates | null> {
+  const query = [point.city, point.address || point.name].filter(Boolean).join(", ");
+  if (!query) return null;
+
+  try {
+    const params = new URLSearchParams({
+      format: "jsonv2",
+      limit: "1",
+      q: query,
+    });
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+      headers: { Accept: "application/json" },
+      signal,
+    });
+
+    if (!response.ok) return null;
+
+    const [result] = (await response.json()) as Array<{ lat?: string; lon?: string }>;
+    const latitude = Number(result?.lat);
+    const longitude = Number(result?.lon);
+
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      return { latitude, longitude };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function storeMarkerHtml() {
+  return `
+    <span class="pro-marker-pin" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="M4 10.5V20h16v-9.5" />
+        <path d="M4.5 4h15l1.2 5.1a2.6 2.6 0 0 1-4.9 1.2 2.6 2.6 0 0 1-4.8 0 2.6 2.6 0 0 1-4.8 0 2.6 2.6 0 0 1-4.9-1.2L4.5 4Z" />
+        <path d="M9 20v-5.5h6V20" />
+      </svg>
+    </span>
+  `;
 }
