@@ -6,7 +6,7 @@ import type { MouseEvent } from "react";
 import { useFormStatus } from "react-dom";
 
 const base =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60";
 
 export function ButtonLink({
   href,
@@ -22,9 +22,9 @@ export function ButtonLink({
       href={href}
       className={clsx(
         base,
-        variant === "primary" && "bg-[var(--brand)] text-white shadow-sm hover:bg-[var(--brand-strong)]",
-        variant === "secondary" && "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50",
-        variant === "ghost" && "text-slate-700 hover:bg-slate-100",
+        variant === "primary" && "bg-[var(--brand-strong)] text-white shadow-sm hover:bg-[var(--brand)]",
+        variant === "secondary" && "border border-[var(--border)] bg-white text-[var(--text)] hover:bg-[var(--inactive)]",
+        variant === "ghost" && "text-[var(--text)] hover:bg-[var(--inactive)]",
       )}
     >
       {children}
@@ -49,9 +49,9 @@ export function SubmitButton({
       disabled={pending}
       className={clsx(
         base,
-        variant === "primary" && "w-full bg-[var(--brand)] text-white shadow-sm hover:bg-[var(--brand-strong)]",
-        variant === "secondary" && "w-full border border-slate-300 bg-white text-slate-900 hover:bg-slate-50",
-        variant === "danger" && "w-full bg-red-700 text-white shadow-sm hover:bg-red-800",
+        variant === "primary" && "w-full bg-[var(--brand-strong)] text-white shadow-sm hover:bg-[var(--brand)]",
+        variant === "secondary" && "w-full border border-[var(--border)] bg-white text-[var(--text)] hover:bg-[var(--inactive)]",
+        variant === "danger" && "w-full bg-[var(--danger)] text-white shadow-sm hover:bg-red-800",
       )}
     >
       {pending ? pendingText : children}
@@ -79,9 +79,9 @@ export function InlineSubmit({
       onClick={confirmAction}
       className={clsx(
         base,
-        variant === "primary" && "bg-[var(--brand)] text-white hover:bg-[var(--brand-strong)]",
-        variant === "secondary" && "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50",
-        variant === "danger" && "bg-red-700 text-white hover:bg-red-800",
+        variant === "primary" && "bg-[var(--brand-strong)] text-white hover:bg-[var(--brand)]",
+        variant === "secondary" && "border border-[var(--border)] bg-white text-[var(--text)] hover:bg-[var(--inactive)]",
+        variant === "danger" && "bg-[var(--danger)] text-white hover:bg-red-800",
       )}
     >
       {children}

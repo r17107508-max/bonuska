@@ -34,11 +34,9 @@ export function CashierBottomNav() {
                 aria-current={active ? "page" : undefined}
                 className={
                   item.primary
-                    ? `flex min-h-16 -translate-y-2 flex-col items-center justify-center gap-1 rounded-xl px-3 text-sm font-semibold shadow-lg transition active:scale-95 ${
-                        active ? "bg-[var(--brand-strong)] text-white" : "bg-[var(--brand)] text-white hover:bg-[var(--brand-strong)]"
-                      }`
+                    ? "flex min-h-16 -translate-y-2 flex-col items-center justify-center gap-1 rounded-full bg-[var(--brand-strong)] px-3 text-sm font-semibold text-white shadow-lg ring-4 ring-white transition active:scale-95"
                     : `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-3 text-xs font-semibold transition active:scale-95 ${
-                        active ? "bg-[var(--brand-soft)] text-[var(--brand)]" : "text-[var(--text-muted)] hover:bg-[var(--inactive)] hover:text-[var(--text)]"
+                        active ? "bg-[var(--brand-soft)] text-[var(--brand-strong)]" : "text-[var(--text-muted)] hover:bg-[var(--inactive)] hover:text-[var(--text)]"
                       }`
                 }
               >
@@ -69,11 +67,11 @@ export function CashierBottomNav() {
             style={{ maxHeight: "calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))" }}
           >
             <div className="overflow-y-auto p-5">
-              <h2 id="cashier-logout-title" className="text-xl font-semibold text-slate-950">
+              <h2 id="cashier-logout-title" className="text-xl font-semibold text-[var(--text)]">
                 Выйти из аккаунта кассира?
               </h2>
             </div>
-            <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-slate-100 bg-white p-5">
+            <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-[var(--border)] bg-white p-5">
               <button
                 type="button"
                 onClick={() => setIsLogoutOpen(false)}
@@ -82,7 +80,7 @@ export function CashierBottomNav() {
                 Отмена
               </button>
               <form action={logout}>
-                <button type="submit" className="min-h-12 w-full rounded-lg bg-[var(--brand)] px-4 font-semibold text-white transition hover:bg-[var(--brand-strong)]">
+                <button type="submit" className="min-h-12 w-full rounded-lg bg-[var(--danger)] px-4 font-semibold text-white transition hover:bg-red-800">
                   Выйти
                 </button>
               </form>

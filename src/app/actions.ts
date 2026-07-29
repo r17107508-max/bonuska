@@ -862,6 +862,73 @@ export async function createStaff(formData: FormData) {
   redirect("/company/staff");
 }
 
+export async function updateCompanyStaff(formData: FormData) {
+  const access = await requireCompanyAdmin();
+  const staffId = text(formData, "staffId");
+  const mode = text(formData, "mode");
+  const role = text(formData, "role") as CompanyUserRole;
+  const temporaryPassword = text(formData, "temporaryPassword");
+
+  const staff = await getDb().companyUser.findFirst({
+    where: { id: staffId, companyId: access.companyId },
+    select: { id: true, userId: true },
+  });
+
+  if (!staff) {
+    errorRedirect("/company/staff", "Сотрудник не найден");
+  }
+
+  if (staff.userId === access.userId && (mode === "block" || mode === "archive")) {
+    errorRedirect("/company/staff", "Нельзя заблокировать собственный доступ");
+  }
+
+  if (mode === "role") {
+    await getDb().companyUser.update({
+      where: { id: staff.id },
+      data: { role },
+    });
+  } else if (mode === "block") {
+    await getDb().companyUser.update({
+      where: { id: staff.id },
+      data: { isActive: false },
+    });
+  } else if (mode === "restore") {
+    await getDb().companyUser.update({
+      where: { id: staff.id },
+      data: { isActive: true },
+    });
+  } else if (mode === "reset") {
+    if (temporaryPassword.length < 6) {
+      errorRedirect("/company/staff", "Временный пароль должен быть от 6 символов");
+    }
+
+    await getDb().user.update({
+      where: { id: staff.userId },
+      data: { passwordHash: await bcrypt.hash(temporaryPassword, 10) },
+    });
+  } else if (mode === "archive") {
+    await getDb().companyUser.update({
+      where: { id: staff.id },
+      data: { isActive: false },
+    });
+  } else {
+    errorRedirect("/company/staff", "Неизвестное действие");
+  }
+
+  await getDb().auditLog.create({
+    data: {
+      actorUserId: access.userId,
+      companyId: access.companyId,
+      action: `COMPANY_STAFF_${mode.toUpperCase()}`,
+      entityType: "CompanyUser",
+      entityId: staff.id,
+    },
+  });
+
+  revalidatePath("/company/staff");
+  redirect("/company/staff?success=1");
+}
+
 export async function registerCustomer(formData: FormData) {
   const slug = text(formData, "slug");
   const company = await getDb().company.findUnique({

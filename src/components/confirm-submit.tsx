@@ -23,8 +23,8 @@ export function ConfirmSubmit({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`inline-flex min-h-12 w-full items-center justify-center rounded-lg px-4 text-base font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60 ${
-          danger ? "bg-red-700 hover:bg-red-800" : "bg-[var(--brand)] hover:bg-[var(--brand-strong)]"
+        className={`inline-flex min-h-12 w-full items-center justify-center rounded-xl px-4 text-base font-bold text-white shadow-sm transition active:scale-[0.99] disabled:pointer-events-none disabled:opacity-60 ${
+          danger ? "bg-[var(--danger)] hover:bg-red-800" : "bg-[var(--brand-strong)] hover:bg-[var(--brand)]"
         }`}
       >
         {buttonText}
@@ -35,19 +35,15 @@ export function ConfirmSubmit({
           <div
             role="dialog"
             aria-modal="true"
-            className="flex w-full max-w-sm flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
+            className="flex w-full max-w-sm flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-xl"
             style={{ maxHeight: "calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))" }}
           >
             <div className="overflow-y-auto p-5">
-              <h2 className="text-xl font-semibold text-slate-950">{title}</h2>
-              <p className="mt-2 text-slate-600">{confirmText}</p>
+              <h2 className="text-xl font-bold text-[var(--text)]">{title}</h2>
+              <p className="mt-2 text-[var(--text-muted)]">{confirmText}</p>
             </div>
-            <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-slate-100 bg-white p-5">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="min-h-12 rounded-lg border border-slate-300 bg-white px-4 font-semibold text-slate-700 disabled:opacity-60"
-              >
+            <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-[var(--border)] bg-white p-5">
+              <button type="button" onClick={() => setOpen(false)} className="min-h-12 rounded-xl border border-[var(--border)] bg-white px-4 font-bold text-[var(--text)] disabled:opacity-60">
                 Отмена
               </button>
               <ModalSubmitButton danger={danger} confirmButtonText={confirmButtonText} />
@@ -72,8 +68,8 @@ function ModalSubmitButton({
     <button
       type="submit"
       disabled={pending}
-      className={`min-h-12 rounded-lg px-4 font-semibold text-white disabled:opacity-60 ${
-        danger ? "bg-red-700" : "bg-[var(--brand)]"
+      className={`min-h-12 rounded-xl px-4 font-bold text-white disabled:opacity-60 ${
+        danger ? "bg-[var(--danger)]" : "bg-[var(--brand-strong)]"
       }`}
     >
       {pending ? "Отправляем..." : confirmButtonText}

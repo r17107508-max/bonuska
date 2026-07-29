@@ -84,7 +84,7 @@ export function daysLeft(date: Date | null | undefined) {
 export function statusLabel(status: CompanyStatus) {
   const labels: Record<CompanyStatus, string> = {
     PENDING: "Заявка",
-    ACTIVE_TRIAL: "Trial",
+    ACTIVE_TRIAL: "Пробный период",
     ACTIVE_PAID: "Оплачено",
     PAYMENT_REQUIRED: "Нужна оплата",
     BLOCKED: "Заблокирована",
@@ -97,13 +97,13 @@ export function statusLabel(status: CompanyStatus) {
 
 export function statusClass(status: CompanyStatus) {
   const classes: Record<CompanyStatus, string> = {
-    PENDING: "bg-[rgba(255,200,87,0.25)] text-[#7a4b00]",
-    ACTIVE_TRIAL: "bg-sky-100 text-sky-800",
-    ACTIVE_PAID: "bg-emerald-100 text-emerald-800",
-    PAYMENT_REQUIRED: "bg-rose-100 text-rose-800",
-    BLOCKED: "bg-zinc-200 text-zinc-800",
-    REJECTED: "bg-red-100 text-red-800",
-    DELETED: "bg-slate-200 text-slate-700",
+    PENDING: "bg-amber-50 text-amber-900",
+    ACTIVE_TRIAL: "bg-sky-50 text-sky-800",
+    ACTIVE_PAID: "bg-emerald-50 text-emerald-800",
+    PAYMENT_REQUIRED: "bg-red-50 text-[var(--danger)]",
+    BLOCKED: "bg-zinc-100 text-zinc-800",
+    REJECTED: "bg-red-50 text-[var(--danger)]",
+    DELETED: "bg-slate-100 text-slate-700",
   };
 
   return classes[status];
@@ -135,7 +135,7 @@ export function operationLabel(type: LoyaltyTransactionType) {
 }
 
 export function companyRoleLabel(role: CompanyUserRole) {
-  return role === CompanyUserRole.COMPANY_ADMIN ? "Админ" : "Кассир";
+  return role === CompanyUserRole.COMPANY_ADMIN ? "Администратор" : "Кассир";
 }
 
 export function slugify(value: string) {

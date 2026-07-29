@@ -1,51 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 const programDescriptions = {
   CLASSIC_REWARD: {
     label: "Классический подарок",
-    description:
-      "Клиент покупает нужное количество раз, а следующая покупка становится подарком.",
-    logic: [
-      "клиент копит покупки",
-      "при достижении цели появляется подарок",
-      "кассир выдаёт подарок",
-      "после выдачи прогресс сбрасывается",
-    ],
+    scheme: "Покупки -> подарок доступен -> кассир выдаёт подарок -> прогресс сбрасывается",
+    description: "Клиент копит покупки до цели, после чего следующая операция становится подарком.",
   },
   COLLECT_AND_REWARD: {
     label: "Накопи и получи подарок",
-    description:
-      "Клиент копит покупки до нужного количества и получает заранее указанный подарок.",
-    logic: [
-      "подарок заранее известен",
-      "клиент видит, сколько осталось",
-      "после достижения цели подарок доступен",
-      "кассир подтверждает выдачу",
-    ],
+    scheme: "Покупки -> известная цель -> подарок доступен -> выдача",
+    description: "Клиент заранее видит, какой подарок получит после нужного количества покупок.",
   },
   GIFT_BOX: {
     label: "Коробка с подарком",
-    description:
-      "Когда подарок доступен, клиент сам открывает коробку в кабинете, а система выбирает подарок из списка.",
-    logic: [
-      "вы указываете список подарков",
-      "клиент копит покупки",
-      "после достижения цели открывает коробку",
-      "кассир сканирует подарочный QR и выдаёт подарок",
-    ],
+    scheme: "Покупки -> клиент открывает коробку -> кассир сканирует подарочный QR",
+    description: "Система выбирает подарок из списка, когда клиент сам открывает коробку в своём кабинете.",
   },
   DISCOUNT_AFTER_N: {
     label: "Скидка после N покупок",
-    description:
-      "Клиент копит покупки и после достижения цели получает скидку.",
-    logic: [
-      "укажите размер скидки в названии или описании подарка",
-      "клиент копит покупки",
-      "кассир применяет скидку",
-      "после использования прогресс сбрасывается",
-    ],
+    scheme: "Покупки -> скидка доступна -> кассир применяет скидку -> прогресс сбрасывается",
+    description: "Используйте название подарка и описание для размера скидки, например «Скидка 15%».",
   },
 } as const;
 
@@ -70,57 +46,50 @@ export function ProgramTypeSettings({
     ? defaultProgramType as ProgramType
     : "CLASSIC_REWARD";
   const [programType, setProgramType] = useState<ProgramType>(initialProgramType);
-  const selected = programDescriptions[programType];
-  const giftLines = useMemo(
-    () => giftOptionsDefaultValue.split("\n").map((item) => item.trim()).filter(Boolean),
-    [giftOptionsDefaultValue],
-  );
 
   return (
     <div className="grid gap-4">
-      <label className="block">
-        <span className="text-sm font-semibold text-slate-700">Тип программы</span>
-        <select
-          name="programType"
-          value={programType}
-          onChange={(event) => setProgramType(event.target.value as ProgramType)}
-          className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
-        >
-          {availableProgramTypes.map((type) => (
-            <option key={type} value={type}>
-              {programDescriptions[type].label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <input type="hidden" name="programType" value={programType} />
+      <div>
+        <p className="text-sm font-bold text-[var(--text)]">Тип программы</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {availableProgramTypes.map((type) => {
+            const selected = type === programType;
+            const item = programDescriptions[type];
 
-      <section className="rounded-lg border border-[rgba(255,106,61,0.2)] bg-[var(--brand-soft)] p-4 text-sm leading-6 text-slate-700">
-        <p className="font-semibold text-slate-950">Как работает выбранный тип программы</p>
-        <p className="mt-2">{selected.description}</p>
-        <ul className="mt-3 grid gap-1">
-          {selected.logic.map((item) => (
-            <li key={item} className="flex gap-2">
-              <span className="mt-2 size-1.5 shrink-0 rounded-full bg-[var(--brand)]" />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setProgramType(type)}
+                className={`min-h-[150px] rounded-2xl border p-4 text-left transition ${
+                  selected
+                    ? "border-[var(--brand-strong)] bg-[var(--brand-soft)]"
+                    : "border-[var(--border)] bg-white hover:bg-[var(--inactive)]"
+                }`}
+                aria-pressed={selected}
+              >
+                <span className="block font-extrabold text-[var(--text)]">{item.label}</span>
+                <span className="mt-2 block text-sm text-[var(--text-muted)]">{item.description}</span>
+                <span className="mt-3 block rounded-xl bg-white p-2 text-xs font-bold text-[var(--brand-strong)] ring-1 ring-[var(--border)]">{item.scheme}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      <label className="block">
-        <span className="text-sm font-semibold text-slate-700">Подарки для коробки, по одному в строке</span>
-        {programType === "GIFT_BOX" && (
-          <p className="mt-2 rounded-lg bg-[var(--inactive)] p-3 text-sm leading-6 text-[#7a4b00]">
-            Введите подарки по одному в строке. Когда клиент накопит нужное количество покупок, он сам откроет коробку в кабинете.
-          </p>
-        )}
-        <textarea
-          name="giftOptions"
-          rows={Math.max(5, giftLines.length)}
-          defaultValue={giftOptionsDefaultValue}
-          className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
-        />
-      </label>
+      {programType === "GIFT_BOX" && (
+        <label className="block">
+          <span className="text-sm font-bold text-[var(--text)]">Подарки для коробки, по одному в строке</span>
+          <textarea
+            name="giftOptions"
+            rows={5}
+            defaultValue={giftOptionsDefaultValue}
+            className="mt-1.5 w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 text-base leading-6 text-[var(--text)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
+          />
+          <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">Поле сохраняется только для механики «Коробка с подарком».</span>
+        </label>
+      )}
     </div>
   );
 }
