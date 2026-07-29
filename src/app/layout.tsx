@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { AppSplash } from "@/components/app-splash";
+import { PwaRegister } from "@/components/pwa-register";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
@@ -12,7 +13,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "ПроПлюшка - QR-программа лояльности",
-  description: "Простая QR-программа лояльности для кофеен, кафе, шаурмичных, магазинов и салонов.",
+  description: "Простая QR-программа лояльности для кофеен, кафе, магазинов и салонов.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -40,6 +41,7 @@ export default function RootLayout({
     <html lang="ru" className={manrope.variable}>
       <body className="antialiased">
         <AppSplash />
+        <PwaRegister />
         {children}
       </body>
     </html>

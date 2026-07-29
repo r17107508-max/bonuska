@@ -74,142 +74,107 @@ export function PartnersBrowser({ partners }: { partners: PartnerBrowserItem[] }
   return (
     <section className="space-y-2.5">
       {partners.length > 0 && (
-        <div className="warm-card p-3">
+        <div>
           <button
             type="button"
             onClick={requestLocation}
             disabled={geoStatus === "loading"}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 text-sm font-bold text-white disabled:opacity-60"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--brand-strong)] px-4 text-sm font-extrabold text-white disabled:opacity-60"
           >
             <LocateFixed aria-hidden className={`size-4 ${geoStatus === "loading" ? "animate-spin" : ""}`} />
-            {geoStatus === "ready" ? "Показаны ближайшие" : geoStatus === "loading" ? "Определяем..." : "Показать рядом"}
+            {geoStatus === "ready" ? "Показаны ближайшие" : geoStatus === "loading" ? "Определяем..." : "Рядом со мной"}
           </button>
           {geoStatus === "error" && (
-            <p className="mt-2 text-sm font-semibold text-red-700">
+            <p className="mt-2 text-sm font-semibold text-[var(--danger)]">
               Не удалось получить геопозицию. Проверьте разрешение браузера.
             </p>
           )}
         </div>
       )}
 
-      {sortedPartners.map((company) => {
-        const address = [company.city, company.address].filter(Boolean).join(", ");
-        const routeHref = address ? `https://yandex.ru/maps/?text=${encodeURIComponent(address)}` : "";
-        const website = company.website?.trim();
-        const phoneHref = company.ownerPhone ? `tel:${company.ownerPhone.replace(/[^\d+]/g, "")}` : "";
+      <div className="grid gap-3 md:grid-cols-2">
+        {sortedPartners.map((company) => {
+          const address = [company.city, company.address].filter(Boolean).join(", ");
+          const routeHref = address ? `https://yandex.ru/maps/?text=${encodeURIComponent(address)}` : "";
+          const phoneHref = company.ownerPhone ? `tel:${company.ownerPhone.replace(/[^\d+]/g, "")}` : "";
 
-        return (
-          <article key={company.id} className="warm-card overflow-hidden">
-            <Link href={`/app/companies/${company.slug}`} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
-              <span className="flex min-w-0 items-center gap-3">
-                {company.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={company.logoUrl} alt="" className="size-10 shrink-0 rounded-lg border border-[var(--border)] bg-white object-cover" />
-                ) : (
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-lg">
-                    {company.programIcon ?? company.icon}
-                  </span>
-                )}
-                <span className="min-w-0">
-                  <span className="block truncate text-base font-semibold text-[var(--text)]">{company.name}</span>
-                  <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-[#7a4b00]">
-                    <span className="inline-flex items-center gap-1">
-                      <Star aria-hidden className="size-3.5 fill-current" />
-                      {company.reviewCount > 0 ? `${company.ratingAverage?.toFixed(1)} · ${company.reviewCount} отзывов` : "Нет отзывов"}
+          return (
+            <article key={company.id} className="overflow-hidden rounded-3xl border border-[var(--border)] bg-white shadow-sm">
+              <Link href={`/app/companies/${company.slug}`} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
+                <span className="flex min-w-0 items-center gap-3">
+                  {company.logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={company.logoUrl} alt={`Логотип ${company.name}`} className="size-11 shrink-0 rounded-2xl border border-[var(--border)] bg-white object-cover" />
+                  ) : (
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-soft)] text-lg">
+                      {company.programIcon ?? company.icon}
                     </span>
-                    {company.distanceKm !== null && (
-                      <span className="inline-flex items-center gap-1 text-[var(--brand)]">
-                        <Navigation aria-hidden className="size-3.5" />
-                        {formatDistance(company.distanceKm)}
-                      </span>
-                    )}
+                  )}
+                  <span className="min-w-0">
+                    <span className="block truncate text-base font-extrabold text-[var(--text)]">{company.name}</span>
+                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-bold text-[var(--text-muted)]">
+                      <span>{company.businessType}</span>
+                      {company.reviewCount > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[#7a4b00]">
+                          <Star aria-hidden className="size-3.5 fill-current" />
+                          {company.ratingAverage?.toFixed(1)} · {company.reviewCount}
+                        </span>
+                      )}
+                      {company.distanceKm !== null && (
+                        <span className="inline-flex items-center gap-1 text-[var(--brand-strong)]">
+                          <Navigation aria-hidden className="size-3.5" />
+                          {formatDistance(company.distanceKm)}
+                        </span>
+                      )}
+                    </span>
                   </span>
                 </span>
-              </span>
-              <ExternalLink aria-hidden className="size-4 shrink-0 text-[var(--text-muted)]" />
-            </Link>
+                <ExternalLink aria-hidden className="size-4 shrink-0 text-[var(--text-muted)]" />
+              </Link>
 
-            <div className="border-t border-[var(--border)] px-4 pb-4 pt-3">
-              <div className="flex flex-wrap gap-2">
-                <span className="rounded-full bg-[rgba(255,200,87,0.25)] px-2.5 py-1 text-xs font-bold text-[#7a4b00]">{company.businessType}</span>
-                {company.distanceKm !== null && (
-                  <span className="rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-xs font-bold text-[var(--brand)]">{formatDistance(company.distanceKm)}</span>
-                )}
-              </div>
+              <div className="border-t border-[var(--border)] px-4 pb-4 pt-3">
+                <p className="text-sm font-bold text-[var(--text)]">{company.promoText}</p>
+                {company.description && <p className="mt-1 line-clamp-2 text-sm leading-5 text-[var(--text-muted)]">{company.description}</p>}
 
-              <p className="mt-3 text-sm font-semibold text-[var(--text)]">{company.promoText}</p>
-              {company.description && <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">{company.description}</p>}
-
-              <div className="mt-3 space-y-2 text-sm text-[var(--text)]">
                 {address && (
-                  <p className="flex gap-2">
-                    <MapPinned aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
+                  <p className="mt-3 flex gap-2 text-sm text-[var(--text-muted)]">
+                    <MapPinned aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--brand-strong)]" />
                     <span>{address}</span>
                   </p>
                 )}
-                {website && (
-                  <p className="flex gap-2">
-                    <Globe2 aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
-                    <span className="break-all">{website.replace(/^https?:\/\//i, "")}</span>
-                  </p>
-                )}
-                {company.ownerPhone && (
-                  <p className="flex gap-2">
-                    <Phone aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />
-                    <span>{company.ownerPhone}</span>
-                  </p>
-                )}
-              </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {phoneHref ? (
-                  <a href={phoneHref} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 text-sm font-bold text-white">
-                    <Phone aria-hidden className="size-4" />
-                    Позвонить
-                  </a>
-                ) : (
-                  <Link href={`/app/companies/${company.slug}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 text-sm font-bold text-white">
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <Link href={`/app/companies/${company.slug}`} className="inline-flex min-h-10 items-center justify-center gap-1 rounded-2xl bg-[var(--brand-strong)] px-2 text-sm font-bold text-white">
                     <ExternalLink aria-hidden className="size-4" />
                     Открыть
                   </Link>
-                )}
-                {website ? (
-                  <a
-                    href={website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-bold text-[var(--text)]"
-                  >
-                    <Globe2 aria-hidden className="size-4" />
-                    Сайт
-                  </a>
-                ) : routeHref ? (
-                  <a
-                    href={routeHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-bold text-[var(--text)]"
-                  >
-                    <MapPinned aria-hidden className="size-4" />
-                    Маршрут
-                  </a>
-                ) : (
-                  <Link
-                    href={`/app/companies/${company.slug}`}
-                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 text-sm font-bold text-[var(--text)]"
-                  >
-                    <ExternalLink aria-hidden className="size-4" />
-                    Карточка
-                  </Link>
-                )}
+                  {routeHref && (
+                    <a href={routeHref} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-1 rounded-2xl border border-[var(--border)] bg-white px-2 text-sm font-bold text-[var(--text)]">
+                      <MapPinned aria-hidden className="size-4" />
+                      Маршрут
+                    </a>
+                  )}
+                  {phoneHref && (
+                    <a href={phoneHref} className="inline-flex min-h-10 items-center justify-center gap-1 rounded-2xl border border-[var(--border)] bg-white px-2 text-sm font-bold text-[var(--text)]">
+                      <Phone aria-hidden className="size-4" />
+                      Позвонить
+                    </a>
+                  )}
+                  {!routeHref && !phoneHref && company.website && (
+                    <a href={company.website} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center gap-1 rounded-2xl border border-[var(--border)] bg-white px-2 text-sm font-bold text-[var(--text)]">
+                      <Globe2 aria-hidden className="size-4" />
+                      Сайт
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
-          </article>
-        );
-      })}
+            </article>
+          );
+        })}
+      </div>
 
       {partners.length === 0 && (
-        <div className="warm-card p-4 text-sm leading-5 text-[var(--text-muted)]">
+        <div className="rounded-3xl border border-[var(--border)] bg-white p-4 text-sm leading-5 text-[var(--text-muted)]">
           В этом городе и категории пока нет партнёров.
         </div>
       )}

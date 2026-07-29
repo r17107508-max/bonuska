@@ -3,11 +3,11 @@
   "short_name": "ПроПлюшка",
   "id": "/",
   "description": "QR-бонусы и подарки за покупки",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#0f766e",
+  "background_color": "#FFF9F3",
+  "theme_color": "#C94726",
   "orientation": "portrait",
   "icons": [
     {

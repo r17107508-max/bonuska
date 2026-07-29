@@ -138,11 +138,11 @@ export function PartnersMap({ points }: { points: PartnerMapPoint[] }) {
         address.textContent = [point.city, point.address].filter(Boolean).join(", ");
         popup.appendChild(address);
 
-        const rating = document.createElement("p");
-        rating.textContent = point.reviewCount > 0
-          ? `Рейтинг ${point.ratingAverage?.toFixed(1)} из 5, отзывов: ${point.reviewCount}`
-          : "Пока нет отзывов";
-        popup.appendChild(rating);
+        if (point.reviewCount > 0) {
+          const rating = document.createElement("p");
+          rating.textContent = `Рейтинг ${point.ratingAverage?.toFixed(1)} из 5, отзывов: ${point.reviewCount}`;
+          popup.appendChild(rating);
+        }
 
         const link = document.createElement("a");
         link.href = `/app/companies/${point.slug}`;
@@ -169,7 +169,7 @@ export function PartnersMap({ points }: { points: PartnerMapPoint[] }) {
 
   return (
     <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-sm">
-      <div ref={mapElementRef} className="h-[360px] w-full" aria-label="Карта точек ПроПлюшка" />
+      <div ref={mapElementRef} className="h-[420px] w-full md:h-[520px]" aria-label="Карта партнёров ПроПлюшка" />
       {visiblePoints.length === 0 && isResolvingCoordinates && (
         <div className="border-t border-[var(--border)] bg-white px-4 py-3 text-sm font-medium text-[var(--text-muted)]">
           Определяем координаты точек по адресам...
@@ -177,7 +177,7 @@ export function PartnersMap({ points }: { points: PartnerMapPoint[] }) {
       )}
       {visiblePoints.length === 0 && !isResolvingCoordinates && (
         <div className="border-t border-[var(--border)] bg-white px-4 py-3 text-sm font-medium text-[var(--text-muted)]">
-          У партнёров этого города пока не указаны координаты для карты.
+          У партнёров этого города пока нет координат для карты.
         </div>
       )}
     </div>

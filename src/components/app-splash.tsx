@@ -5,8 +5,8 @@ import styles from "./app-splash.module.css";
 
 type SplashPhase = "visible" | "leaving" | "hidden";
 
-const START_EXIT_AFTER_MS = 1420;
-const REMOVE_AFTER_MS = 1820;
+const START_EXIT_AFTER_MS = 900;
+const REMOVE_AFTER_MS = 1180;
 
 function isStandaloneApp() {
   const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
@@ -18,7 +18,7 @@ export function AppSplash() {
   const [phase, setPhase] = useState<SplashPhase>("hidden");
 
   useEffect(() => {
-    if (!isStandaloneApp()) {
+    if (!isStandaloneApp() || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
     }
 
@@ -41,6 +41,7 @@ export function AppSplash() {
     <div className={`${styles.splash} ${phase === "leaving" ? styles.leaving : ""}`} data-app-splash aria-hidden="true">
       <div className={styles.content}>
         <div className={styles.iconShell}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className={styles.icon} src="/icons/icon-192.png" alt="" width={192} height={192} decoding="async" />
         </div>
         <p className={styles.title}>ПроПлюшка</p>

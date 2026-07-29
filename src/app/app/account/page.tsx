@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { HelpCircle, LogOut, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Bell, HelpCircle, History, KeyRound, LogOut, ShieldCheck, Smartphone, Trash2, UserRound, WalletCards } from "lucide-react";
 import { changeCustomerPassword, deleteCustomerAccount, logout, updateCustomerProfile } from "@/app/actions";
 import { SubmitButton } from "@/components/buttons";
 import { ClientBrandHeader } from "@/components/client-brand-header";
+import { ClientCard, ClientShell } from "@/components/client-ui";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { requireUser } from "@/lib/auth";
 import { getPartnerCities } from "@/lib/customer-app";
@@ -23,56 +24,65 @@ export default async function AccountPage({
   ]);
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 pb-28 pt-3">
-      <section className="mx-auto max-w-md space-y-3">
-        <ClientBrandHeader />
+    <ClientShell>
+      <ClientBrandHeader greeting="Профиль" />
 
-        <section className="panel p-3.5">
-          <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
-              <UserRound aria-hidden className="size-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-slate-950">Аккаунт</h1>
-              <p className="mt-0.5 text-sm leading-5 text-slate-600">Профиль клиента.</p>
-            </div>
+      <section>
+        <h1 className="text-3xl font-extrabold leading-tight text-[var(--text)]">Профиль</h1>
+        <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">Личные данные, безопасность и быстрые ссылки.</p>
+      </section>
+
+      {params.error && <p className="rounded-2xl bg-red-50 p-3 text-sm font-semibold text-[var(--danger)]">{params.error}</p>}
+      {params.success === "profile" && <p className="rounded-2xl bg-emerald-50 p-3 text-sm font-semibold text-[var(--success)]">Данные сохранены.</p>}
+      {params.success === "password" && <p className="rounded-2xl bg-emerald-50 p-3 text-sm font-semibold text-[var(--success)]">Пароль изменён.</p>}
+
+      <ClientCard>
+        <div className="flex items-start gap-3">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand-strong)]">
+            <UserRound aria-hidden className="size-6" />
           </div>
-        </section>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-xl font-extrabold text-[var(--text)]">{user.name}</h2>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">{formatPhone(user.phone)}</p>
+          </div>
+        </div>
 
-        {params.error && <p className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">{params.error}</p>}
-        {params.success === "profile" && <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">Данные сохранены.</p>}
-        {params.success === "password" && <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">Пароль изменён.</p>}
+        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+          <ReadonlyField label="Email" value={user.email || "Не указан"} />
+          <ReadonlyField label="Город" value={user.city || "Не указан"} />
+        </dl>
 
-        <section className="panel p-4">
-          <form action={updateCustomerProfile} className="space-y-3.5">
+        <details className="mt-4 rounded-2xl border border-[var(--border)] bg-white p-3">
+          <summary className="cursor-pointer text-sm font-extrabold text-[var(--brand-strong)]">Изменить личные данные</summary>
+          <form action={updateCustomerProfile} className="mt-4 space-y-3.5">
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">Имя</span>
+              <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Имя</span>
               <input
                 name="name"
                 defaultValue={user.name}
                 required
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
+                className="mt-1.5 min-h-11 w-full rounded-2xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.16)]"
               />
             </label>
             <ReadonlyField label="Телефон" value={formatPhone(user.phone)} />
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">Email</span>
+              <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Email</span>
               <input
                 name="email"
                 type="email"
                 defaultValue={user.email ?? ""}
                 placeholder="email@example.ru"
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
+                className="mt-1.5 min-h-11 w-full rounded-2xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.16)]"
               />
             </label>
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">Город</span>
+              <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Город</span>
               <input
                 name="city"
                 list="account-city-options"
                 defaultValue={user.city ?? ""}
                 required
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
+                className="mt-1.5 min-h-11 w-full rounded-2xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.16)]"
               />
               <datalist id="account-city-options">
                 {cities.map((city) => (
@@ -82,89 +92,113 @@ export default async function AccountPage({
             </label>
             <SubmitButton>Сохранить</SubmitButton>
           </form>
-        </section>
+        </details>
+      </ClientCard>
 
-        <section className="panel p-4">
-          <form action={changeCustomerPassword} className="space-y-3.5">
-            <h2 className="text-lg font-semibold text-slate-950">Сменить пароль</h2>
+      <ClientCard>
+        <nav className="space-y-2" aria-label="Разделы профиля">
+          <ProfileLink href="/app/cards" icon={WalletCards} label="Мои карты" />
+          <ProfileLink href="/app/history" icon={History} label="История" />
+          <ProfileStatic icon={Bell} label="Уведомления" note="Появятся после подключения backend уведомлений" />
+          <ProfileStatic icon={Smartphone} label="Установить приложение" note="Предложение установки показывается только в поддерживаемом браузере" />
+          <ProfileLink href="/app/support" icon={HelpCircle} label="Помощь" />
+          <ProfileLink href="/privacy" icon={ShieldCheck} label="Политика персональных данных" />
+        </nav>
+      </ClientCard>
+
+      <ClientCard>
+        <details className="rounded-2xl border border-[var(--border)] bg-white p-3">
+          <summary className="flex cursor-pointer items-center gap-2 text-sm font-extrabold text-[var(--text)]">
+            <KeyRound aria-hidden className="size-4" />
+            Безопасность
+          </summary>
+          <form action={changeCustomerPassword} className="mt-4 space-y-3.5">
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">Текущий пароль</span>
+              <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Текущий пароль</span>
               <input
                 name="currentPassword"
                 type="password"
                 autoComplete="current-password"
                 required
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
+                className="mt-1.5 min-h-11 w-full rounded-2xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.16)]"
               />
             </label>
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">Новый пароль</span>
+              <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Новый пароль</span>
               <input
                 name="newPassword"
                 type="password"
                 autoComplete="new-password"
                 required
                 minLength={6}
-                className="mt-1.5 min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-[var(--brand)] focus:ring-4 focus:ring-[rgba(255,106,61,0.15)]"
+                className="mt-1.5 min-h-11 w-full rounded-2xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.16)]"
               />
             </label>
             <SubmitButton variant="secondary">Сменить пароль</SubmitButton>
           </form>
-        </section>
+        </details>
+      </ClientCard>
 
-        <section className="panel p-4">
-          <div className="space-y-3">
-            <Link href="/privacy" className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
-              <ShieldCheck aria-hidden className="size-5 text-[var(--brand)]" />
-              Политика персональных данных
-            </Link>
-            <Link
-              href="/app/support"
-              className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
-            >
-              <HelpCircle aria-hidden className="size-5 text-[var(--brand)]" />
-              Поддержка
-            </Link>
-          </div>
-        </section>
+      <ClientCard>
+        <form action={logout}>
+          <button type="submit" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--border)] bg-white px-4 text-sm font-extrabold text-[var(--text)]">
+            <LogOut aria-hidden className="size-5" />
+            Выйти
+          </button>
+        </form>
+      </ClientCard>
 
-        <section className="panel p-4">
-          <form action={logout}>
-            <button type="submit" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700">
-              <LogOut aria-hidden className="size-5" />
-              Выйти из аккаунта
-            </button>
-          </form>
-        </section>
-
-        <section className="panel border-red-200 p-4">
-          <div className="mb-3 flex items-start gap-3">
-            <Trash2 aria-hidden className="mt-0.5 size-5 shrink-0 text-red-700" />
-            <p className="text-sm leading-5 text-slate-600">
+      <ClientCard className="border-red-200">
+        <div className="mb-3 flex items-start gap-3">
+          <Trash2 aria-hidden className="mt-0.5 size-5 shrink-0 text-[var(--danger)]" />
+          <div>
+            <h2 className="font-extrabold text-[var(--text)]">Опасная зона</h2>
+            <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">
               Удаление уберёт клиентский аккаунт, карты и историю участия. Действие нельзя отменить.
             </p>
           </div>
-          <form action={deleteCustomerAccount}>
-            <ConfirmSubmit
-              danger
-              title="Удалить аккаунт?"
-              confirmText="Будут удалены клиентский аккаунт, бонусные карты и история участия. Если аккаунт связан с компанией, удаление будет остановлено."
-              buttonText="Удалить аккаунт"
-            />
-          </form>
-        </section>
-      </section>
-    </main>
+        </div>
+        <form action={deleteCustomerAccount}>
+          <ConfirmSubmit
+            danger
+            title="Удалить аккаунт?"
+            confirmText="Будут удалены клиентский аккаунт, бонусные карты и история участия. Если аккаунт связан с компанией, удаление будет остановлено."
+            buttonText="Удалить аккаунт"
+          />
+        </form>
+      </ClientCard>
+    </ClientShell>
   );
 }
 
 function ReadonlyField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <span className="text-xs font-semibold uppercase tracking-normal text-slate-600">{label}</span>
-      <div className="mt-1.5 flex min-h-10 w-full items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800">
+      <dt className="text-xs font-bold uppercase text-[var(--text-muted)]">{label}</dt>
+      <dd className="mt-1.5 flex min-h-11 w-full items-center rounded-2xl border border-[var(--border)] bg-[var(--inactive)] px-3 text-sm font-bold text-[var(--text)]">
         {value}
-      </div>
+      </dd>
+    </div>
+  );
+}
+
+function ProfileLink({ href, icon: Icon, label }: { href: string; icon: typeof UserRound; label: string }) {
+  return (
+    <Link href={href} className="flex min-h-12 items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-3 text-sm font-bold text-[var(--text)]">
+      <Icon aria-hidden className="size-5 text-[var(--brand-strong)]" />
+      {label}
+    </Link>
+  );
+}
+
+function ProfileStatic({ icon: Icon, label, note }: { icon: typeof UserRound; label: string; note: string }) {
+  return (
+    <div className="flex min-h-12 items-start gap-3 rounded-2xl border border-[var(--border)] bg-[var(--inactive)] px-3 py-3 text-sm text-[var(--text-muted)]">
+      <Icon aria-hidden className="size-5 shrink-0 text-[var(--brand-strong)]" />
+      <span>
+        <span className="block font-bold text-[var(--text)]">{label}</span>
+        <span className="mt-0.5 block text-xs leading-5">{note}</span>
+      </span>
     </div>
   );
 }

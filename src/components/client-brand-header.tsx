@@ -1,18 +1,35 @@
 import Link from "next/link";
-import { Gift } from "lucide-react";
+import { Bell, Gift } from "lucide-react";
 
-export function ClientBrandHeader() {
+export function ClientBrandHeader({
+  greeting = "ПроПлюшка",
+  showNotifications = false,
+}: {
+  greeting?: string;
+  showNotifications?: boolean;
+}) {
   return (
-    <header className="flex min-h-9 items-center justify-between">
+    <header className="flex min-h-14 items-center justify-between gap-3">
       <Link
         href="/app"
-        className="inline-flex min-h-9 items-center gap-2 rounded-[14px] border border-[var(--border)] bg-white px-2.5 text-base font-extrabold text-[var(--text)] shadow-sm"
+        className="inline-flex min-h-11 min-w-0 items-center gap-2 rounded-2xl border border-[var(--border)] bg-white px-3 text-base font-extrabold text-[var(--text)] shadow-sm"
+        aria-label="На главную"
       >
-        <span aria-hidden className="flex size-6 items-center justify-center rounded-[10px] bg-[var(--brand-soft)] text-[var(--brand)]">
+        <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand-strong)]">
           <Gift className="size-4" />
         </span>
-        <span>ПроПлюшка</span>
+        <span className="truncate">{greeting}</span>
       </Link>
+
+      {showNotifications && (
+        <button
+          type="button"
+          className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-white text-[var(--text)] shadow-sm"
+          aria-label="Уведомления"
+        >
+          <Bell aria-hidden className="size-5" />
+        </button>
+      )}
     </header>
   );
 }

@@ -1,13 +1,14 @@
 import QRCode from "qrcode";
 import Link from "next/link";
-import { Check, Gift, MapPinned, QrCode, Sparkles, Trophy, WalletCards } from "lucide-react";
+import { ArrowRight, Gift, QrCode, Trophy } from "lucide-react";
 import { LoyaltyTransactionType, RaffleStatus, RewardClaimStatus } from "@prisma/client";
 import { ClientBrandHeader } from "@/components/client-brand-header";
+import { ClientCard, ClientEmptyState, ClientShell, LogoBox, PartnerBadge, ProgramSummaryCard, ProgressBar, QuickQrButton, pluralPurchasesLeft } from "@/components/client-ui";
 import { GiftOpenCard } from "@/components/gift-open-card";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { getClientDashboardMemberships, pickNearestGift, rewardGoal } from "@/lib/customer-app";
+import { getActivePartnerCompanies, getClientMemberships, pickNearestGift, rewardGoal, rewardLeft, type ClientMembership } from "@/lib/customer-app";
 import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
 import { finalizeDueRafflesForUser, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
 
@@ -19,13 +20,13 @@ export default async function ClientDashboardPage({
   const [currentUser, params] = await Promise.all([requireUser("/company/login"), searchParams]);
   const user = await getDb().user.findUniqueOrThrow({
     where: { id: currentUser.id },
-    select: { id: true, name: true },
+    select: { id: true, name: true, city: true },
   });
 
   await finalizeDueRafflesForUser(user.id);
 
-  const [memberships, nearestRaffleTicket, recentTransactions] = await Promise.all([
-    getClientDashboardMemberships(user.id),
+  const [memberships, nearestRaffleTicket, recentTransactions, nearbyPartners] = await Promise.all([
+    getClientMemberships(user.id),
     getDb().raffleTicket.findFirst({
       where: {
         userId: user.id,
@@ -46,14 +47,13 @@ export default async function ClientDashboardPage({
       where: { membership: { userId: user.id } },
       include: { company: { include: { loyaltyProgram: true } } },
       orderBy: { createdAt: "desc" },
-      take: 4,
+      take: 3,
     }),
+    getActivePartnerCompanies(user.city, 4),
   ]);
-  const nearest = pickNearestGift(memberships);
-  const heroGoal = nearest ? rewardGoal(nearest) : 10;
-  const heroCurrent = nearest ? Math.min(nearest.currentCount, heroGoal) : 0;
-  const heroLeft = Math.max(0, heroGoal - heroCurrent);
-  const heroProgress = nearest?.rewardAvailable ? 100 : Math.round((heroCurrent / Math.max(heroGoal, 1)) * 100);
+
+  const nearest = pickNearestGift(memberships) as ClientMembership | null;
+  const otherMemberships = memberships.filter((membership) => membership.id !== nearest?.id);
   const nearestUsesGiftBox = nearest?.company.loyaltyProgram
     ? isGiftBoxProgram(nearest.company.loyaltyProgram, nearest.company.giftOptions)
     : false;
@@ -75,218 +75,165 @@ export default async function ClientDashboardPage({
         description: nearestRewardClaim.description,
         rewardQrToken: nearestRewardClaim.token,
         qrDataUrl: await QRCode.toDataURL(buildRewardQrPayload(nearestRewardClaim.token), {
-          margin: 1,
+          margin: 2,
           width: 360,
-          color: { dark: "#92400e", light: "#ffffff" },
+          color: { dark: "#1F1B18", light: "#ffffff" },
         }),
       }
     : null;
 
   return (
-    <main className="min-h-screen bg-[var(--background)] px-4 pb-28 pt-3">
-      <section className="mx-auto max-w-md space-y-3">
-        <ClientBrandHeader />
+    <ClientShell>
+      <ClientBrandHeader greeting={`Привет, ${user.name}`} />
 
-        {params.error && <p className="rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-800">{params.error}</p>}
+      {params.error && <p className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-[var(--danger)]">{params.error}</p>}
 
-        <section className="digital-card overflow-hidden rounded-[28px] p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm font-extrabold text-[#5f250f]">Здравствуйте, {user.name}</p>
-              <h1 className="mt-1 text-3xl font-extrabold leading-tight text-[var(--text)]">
-                {nearest ? `${heroCurrent} из ${heroGoal}` : "Ваш QR готов"}
-              </h1>
-              <p className="mt-2 text-sm font-extrabold leading-5 text-[#5f250f]">
-                {nearest?.rewardAvailable
-                  ? "Подарок доступен сейчас"
-                  : nearest
-                    ? `До подарка осталось ${heroLeft} покупок`
-                    : "Покажите QR у партнёра, чтобы начать копить покупки"}
-              </p>
-            </div>
-            <div className="flex size-13 shrink-0 items-center justify-center rounded-[16px] bg-white/45 text-[var(--text)] ring-1 ring-white/50">
-              <QrCode aria-hidden className="size-7" />
-            </div>
-          </div>
+      {memberships.length === 0 ? (
+        <ClientEmptyState
+          image="client-first-card"
+          alt="Иллюстрация первой карты лояльности"
+          title="Начните собирать первую плюшку"
+          text="Выберите партнёра и покажите QR при покупке."
+          actionHref="/app/partners"
+          actionLabel="Найти партнёра"
+        />
+      ) : (
+        <>
+          {nearest && <NearestGiftHero membership={nearest} />}
 
-          <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/24">
-            <div className="animated-progress h-full rounded-full bg-white" style={{ width: `${heroProgress}%` }} />
-          </div>
-          {nearest && (
-            <div className="motion-track mt-5 grid grid-cols-5 gap-2">
-              {Array.from({ length: Math.min(heroGoal, 10) }).map((_, index) => {
-                const filled = index < Math.min(heroCurrent, 10);
-                return (
-                  <span
-                    key={index}
-                    className={`relative z-10 flex aspect-square items-center justify-center rounded-[14px] text-xs font-black ${
-                      filled ? "bg-white text-[var(--brand)]" : "bg-white/16 text-white ring-1 ring-white/22"
-                    }`}
-                    aria-label={filled ? "Покупка засчитана" : "Ожидает покупки"}
-                  >
-                    {filled ? <Check aria-hidden className="size-4" /> : index + 1}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-          {nearest && (
-          <p className="mt-4 text-sm font-extrabold text-[var(--text)]">
-              Следующий подарок: {nearest.company.loyaltyProgram?.rewardTitle ?? nearest.company.loyaltyProgram?.rewardDescription ?? "подарок"}
-            </p>
+          {nearestRaffleTicket && <RaffleBanner ticket={nearestRaffleTicket} />}
+
+          {nearest?.rewardAvailable && nearestUsesGiftBox && (
+            <GiftOpenCard
+              membershipId={nearest.id}
+              companyName={nearest.company.name}
+              initialClaim={nearestInitialRewardClaim}
+            />
           )}
 
-          <Link href="/app/qr" className="mt-5 flex min-h-14 items-center justify-between gap-3 rounded-[16px] bg-white px-4 text-[var(--text)] shadow-lg shadow-black/10">
-            <span>
-              <span className="block text-sm font-bold">Показать QR кассиру</span>
-              <span className="mt-0.5 block text-xs font-semibold text-[var(--text-muted)]">Открыть QR-код</span>
-            </span>
-            <QrCode aria-hidden className="size-6 shrink-0 text-[var(--brand)]" />
-          </Link>
-        </section>
-
-        {nearestRaffleTicket && <RaffleBanner ticket={nearestRaffleTicket} />}
-
-        <NearestRewardCard membership={nearest} />
-
-        {nearest?.rewardAvailable && nearestUsesGiftBox && (
-          <GiftOpenCard
-            membershipId={nearest.id}
-            companyName={nearest.company.name}
-            initialClaim={nearestInitialRewardClaim}
-          />
-        )}
-
-        <section className="grid grid-cols-3 gap-2">
-          <QuickAction href="/app/rewards" icon={Gift} title="Награды" />
-          <QuickAction href="/app/partners" icon={MapPinned} title="Партнёры" />
-          <QuickAction href="/app/cards" icon={WalletCards} title="Карты" />
-        </section>
-
-        <section className="warm-card p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">Мои карты</p>
-              <h2 className="mt-1 text-lg font-semibold text-[var(--text)]">Активные программы</h2>
-            </div>
-            <Link href="/app/cards" className="text-sm font-bold text-[var(--brand)]">
-              Все
-            </Link>
-          </div>
-          <div className="mt-3 space-y-2">
-            {memberships.slice(0, 3).map((membership) => (
-              <Link key={membership.id} href={`/app/cards/${membership.id}`} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-white/70 p-3">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-[var(--text)]">{membership.company.name}</p>
-                  <p className="mt-0.5 text-sm text-[var(--text-muted)]">
-                    {membership.rewardAvailable ? "Подарок готов" : `${membership.currentCount}/${rewardGoal(membership)}`}
-                  </p>
-                </div>
-                <span className="flex size-10 items-center justify-center rounded-[12px] bg-[var(--brand-soft)] text-[var(--brand)]" aria-hidden>
-                  <Gift className="size-5" />
-                </span>
-              </Link>
-            ))}
-            {memberships.length === 0 && (
-              <p className="rounded-lg border border-dashed border-[var(--border)] p-3 text-sm leading-5 text-[var(--text-muted)]">
-                Карт пока нет. Откройте партнёров и выберите компанию.
-              </p>
-            )}
-          </div>
-        </section>
-
-        <section className="warm-card p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">Активность</p>
-              <h2 className="mt-1 text-lg font-semibold text-[var(--text)]">Последние операции</h2>
-            </div>
-            <Link href="/app/history" className="text-sm font-bold text-[var(--brand)]">
-              История
-            </Link>
-          </div>
-          <div className="mt-3 space-y-2">
-            {recentTransactions.map((transaction) => (
-              <div key={transaction.id} className="rounded-lg border border-[var(--border)] bg-white/70 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-[var(--text)]">{transaction.company.name}</p>
-                    <p className="mt-0.5 text-sm text-[var(--text-muted)]">{clientOperationLabel(transaction.type)}</p>
-                  </div>
-                  <p className="shrink-0 text-xs font-semibold text-[var(--text-muted)]">{formatDate(transaction.createdAt)}</p>
-                </div>
+          {otherMemberships.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="text-xl font-extrabold text-[var(--text)]">Остальные программы</h2>
+                <Link href="/app/cards" className="text-sm font-bold text-[var(--brand-strong)]">Все</Link>
               </div>
-            ))}
-            {recentTransactions.length === 0 && (
-              <p className="rounded-lg border border-dashed border-[var(--border)] p-3 text-sm leading-5 text-[var(--text-muted)]">
-                Истории пока нет. Покажите QR при следующей покупке.
-              </p>
-            )}
-          </div>
-        </section>
-      </section>
-    </main>
+              <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+                {otherMemberships.map((membership) => (
+                  <div key={membership.id} className="w-[82%] max-w-[320px] shrink-0">
+                    <ProgramSummaryCard
+                      href={`/app/cards/${membership.id}`}
+                      companyName={membership.company.name}
+                      businessType={membership.company.businessType}
+                      logoUrl={membership.company.logoUrl}
+                      icon={membership.company.loyaltyProgram?.icon ?? membership.company.icon}
+                      rewardTitle={membership.company.loyaltyProgram?.rewardTitle ?? "Подарок"}
+                      current={membership.currentCount}
+                      goal={rewardGoal(membership)}
+                      left={rewardLeft(membership)}
+                      address={membership.company.address}
+                      rewardAvailable={membership.rewardAvailable}
+                      themeColor={membership.company.loyaltyProgram?.themeColor ?? membership.company.themeColor}
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+
+      <ClientCard>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-extrabold text-[var(--text)]">Партнёры рядом</h2>
+          <Link href="/app/partners" className="text-sm font-bold text-[var(--brand-strong)]">Карта</Link>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {nearbyPartners.map((partner) => (
+            <Link key={partner.id} href={`/app/companies/${partner.slug}`} className="flex min-h-20 min-w-0 items-center gap-3 overflow-hidden rounded-2xl border border-[var(--border)] bg-white p-3">
+              <LogoBox logoUrl={partner.logoUrl} fallback={partner.loyaltyProgram?.icon ?? partner.icon} name={partner.name} color={partner.themeColor} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-extrabold text-[var(--text)]">{partner.name}</span>
+                <span className="mt-1 block truncate text-sm text-[var(--text-muted)]">{partner.loyaltyProgram?.rewardDescription || `${partner.loyaltyProgram?.goalCount ?? 6} покупок - подарок`}</span>
+              </span>
+              <ArrowRight aria-hidden className="size-5 shrink-0 text-[var(--text-muted)]" />
+            </Link>
+          ))}
+          {nearbyPartners.length === 0 && (
+            <p className="rounded-2xl border border-dashed border-[var(--border)] p-4 text-sm text-[var(--text-muted)]">Партнёры появятся после выбора города в профиле.</p>
+          )}
+        </div>
+      </ClientCard>
+
+      <ClientCard>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-extrabold text-[var(--text)]">Последние операции</h2>
+          <Link href="/app/history" className="text-sm font-bold text-[var(--brand-strong)]">Вся история</Link>
+        </div>
+        <div className="space-y-2">
+          {recentTransactions.map((transaction) => (
+            <div key={transaction.id} className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-white p-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-soft)] text-[var(--brand-strong)]">
+                {transaction.type === LoyaltyTransactionType.PURCHASE ? <QrCode aria-hidden className="size-5" /> : <Gift aria-hidden className="size-5" />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-bold text-[var(--text)]">{transaction.company.name}</span>
+                <span className="block text-sm text-[var(--text-muted)]">{clientOperationLabel(transaction.type, transaction.quantity)}</span>
+              </span>
+              <span className="shrink-0 text-xs font-bold text-[var(--text-muted)]">{formatDate(transaction.createdAt)}</span>
+            </div>
+          ))}
+          {recentTransactions.length === 0 && (
+            <p className="rounded-2xl border border-dashed border-[var(--border)] p-4 text-sm text-[var(--text-muted)]">Покажите QR при покупке, и здесь появится подтверждение.</p>
+          )}
+        </div>
+      </ClientCard>
+    </ClientShell>
   );
 }
 
-function NearestRewardCard({
+function NearestGiftHero({
   membership,
 }: {
-  membership: ReturnType<typeof pickNearestGift>;
+  membership: ClientMembership;
 }) {
-  if (!membership?.company.loyaltyProgram) {
-    return (
-      <section className="warm-card p-4">
-        <p className="text-xs font-semibold uppercase text-[var(--brand)]">Ближайшая плюшка</p>
-        <h2 className="mt-1 text-lg font-semibold text-[var(--text)]">Пока нет активных карт</h2>
-        <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">Выберите партнёра и присоединитесь к программе.</p>
-      </section>
-    );
-  }
-
+  const program = membership.company.loyaltyProgram!;
   const goal = rewardGoal(membership);
-  const progress = Math.min(100, Math.round((membership.currentCount / goal) * 100));
+  const left = rewardLeft(membership);
+  const progress = membership.rewardAvailable ? 100 : Math.round((membership.currentCount / Math.max(goal, 1)) * 100);
+  const color = program.themeColor || membership.company.themeColor || "#C94726";
 
   return (
-    <Link href={`/app/cards/${membership.id}`} className={`warm-card block p-4 transition active:scale-[0.99] ${membership.rewardAvailable ? "border-[var(--gold)] bg-[var(--inactive)]" : ""}`}>
-      <div className="flex items-start gap-3">
-        <div className={`flex size-11 shrink-0 items-center justify-center rounded-lg ${membership.rewardAvailable ? "bg-[rgba(255,200,87,0.44)] text-[#5f3a00]" : "bg-[var(--brand-soft)] text-[var(--brand)]"}`}>
-          {membership.rewardAvailable ? <Sparkles aria-hidden className="size-6" /> : <Gift aria-hidden className="size-6" />}
+    <ClientCard className="overflow-hidden p-0">
+      <div className="p-5" style={{ borderTop: `8px solid ${color}` }}>
+        <div className="flex items-start gap-3">
+          <LogoBox logoUrl={membership.company.logoUrl} fallback={program.icon || membership.company.icon} name={membership.company.name} color={color} className="size-14" />
+          <div className="min-w-0 flex-1">
+            <PartnerBadge>Ближайший подарок</PartnerBadge>
+            <h1 className="mt-3 text-3xl font-extrabold leading-tight text-[var(--text)]">
+              {membership.rewardAvailable ? "Подарок готов" : pluralPurchasesLeft(left)}
+            </h1>
+            <p className="mt-2 text-base font-bold text-[var(--text)]">{program.rewardTitle || "Подарок"}</p>
+            <p className="mt-1 truncate text-sm text-[var(--text-muted)]">{membership.company.name} · {membership.company.businessType}</p>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase text-[var(--brand)]">Ближайшая плюшка</p>
-          <h2 className="mt-1 truncate text-xl font-semibold text-[var(--text)]">{membership.company.name}</h2>
-          <p className="mt-1 text-sm font-semibold leading-5 text-[var(--text)]">
-            {membership.rewardAvailable
-              ? "Подарок готов"
-              : membership.company.loyaltyProgram.rewardDescription || `${membership.currentCount}/${goal}`}
-          </p>
-        </div>
-      </div>
-      <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-[rgba(255,200,87,0.25)]">
-        <div className={`animated-progress h-full rounded-full ${membership.rewardAvailable ? "bg-[var(--gold)]" : "bg-[var(--brand)]"}`} style={{ width: `${progress}%` }} />
-      </div>
-      <p className="mt-2 text-sm font-semibold text-[var(--text-muted)]">
-        {membership.rewardAvailable ? "Откройте карту, чтобы забрать подарок." : `${membership.currentCount} из ${goal} покупок`}
-      </p>
-    </Link>
-  );
-}
 
-function QuickAction({
-  href,
-  icon: Icon,
-  title,
-}: {
-  href: string;
-  icon: typeof Gift;
-  title: string;
-}) {
-  return (
-    <Link href={href} className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-white/80 p-2 text-center text-sm font-bold text-[var(--text)] shadow-sm active:bg-[var(--inactive)]">
-      <Icon aria-hidden className="size-5 text-[var(--brand)]" />
-      {title}
-    </Link>
+        <div className="mt-5">
+          <ProgressBar value={progress} tone={membership.rewardAvailable ? "warning" : "brand"} />
+          <div className="mt-2 flex items-center justify-between text-sm font-bold text-[var(--text-muted)]">
+            <span>{membership.currentCount} из {goal}</span>
+            {membership.lastActionAt && <span>Последняя: {formatDate(membership.lastActionAt)}</span>}
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <QuickQrButton />
+          <Link href={`/app/cards/${membership.id}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[var(--border)] bg-white px-4 text-sm font-extrabold text-[var(--text)]">
+            Открыть программу
+            <ArrowRight aria-hidden className="size-5" />
+          </Link>
+        </div>
+      </div>
+    </ClientCard>
   );
 }
 
@@ -314,16 +261,14 @@ function RaffleBanner({
   const drawn = ticket.raffle.status === RaffleStatus.DRAWN;
 
   return (
-    <section className={`warm-card p-4 ${place ? "border-[var(--gold)] bg-[var(--inactive)]" : ""}`}>
+    <ClientCard className={place ? "border-[var(--gold)] bg-[var(--inactive)]" : ""}>
       <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[rgba(255,200,87,0.25)] text-[#7a4b00]">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[rgba(255,180,76,0.25)] text-[#7a4b00]">
           <Trophy aria-hidden className="size-5" />
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase text-[#7a4b00]">{drawn ? "Результат розыгрыша" : "Розыгрыш скоро"}</p>
-          <h2 className="mt-1 text-lg font-semibold text-[var(--text)]">
-            {ticket.raffle.company.name}: № {ticket.number}
-          </h2>
+          <p className="text-xs font-bold uppercase text-[#7a4b00]">{drawn ? "Результат розыгрыша" : "Розыгрыш скоро"}</p>
+          <h2 className="mt-1 text-lg font-extrabold text-[var(--text)]">{ticket.raffle.company.name}: № {ticket.number}</h2>
           <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">
             {drawn
               ? place
@@ -333,17 +278,17 @@ function RaffleBanner({
           </p>
         </div>
       </div>
-    </section>
+    </ClientCard>
   );
 }
 
-function clientOperationLabel(type: LoyaltyTransactionType) {
+function clientOperationLabel(type: LoyaltyTransactionType, quantity: number) {
   const labels: Record<LoyaltyTransactionType, string> = {
-    PURCHASE: "Начислена покупка",
+    PURCHASE: quantity > 1 ? `Начислено покупок: ${quantity}` : "Покупка начислена",
     LEVEL_UP: "Достигнут новый уровень",
-    REWARD_OPENED: "Открыт подарок",
-    REWARD_REDEEMED: "Выдан подарок",
-    REWARD_GRANTED: "Выдан подарок",
+    REWARD_OPENED: "Подарок открыт",
+    REWARD_REDEEMED: "Подарок выдан",
+    REWARD_GRANTED: "Подарок выдан",
     MANUAL_ADJUSTMENT: "Ручное изменение",
   };
 
