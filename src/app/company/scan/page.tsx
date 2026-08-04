@@ -4,13 +4,14 @@ import { AlertTriangle, CheckCircle2, Gift, ScanLine, UserRound } from "lucide-r
 import { confirmPurchase, giveReward, joinScannedCustomerAndConfirmPurchase, redeemRewardClaim } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
+import { CompanyScanSearch } from "@/components/company-scan-search";
 import { QrScanner } from "@/components/scanner";
 import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
 import { StatusPill, WorkspaceCard, maskPhone } from "@/components/company-ui";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { formatDateTime, phoneLookupValues, statusLabel } from "@/lib/format";
+import { formatDateTime, statusLabel } from "@/lib/format";
 import { DAILY_PURCHASE_LIMIT_PER_CUSTOMER, findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
 import { formatKopeks, getActiveCompanyRaffle } from "@/lib/raffles";
 
@@ -31,27 +32,6 @@ export default async function CompanyScanPage({
   const activeRaffle = active ? await getActiveCompanyRaffle(access.companyId) : null;
   const isCashier = access.role === CompanyUserRole.CASHIER;
   const q = params.q?.trim() ?? "";
-  const phoneValues = phoneLookupValues(q);
-  const manualMatches = q
-    ? await getDb().customerMembership.findMany({
-        where: {
-          companyId: access.companyId,
-          user: {
-            OR: [
-              { name: { contains: q } },
-              { phone: { in: phoneValues } },
-              { phone: { contains: q.replace(/\D/g, "") || q } },
-            ],
-          },
-        },
-        include: {
-          user: true,
-          company: { include: { loyaltyProgram: true } },
-        },
-        orderBy: { updatedAt: "desc" },
-        take: 8,
-      })
-    : [];
   const scannedMembershipUsesGiftBox = Boolean(
     membership?.company.loyaltyProgram &&
       isGiftBoxProgram(membership.company.loyaltyProgram, membership.company.giftOptions),
@@ -107,21 +87,13 @@ export default async function CompanyScanPage({
             <QrScanner />
           )}
 
-          <details className="panel p-4">
-            <summary className="cursor-pointer text-base font-extrabold text-[var(--text)]">Не удалось отсканировать?</summary>
+          <section className="panel p-4">
+            <div className="space-y-1">
+              <h2 className="text-base font-extrabold text-[var(--text)]">Поиск клиента</h2>
+              <p className="text-sm text-[var(--text-muted)]">Если QR не сканируется, найдите клиента по имени или телефону.</p>
+            </div>
             <div className="mt-4 space-y-4">
-              <form action="/company/scan" method="get" className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                <label>
-                  <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Поиск по имени или телефону</span>
-                  <input
-                    name="q"
-                    defaultValue={q}
-                    placeholder="Имя или телефон"
-                    className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
-                  />
-                </label>
-                <button type="submit" className="min-h-11 self-end rounded-xl bg-[var(--brand-strong)] px-4 font-bold text-white">Найти</button>
-              </form>
+              <CompanyScanSearch initialQuery={q} />
 
               <form action="/company/scan" method="get" className="grid gap-3 sm:grid-cols-[1fr_auto]">
                 <input type="hidden" name="source" value="manual" />
@@ -136,22 +108,8 @@ export default async function CompanyScanPage({
                 <button type="submit" className="min-h-11 self-end rounded-xl border border-[var(--border)] bg-white px-4 font-bold text-[var(--text)]">Открыть</button>
               </form>
 
-              {q && (
-                <div className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-white">
-                  {manualMatches.map((item) => (
-                    <Link key={item.id} href={`/company/scan?token=${encodeURIComponent(`tega:${item.qrToken}`)}`} className="flex items-center justify-between gap-3 p-3">
-                      <span>
-                        <span className="font-bold text-[var(--text)]">{item.user.name}</span>
-                        <span className="ml-2 text-sm text-[var(--text-muted)]">{isCashier ? maskPhone(item.user.phone) : item.user.phone}</span>
-                      </span>
-                      <span className="text-sm font-bold text-[var(--brand-strong)]">Открыть</span>
-                    </Link>
-                  ))}
-                  {manualMatches.length === 0 && <p className="p-3 text-sm text-[var(--text-muted)]">Клиент в вашей компании не найден.</p>}
-                </div>
-              )}
             </div>
-          </details>
+          </section>
         </section>
 
         <section className="space-y-5">
@@ -437,13 +395,12 @@ function PurchaseControls({
           name="purchaseAmount"
           inputMode="decimal"
           placeholder="Например, 450"
-          required={Boolean(activeRaffle)}
           className="min-h-12 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-base font-semibold text-[var(--text)] outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
         />
         <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">
           {activeRaffle
-            ? `Для розыгрыша «${activeRaffle.title}» нужен чек от ${formatKopeks(activeRaffle.minPurchaseAmountKopeks)}.`
-            : "Если активного розыгрыша нет, поле можно оставить пустым."}
+            ? `Для участия в розыгрыше «${activeRaffle.title}» нужен чек от ${formatKopeks(activeRaffle.minPurchaseAmountKopeks)}. Без суммы покупка всё равно начислится, но билет не создастся.`
+            : "Поле можно оставить пустым: покупка начислится без суммы чека."}
         </span>
       </label>
       <ConfirmSubmit title={title} confirmText={confirmText} buttonText={buttonText} />
