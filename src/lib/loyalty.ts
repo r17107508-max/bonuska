@@ -836,7 +836,84 @@ export async function grantReward(companyId: string, membershipId: string, cashi
     const program = membership.company.loyaltyProgram;
     const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
     if (isGiftBox) {
-      throw new Error("Для выдачи подарка отсканируйте подарочный QR-код клиента");
+      let claim = await tx.rewardClaim.findFirst({
+        where: { membershipId: membership.id, status: RewardClaimStatus.OPENED },
+        orderBy: { openedAt: "desc" },
+      });
+
+      if (!claim) {
+        const activeGifts = membership.company.giftOptions.filter((gift) => gift.isActive);
+        const gift = chooseGift(activeGifts);
+        if (!gift) {
+          throw new Error("У компании пока нет активных подарков для коробки");
+        }
+
+        const availableClaim =
+          (await tx.rewardClaim.findFirst({
+            where: { membershipId: membership.id, status: RewardClaimStatus.AVAILABLE },
+            orderBy: { createdAt: "asc" },
+          })) ??
+          (await tx.rewardClaim.create({
+            data: {
+              companyId: membership.companyId,
+              membershipId: membership.id,
+              userId: membership.userId,
+              token: newRewardToken(),
+              status: RewardClaimStatus.AVAILABLE,
+            },
+          }));
+
+        const openedAt = new Date();
+        claim = await tx.rewardClaim.update({
+          where: { id: availableClaim.id },
+          data: {
+            giftOptionId: gift.id,
+            title: gift.title,
+            description: gift.description,
+            status: RewardClaimStatus.OPENED,
+            openedAt,
+          },
+        });
+
+        await tx.customerMembership.update({
+          where: { id: membership.id },
+          data: { pendingReward: gift.title, lastActionAt: openedAt },
+        });
+
+        await tx.loyaltyTransaction.create({
+          data: {
+            companyId: membership.companyId,
+            membershipId: membership.id,
+            cashierId,
+            type: LoyaltyTransactionType.REWARD_OPENED,
+            countBefore: membership.currentCount,
+            countAfter: membership.currentCount,
+            rewardTitle: gift.title,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            actorUserId: cashierId,
+            companyId: membership.companyId,
+            action: "REWARD_CLAIM_OPENED_BY_CASHIER",
+            entityType: "RewardClaim",
+            entityId: claim.id,
+            metadataJson: JSON.stringify({ membershipId: membership.id, giftOptionId: gift.id }),
+          },
+        });
+      }
+
+      await redeemMembershipRewardInTransaction(tx, {
+        companyId,
+        membership,
+        cashierId,
+        claimId: claim.id,
+        rewardTitle: claim.title ?? membership.pendingReward ?? program.rewardTitle,
+        goalCount: program.goalCount,
+        nextRewardTitle: null,
+      });
+      return;
     }
 
     await redeemMembershipRewardInTransaction(tx, {

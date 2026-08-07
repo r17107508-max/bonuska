@@ -15,6 +15,15 @@ import { formatDateTime, statusLabel } from "@/lib/format";
 import { DAILY_PURCHASE_LIMIT_PER_CUSTOMER, findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
 import { formatKopeks, getActiveCompanyRaffle } from "@/lib/raffles";
 
+type ScannedMembership = NonNullable<Awaited<ReturnType<typeof findMembershipForScan>>>;
+type ActiveCompanyRaffle = Awaited<ReturnType<typeof getActiveCompanyRaffle>>;
+type OpenedRewardClaim = {
+  token: string;
+  title: string | null;
+  description: string | null;
+  openedAt: Date | null;
+} | null;
+
 export default async function CompanyScanPage({
   searchParams,
 }: {
@@ -66,7 +75,7 @@ export default async function CompanyScanPage({
       {params.success && <Notice tone="success" text={params.success} />}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(320px,460px)_1fr]">
-        <section className="space-y-4">
+        <section className={`space-y-4 ${token ? "order-2" : ""}`}>
           {token ? (
             <WorkspaceCard>
               <div className="flex items-start gap-3">
@@ -112,7 +121,7 @@ export default async function CompanyScanPage({
           </section>
         </section>
 
-        <section className="space-y-5">
+        <section className={`space-y-5 ${token ? "order-1" : ""}`}>
           {!token && (
             <WorkspaceCard>
               <h2 className="text-xl font-extrabold text-[var(--text)]">Ожидаем QR клиента</h2>
@@ -193,6 +202,17 @@ export default async function CompanyScanPage({
                 </div>
               </WorkspaceCard>
 
+              {active && (
+                <MembershipActionCard
+                  membership={membership}
+                  token={token}
+                  activeRaffle={activeRaffle}
+                  purchaseQuantityMax={purchaseQuantityMax}
+                  scannedMembershipUsesGiftBox={scannedMembershipUsesGiftBox}
+                  openedRewardClaim={openedRewardClaim}
+                />
+              )}
+
               <ProgressIcons
                 icon={membership.company.loyaltyProgram.icon}
                 current={membership.currentCount}
@@ -208,45 +228,6 @@ export default async function CompanyScanPage({
                     : undefined
                 }
               />
-
-              {active && (
-                <WorkspaceCard>
-                  <h2 className="text-xl font-extrabold text-[var(--text)]">Подтверждение действия</h2>
-                  <div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm text-[var(--text-muted)]">
-                    <p className="font-bold text-[var(--text)]">Проверьте итог перед подтверждением</p>
-                    <p className="mt-1">Операция будет записана на сервере. Защита от повторного начисления остаётся серверной.</p>
-                  </div>
-                  <div className="mt-4">
-                    {membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
-                      <OpenedGiftClaim openedRewardClaim={openedRewardClaim} />
-                    ) : membership.rewardAvailable && scannedMembershipUsesGiftBox ? (
-                      <p className="rounded-xl bg-amber-50 p-4 text-sm font-semibold text-amber-900">Попросите клиента открыть коробку в приложении и показать подарочный QR-код.</p>
-                    ) : membership.rewardAvailable ? (
-                      <form action={giveReward}>
-                        <input type="hidden" name="membershipId" value={membership.id} />
-                        <input type="hidden" name="token" value={token} />
-                        <ConfirmSubmit
-                          title="Выдать подарок?"
-                          confirmText={`Подтвердите выдачу: ${membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle}. После выдачи прогресс клиента сбросится.`}
-                          buttonText="Выдать подарок"
-                        />
-                      </form>
-                    ) : (
-                      <form action={confirmPurchase}>
-                        <input type="hidden" name="membershipId" value={membership.id} />
-                        <input type="hidden" name="token" value={token} />
-                        <PurchaseControls
-                          maxQuantity={purchaseQuantityMax}
-                          activeRaffle={activeRaffle}
-                          title="Начислить покупку?"
-                          confirmText="Проверьте количество покупок в чеке. После подтверждения операция будет начислена сразу."
-                          buttonText="Начислить покупку"
-                        />
-                      </form>
-                    )}
-                  </div>
-                </WorkspaceCard>
-              )}
 
               <section>
                 <h2 className="mb-3 text-xl font-extrabold text-[var(--text)]">Последние операции</h2>
@@ -298,6 +279,71 @@ function RewardClaimCard({
           />
         </form>
       )}
+    </WorkspaceCard>
+  );
+}
+
+function MembershipActionCard({
+  membership,
+  token,
+  activeRaffle,
+  purchaseQuantityMax,
+  scannedMembershipUsesGiftBox,
+  openedRewardClaim,
+}: {
+  membership: ScannedMembership;
+  token: string;
+  activeRaffle: ActiveCompanyRaffle;
+  purchaseQuantityMax: number;
+  scannedMembershipUsesGiftBox: boolean;
+  openedRewardClaim: OpenedRewardClaim;
+}) {
+  const program = membership.company.loyaltyProgram;
+  if (!program) return null;
+
+  return (
+    <WorkspaceCard>
+      <h2 className="text-xl font-extrabold text-[var(--text)]">Действие с клиентом</h2>
+      <div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm text-[var(--text-muted)]">
+        <p className="font-bold text-[var(--text)]">Проверьте итог перед подтверждением</p>
+        <p className="mt-1">Операция будет записана на сервере. Защита от повторного начисления остаётся серверной.</p>
+      </div>
+      <div className="mt-4">
+        {membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
+          <OpenedGiftClaim openedRewardClaim={openedRewardClaim} />
+        ) : membership.rewardAvailable ? (
+          <form action={giveReward}>
+            <input type="hidden" name="membershipId" value={membership.id} />
+            <input type="hidden" name="token" value={token} />
+            {scannedMembershipUsesGiftBox && (
+              <p className="mb-3 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+                Если клиент без телефона, подарок можно выдать по найденной карте. Если коробка ещё не открыта, система выберет доступный подарок и сразу отметит выдачу.
+              </p>
+            )}
+            <ConfirmSubmit
+              title={scannedMembershipUsesGiftBox ? "Выдать подарок без QR?" : "Выдать подарок?"}
+              confirmText={
+                scannedMembershipUsesGiftBox
+                  ? `Подтвердите выдачу подарка клиенту ${membership.user.name}. Операция будет записана без сканирования подарочного QR.`
+                  : `Подтвердите выдачу: ${membership.pendingReward ?? program.rewardTitle}. После выдачи прогресс клиента сбросится.`
+              }
+              buttonText={scannedMembershipUsesGiftBox ? "Выдать подарок без QR" : "Выдать подарок"}
+            />
+          </form>
+        ) : (
+          <form action={confirmPurchase}>
+            <input type="hidden" name="membershipId" value={membership.id} />
+            <input type="hidden" name="token" value={token} />
+            <PurchaseControls
+              maxQuantity={purchaseQuantityMax}
+              activeRaffle={activeRaffle}
+              title="Начислить покупку?"
+              confirmText="Проверьте количество покупок в чеке. После подтверждения операция будет начислена сразу."
+              buttonText="Начислить покупку"
+            />
+          </form>
+        )}
+      </div>
     </WorkspaceCard>
   );
 }
