@@ -48,6 +48,7 @@ export async function GET(request: Request) {
       id: item.id,
       name: item.user.name,
       phone: canSeePhone ? item.user.phone : maskPhone(item.user.phone),
+      scanToken: `tega:${item.qrToken}`,
       scanHref: `/company/scan?token=${encodeURIComponent(`tega:${item.qrToken}`)}`,
     })),
   });

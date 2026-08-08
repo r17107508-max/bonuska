@@ -74,54 +74,8 @@ export default async function CompanyScanPage({
       {params.error && <Notice tone="danger" text={params.error} />}
       {params.success && <Notice tone="success" text={params.success} />}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(320px,460px)_1fr]">
-        <section className={`space-y-4 ${token ? "order-2" : ""}`}>
-          {token ? (
-            <WorkspaceCard>
-              <div className="flex items-start gap-3">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand-strong)]">
-                  <ScanLine aria-hidden className="size-5" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-extrabold text-[var(--text)]">QR распознан</h2>
-                  <p className="mt-1 text-sm text-[var(--text-muted)]">Камера остановлена, чтобы не выполнить повторное сканирование.</p>
-                </div>
-              </div>
-              <Link href="/company/scan" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-strong)] px-4 font-bold text-white">
-                <ScanLine aria-hidden className="size-5" />
-                Сканировать другой QR
-              </Link>
-            </WorkspaceCard>
-          ) : (
-            <QrScanner />
-          )}
-
-          <section className="panel p-4">
-            <div className="space-y-1">
-              <h2 className="text-base font-extrabold text-[var(--text)]">Поиск клиента</h2>
-              <p className="text-sm text-[var(--text-muted)]">Если QR не сканируется, найдите клиента по имени или телефону.</p>
-            </div>
-            <div className="mt-4 space-y-4">
-              <CompanyScanSearch initialQuery={q} />
-
-              <form action="/company/scan" method="get" className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                <input type="hidden" name="source" value="manual" />
-                <label>
-                  <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Ручной код под QR</span>
-                  <input
-                    name="token"
-                    placeholder="Введите код"
-                    className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
-                  />
-                </label>
-                <button type="submit" className="min-h-11 self-end rounded-xl border border-[var(--border)] bg-white px-4 font-bold text-[var(--text)]">Открыть</button>
-              </form>
-
-            </div>
-          </section>
-        </section>
-
-        <section className={`space-y-5 ${token ? "order-1" : ""}`}>
+      <div className={`grid gap-6 ${token ? "" : "xl:grid-cols-[minmax(320px,460px)_1fr]"}`}>
+        <section className={`space-y-5 ${token ? "" : "order-2"}`}>
           {!token && (
             <WorkspaceCard>
               <h2 className="text-xl font-extrabold text-[var(--text)]">Ожидаем QR клиента</h2>
@@ -236,6 +190,53 @@ export default async function CompanyScanPage({
             </>
           )}
         </section>
+
+        <section className={`space-y-4 ${token ? "order-2" : ""}`}>
+          {token ? (
+            <WorkspaceCard>
+              <div className="flex items-start gap-3">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand-strong)]">
+                  <ScanLine aria-hidden className="size-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-[var(--text)]">QR распознан</h2>
+                  <p className="mt-1 text-sm text-[var(--text-muted)]">Камера остановлена, чтобы не выполнить повторное сканирование.</p>
+                </div>
+              </div>
+              <Link href="/company/scan" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-strong)] px-4 font-bold text-white">
+                <ScanLine aria-hidden className="size-5" />
+                Сканировать другой QR
+              </Link>
+            </WorkspaceCard>
+          ) : (
+            <QrScanner />
+          )}
+
+          <section className="panel p-4">
+            <div className="space-y-1">
+              <h2 className="text-base font-extrabold text-[var(--text)]">Поиск клиента</h2>
+              <p className="text-sm text-[var(--text-muted)]">Если QR не сканируется, найдите клиента по имени или телефону.</p>
+            </div>
+            <div className="mt-4 space-y-4">
+              <CompanyScanSearch initialQuery={q} />
+
+              <form action="/company/scan" method="get" className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <input type="hidden" name="source" value="manual" />
+                <label>
+                  <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Ручной код под QR</span>
+                  <input
+                    name="token"
+                    placeholder="Введите код"
+                    className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
+                  />
+                </label>
+                <button type="submit" className="min-h-11 self-end rounded-xl border border-[var(--border)] bg-white px-4 font-bold text-[var(--text)]">Открыть</button>
+              </form>
+
+            </div>
+          </section>
+        </section>
+
       </div>
     </AdminShell>
   );
