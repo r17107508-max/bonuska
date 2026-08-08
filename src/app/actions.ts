@@ -72,7 +72,7 @@ function successRedirect(path: string, message: string): never {
 }
 
 function safeCompanyReturnPath(value: string, fallback: string) {
-  if (value.startsWith("/company/scan") || value.startsWith("/company/client/") || value.startsWith("/company/raffles")) {
+  if (value.startsWith("/company/scan") || value.startsWith("/company/clients") || value.startsWith("/company/client/") || value.startsWith("/company/raffles")) {
     return value;
   }
 

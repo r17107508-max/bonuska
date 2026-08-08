@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { CompanyUserRole, Prisma } from "@prisma/client";
 import { Search } from "lucide-react";
+import { confirmPurchase } from "@/app/actions";
 import { AdminShell, companyNavForRole } from "@/components/admin-shell";
+import { ConfirmSubmit } from "@/components/confirm-submit";
 import { EmptyCompanyState, maskPhone, SegmentedLinks, StatusPill } from "@/components/company-ui";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -58,12 +60,14 @@ export default async function CompanyClientsPage({
   ]);
 
   const canSeePhone = access.role === CompanyUserRole.COMPANY_ADMIN;
-  const isAdmin = access.role === CompanyUserRole.COMPANY_ADMIN;
   const totalPages = Math.max(Math.ceil(matchedTotal / pageSize), 1);
   const baseParams = new URLSearchParams();
   if (q) baseParams.set("q", q);
   if (filter !== "all") baseParams.set("filter", filter);
   if (sort !== "last") baseParams.set("sort", sort);
+  const currentParams = new URLSearchParams(baseParams);
+  if (page > 1) currentParams.set("page", String(page));
+  const currentHref = currentParams.toString() ? `/company/clients?${currentParams}` : "/company/clients";
 
   return (
     <AdminShell title="Клиенты" subtitle="Поиск, фильтры, прогресс до подарка и история операций." nav={companyNavForRole(access.role)}>
@@ -128,7 +132,7 @@ export default async function CompanyClientsPage({
             <>
               <div className="grid gap-3 lg:hidden">
                 {clients.map((client) => (
-                  <ClientCard key={client.id} client={client} goalCount={goalCount} canSeePhone={canSeePhone} isAdmin={isAdmin} activeSince={activeSince} />
+                  <ClientCard key={client.id} client={client} goalCount={goalCount} canSeePhone={canSeePhone} activeSince={activeSince} returnTo={currentHref} />
                 ))}
               </div>
 
@@ -155,7 +159,10 @@ export default async function CompanyClientsPage({
                         <td className="px-4 py-3 text-[var(--text-muted)]">{client.totalRewards}</td>
                         <td className="px-4 py-3 text-[var(--text-muted)]">{formatDateTime(client.transactions[0]?.createdAt)}</td>
                         <td className="px-4 py-3">
-                          {isAdmin ? <Link href={`/company/client/${client.id}`} className="font-bold text-[var(--brand-strong)]">Открыть</Link> : <span className="text-[var(--text-muted)]">Только админ</span>}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <QuickPurchaseForm membershipId={client.id} qrToken={client.qrToken} returnTo={currentHref} compact />
+                            <Link href={`/company/client/${client.id}`} className="font-bold text-[var(--brand-strong)]">Открыть</Link>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -213,11 +220,12 @@ function ClientCard({
   client,
   goalCount,
   canSeePhone,
-  isAdmin,
   activeSince,
+  returnTo,
 }: {
   client: {
     id: string;
+    qrToken: string;
     user: { name: string; phone: string };
     currentCount: number;
     totalPurchases: number;
@@ -228,8 +236,8 @@ function ClientCard({
   };
   goalCount: number;
   canSeePhone: boolean;
-  isAdmin: boolean;
   activeSince: Date;
+  returnTo: string;
 }) {
   const status = client.rewardAvailable
     ? { label: "Подарок доступен", tone: "success" as const }
@@ -264,10 +272,42 @@ function ClientCard({
     </>
   );
 
-  return isAdmin ? (
-    <Link href={`/company/client/${client.id}`} className="panel block p-4">{content}</Link>
-  ) : (
-    <article className="panel p-4">{content}</article>
+  return (
+    <article className="panel p-4">
+      {content}
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <QuickPurchaseForm membershipId={client.id} qrToken={client.qrToken} returnTo={returnTo} />
+        <Link href={`/company/client/${client.id}`} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[var(--border)] bg-white px-4 text-sm font-bold text-[var(--brand-strong)]">
+          Открыть карточку
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+function QuickPurchaseForm({
+  membershipId,
+  qrToken,
+  returnTo,
+  compact = false,
+}: {
+  membershipId: string;
+  qrToken: string;
+  returnTo: string;
+  compact?: boolean;
+}) {
+  return (
+    <form action={confirmPurchase}>
+      <input type="hidden" name="membershipId" value={membershipId} />
+      <input type="hidden" name="token" value={`tega:${qrToken}`} />
+      <input type="hidden" name="returnTo" value={returnTo} />
+      <input type="hidden" name="quantity" value="1" />
+      <ConfirmSubmit
+        title="Начислить покупку?"
+        confirmText="Будет начислена 1 покупка без сканирования QR. Сервер проверит лимиты и доступ компании."
+        buttonText={compact ? "Начислить" : "Начислить покупку"}
+      />
+    </form>
   );
 }
 
