@@ -1,5 +1,5 @@
 import { CompanyUserRole } from "@prisma/client";
-import { requireApiCompanyUser, ok } from "@/lib/api";
+import { requireApiCompanyUser, ok, safeCompanySelect } from "@/lib/api";
 import { getDb } from "@/lib/db";
 
 function optionalCoordinate(value: unknown) {
@@ -25,6 +25,7 @@ export async function PATCH(request: Request) {
       themeColor: body.themeColor ? String(body.themeColor) : undefined,
       icon: body.icon ? String(body.icon) : undefined,
     },
+    select: safeCompanySelect,
   });
   return ok({ company });
 }

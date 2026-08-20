@@ -1,10 +1,29 @@
 import { CompanyStatus, Prisma } from "@prisma/client";
 import { getDb } from "@/lib/db";
+import { publicCompanySelect } from "@/lib/api";
 import { enforceCompaniesRatingStatus, getCompanyRatingSummaries } from "@/lib/company-reviews";
 import { hasActiveAccess } from "@/lib/loyalty";
 
+const clientMembershipSelect = {
+  id: true,
+  companyId: true,
+  userId: true,
+  currentCount: true,
+  totalPurchases: true,
+  totalRewards: true,
+  levelId: true,
+  currentLevelName: true,
+  levelReachedAt: true,
+  rewardAvailable: true,
+  pendingReward: true,
+  lastActionAt: true,
+  createdAt: true,
+  updatedAt: true,
+  company: { select: { ...publicCompanySelect, loyaltyProgram: true, giftOptions: true } },
+} as const;
+
 export type ClientMembership = Prisma.CustomerMembershipGetPayload<{
-  include: { company: { include: { loyaltyProgram: true, giftOptions: true } } };
+  select: typeof clientMembershipSelect;
 }>;
 
 export type ClientDashboardMembership = Prisma.CustomerMembershipGetPayload<{
@@ -58,7 +77,7 @@ export function pickNearestGift(memberships: (ClientMembership | ClientDashboard
 export async function getClientMemberships(userId: string) {
   return getDb().customerMembership.findMany({
     where: { userId, company: { status: { not: CompanyStatus.DELETED } } },
-    include: { company: { include: { loyaltyProgram: true, giftOptions: true } } },
+    select: clientMembershipSelect,
     orderBy: { updatedAt: "desc" },
   });
 }
@@ -108,7 +127,7 @@ export async function getActivePartnerCompanies(city?: string | null, take?: num
     where: {
       ...where,
     },
-    include: { loyaltyProgram: true },
+    select: { ...publicCompanySelect, loyaltyProgram: true },
     orderBy: [{ city: "asc" }, { name: "asc" }],
     ...(take ? { take } : {}),
   });

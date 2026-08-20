@@ -1,15 +1,13 @@
-import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { ensureGlobalQrToken } from "@/lib/loyalty";
-import { ok } from "@/lib/api";
+import { ok, requireApiUser } from "@/lib/api";
 
 export async function GET() {
-  const currentUser = await requireUser();
+  const { error, user: currentUser } = await requireApiUser();
+  if (error) return error;
   const user = await getDb().user.findUniqueOrThrow({
-    where: { id: currentUser.id },
-    select: { id: true, name: true, phone: true, email: true, city: true, globalQrToken: true },
+    where: { id: currentUser!.id },
+    select: { id: true, name: true, phone: true, email: true, city: true },
   });
-  const globalQrToken = await ensureGlobalQrToken(user);
 
-  return ok({ user: { ...user, globalQrToken } });
+  return ok({ user });
 }

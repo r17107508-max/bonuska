@@ -1,4 +1,4 @@
-import { requireApiCompanyAdmin, ok } from "@/lib/api";
+import { requireApiCompanyAdmin, ok, safeUserSelect } from "@/lib/api";
 import { getDb } from "@/lib/db";
 
 export async function GET() {
@@ -40,7 +40,25 @@ export async function GET() {
     getDb().customerMembership.count({ where: { companyId: access!.companyId, rewardAvailable: true } }),
     getDb().customerMembership.count({ where: { companyId: access!.companyId, rewardAvailable: false, currentCount: { gte: nearRewardStart } } }),
     getDb().loyaltyTransaction.findMany({ where: { companyId: access!.companyId, createdAt: { gte: weekStart } }, select: { membershipId: true } }),
-    getDb().customerMembership.findMany({ where: { companyId: access!.companyId }, include: { user: true }, orderBy: { totalPurchases: "desc" }, take: 10 }),
+    getDb().customerMembership.findMany({
+      where: { companyId: access!.companyId },
+      select: {
+        id: true,
+        companyId: true,
+        userId: true,
+        currentCount: true,
+        totalPurchases: true,
+        totalRewards: true,
+        rewardAvailable: true,
+        pendingReward: true,
+        lastActionAt: true,
+        createdAt: true,
+        updatedAt: true,
+        user: { select: safeUserSelect },
+      },
+      orderBy: { totalPurchases: "desc" },
+      take: 10,
+    }),
   ]);
   const activeClients7 = new Set(weekTransactions.map((transaction) => transaction.membershipId)).size;
   const purchasesToday = purchasesTodayAggregate._sum.quantity ?? 0;

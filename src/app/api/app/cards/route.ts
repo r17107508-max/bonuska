@@ -1,13 +1,29 @@
-import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { ok } from "@/lib/api";
+import { ok, publicCompanySelect, requireApiUser } from "@/lib/api";
 import { CompanyStatus } from "@prisma/client";
 
 export async function GET() {
-  const user = await requireUser();
+  const { error, user } = await requireApiUser();
+  if (error) return error;
   const cards = await getDb().customerMembership.findMany({
-    where: { userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
-    include: { company: { include: { loyaltyProgram: true, giftOptions: true } } },
+    where: { userId: user!.id, company: { status: { not: CompanyStatus.DELETED } } },
+    select: {
+      id: true,
+      companyId: true,
+      userId: true,
+      currentCount: true,
+      totalPurchases: true,
+      totalRewards: true,
+      levelId: true,
+      currentLevelName: true,
+      levelReachedAt: true,
+      rewardAvailable: true,
+      pendingReward: true,
+      lastActionAt: true,
+      createdAt: true,
+      updatedAt: true,
+      company: { select: { ...publicCompanySelect, loyaltyProgram: true, giftOptions: true } },
+    },
     orderBy: { updatedAt: "desc" },
     take: 50,
   });

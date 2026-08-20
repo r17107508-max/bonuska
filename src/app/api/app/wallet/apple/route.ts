@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { CompanyStatus } from "@prisma/client";
-import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { createAppleWalletPass } from "@/lib/apple-wallet";
 import { ensureGlobalQrToken } from "@/lib/loyalty";
+import { requireApiUser } from "@/lib/api";
 
 export async function GET() {
-  const currentUser = await requireUser("/company/login");
+  const { error, user: currentUser } = await requireApiUser();
+  if (error) return error;
   const user = await getDb().user.findUniqueOrThrow({
-    where: { id: currentUser.id },
+    where: { id: currentUser!.id },
     select: { id: true, name: true, globalQrToken: true },
   });
   const globalQrToken = await ensureGlobalQrToken(user);

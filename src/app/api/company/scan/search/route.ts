@@ -34,8 +34,10 @@ export async function GET(request: Request) {
         ],
       },
     },
-    include: {
-      user: true,
+    select: {
+      id: true,
+      qrToken: true,
+      user: { select: { name: true, phone: true } },
     },
     orderBy: { updatedAt: "desc" },
     take: 8,

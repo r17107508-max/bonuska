@@ -1,9 +1,9 @@
-import { requireUser } from "@/lib/auth";
-import { ok } from "@/lib/api";
+import { ok, requireApiUser } from "@/lib/api";
 import { getAppleWalletStatus } from "@/lib/apple-wallet";
 
 export async function GET() {
-  await requireUser("/company/login");
+  const { error } = await requireApiUser();
+  if (error) return error;
   const status = getAppleWalletStatus();
 
   return ok({

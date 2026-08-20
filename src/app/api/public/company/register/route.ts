@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { CompanyStatus, CompanyUserRole } from "@prisma/client";
-import { apiError, ok } from "@/lib/api";
+import { apiError, ok, safeCompanySelect } from "@/lib/api";
 import { getDb } from "@/lib/db";
 import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, slugify } from "@/lib/format";
 import { ensureGlobalQrToken } from "@/lib/loyalty";
@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
       personalDataConsents: { create: { userId: user.id, consentVersion: settings.privacyVersion, ip: request.headers.get("x-forwarded-for") ?? "local", userAgent: request.headers.get("user-agent") ?? "unknown" } },
       auditLogs: { create: { actorUserId: user.id, action: "COMPANY_APPLICATION_CREATED_API", entityType: "Company" } },
     },
+    select: safeCompanySelect,
   });
 
   await notifySuperadminsAboutCompanyPush(company);

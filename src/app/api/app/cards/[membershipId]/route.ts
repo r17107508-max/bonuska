@@ -1,7 +1,6 @@
 import QRCode from "qrcode";
-import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { apiError, ok } from "@/lib/api";
+import { apiError, ok, publicCompanySelect, requireApiUser } from "@/lib/api";
 import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
 import { CompanyStatus, RewardClaimStatus } from "@prisma/client";
 
@@ -9,14 +8,41 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ membershipId: string }> },
 ) {
-  const user = await requireUser();
+  const { error, user } = await requireApiUser();
+  if (error) return error;
   const { membershipId } = await params;
   const card = await getDb().customerMembership.findFirst({
-    where: { id: membershipId, userId: user.id, company: { status: { not: CompanyStatus.DELETED } } },
-    include: {
-      company: { include: { loyaltyProgram: true, giftOptions: true } },
+    where: { id: membershipId, userId: user!.id, company: { status: { not: CompanyStatus.DELETED } } },
+    select: {
+      id: true,
+      companyId: true,
+      userId: true,
+      currentCount: true,
+      totalPurchases: true,
+      totalRewards: true,
+      levelId: true,
+      currentLevelName: true,
+      levelReachedAt: true,
+      rewardAvailable: true,
+      pendingReward: true,
+      lastActionAt: true,
+      createdAt: true,
+      updatedAt: true,
+      company: { select: { ...publicCompanySelect, loyaltyProgram: true, giftOptions: true } },
       transactions: {
-        include: { cashier: { select: { id: true, name: true } } },
+        select: {
+          id: true,
+          companyId: true,
+          membershipId: true,
+          cashierId: true,
+          type: true,
+          quantity: true,
+          countBefore: true,
+          countAfter: true,
+          rewardTitle: true,
+          createdAt: true,
+          cashier: { select: { id: true, name: true } },
+        },
         orderBy: { createdAt: "desc" },
       },
     },

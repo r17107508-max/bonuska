@@ -1,5 +1,5 @@
 import { CompanyStatus } from "@prisma/client";
-import { requireApiSuperadmin, ok } from "@/lib/api";
+import { requireApiSuperadmin, ok, safeCompanySelect } from "@/lib/api";
 import { getDb } from "@/lib/db";
 import { notifyCompanyApproved } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
@@ -21,6 +21,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       isBlocked: false,
       auditLogs: { create: { actorUserId: user!.id, action: "COMPANY_APPROVED_API", entityType: "Company", entityId: id } },
     },
+    select: safeCompanySelect,
   });
   await notifyCompanyApproved(company, new URL(request.url).origin);
   return ok({ company });

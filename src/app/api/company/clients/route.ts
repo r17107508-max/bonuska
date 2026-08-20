@@ -1,4 +1,4 @@
-import { requireApiCompanyAdmin, ok } from "@/lib/api";
+import { requireApiCompanyAdmin, ok, safeUserSelect } from "@/lib/api";
 import { getDb } from "@/lib/db";
 
 export async function GET() {
@@ -6,7 +6,23 @@ export async function GET() {
   if (error) return error;
   const clients = await getDb().customerMembership.findMany({
     where: { companyId: access!.companyId },
-    include: { user: true },
+    select: {
+      id: true,
+      companyId: true,
+      userId: true,
+      currentCount: true,
+      totalPurchases: true,
+      totalRewards: true,
+      levelId: true,
+      currentLevelName: true,
+      levelReachedAt: true,
+      rewardAvailable: true,
+      pendingReward: true,
+      lastActionAt: true,
+      createdAt: true,
+      updatedAt: true,
+      user: { select: safeUserSelect },
+    },
     orderBy: { updatedAt: "desc" },
     take: 100,
   });

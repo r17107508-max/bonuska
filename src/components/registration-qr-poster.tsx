@@ -85,6 +85,7 @@ export function RegistrationQrPoster(props: RegistrationQrPosterProps) {
     <section className="warm-card p-5">
       <div className="grid gap-5 lg:grid-cols-[220px_1fr] lg:items-center">
         <div className="rounded-lg bg-white p-4 ring-1 ring-[var(--border)]">
+          {/* eslint-disable-next-line @next/next/no-img-element -- QR is a generated data URL. */}
           <img src={props.qrDataUrl} alt="QR для регистрации клиентов" className="mx-auto aspect-square w-full max-w-[220px]" />
         </div>
         <div>

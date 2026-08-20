@@ -1,5 +1,5 @@
 import { CompanyStatus } from "@prisma/client";
-import { requireApiSuperadmin, ok } from "@/lib/api";
+import { requireApiSuperadmin, ok, safeCompanySelect } from "@/lib/api";
 import { getDb } from "@/lib/db";
 
 export async function PATCH(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -9,6 +9,7 @@ export async function PATCH(_request: Request, { params }: { params: Promise<{ i
   const company = await getDb().company.update({
     where: { id },
     data: { status: CompanyStatus.REJECTED, auditLogs: { create: { actorUserId: user!.id, action: "COMPANY_REJECTED_API", entityType: "Company", entityId: id } } },
+    select: safeCompanySelect,
   });
   return ok({ company });
 }

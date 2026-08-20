@@ -1,14 +1,24 @@
-import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { ok } from "@/lib/api";
+import { ok, publicCompanySelect, requireApiUser } from "@/lib/api";
 import { CompanyStatus } from "@prisma/client";
 
 export async function GET() {
-  const user = await requireUser();
+  const { error, user } = await requireApiUser();
+  if (error) return error;
   const history = await getDb().loyaltyTransaction.findMany({
-    where: { membership: { userId: user.id, company: { status: { not: CompanyStatus.DELETED } } } },
-    include: {
-      company: true,
+    where: { membership: { userId: user!.id, company: { status: { not: CompanyStatus.DELETED } } } },
+    select: {
+      id: true,
+      companyId: true,
+      membershipId: true,
+      cashierId: true,
+      type: true,
+      quantity: true,
+      countBefore: true,
+      countAfter: true,
+      rewardTitle: true,
+      createdAt: true,
+      company: { select: publicCompanySelect },
       cashier: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: "desc" },

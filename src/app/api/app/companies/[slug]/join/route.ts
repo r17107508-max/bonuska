@@ -1,6 +1,5 @@
-import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { apiError, ok } from "@/lib/api";
+import { apiError, ok, publicCompanySelect, requireApiUser } from "@/lib/api";
 import { ensureGlobalQrToken, joinCompanyProgram } from "@/lib/loyalty";
 import { CompanyStatus } from "@prisma/client";
 
@@ -8,7 +7,8 @@ export async function POST(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  const user = await requireUser();
+  const { error, user } = await requireApiUser();
+  if (error) return error;
   const { slug } = await params;
   const company = await getDb().company.findUnique({
     where: { slug },
@@ -19,13 +19,32 @@ export async function POST(
     return apiError("Компания не найдена", 404);
   }
 
-  await ensureGlobalQrToken(user);
-  let membership: Awaited<ReturnType<typeof joinCompanyProgram>>;
+  await ensureGlobalQrToken(user!);
+  let membershipId: string;
   try {
-    membership = await joinCompanyProgram(company.id, user.id);
+    const membership = await joinCompanyProgram(company.id, user!.id);
+    membershipId = membership.id;
   } catch (error) {
     return apiError(error instanceof Error ? error.message : "Компания сейчас недоступна", 403);
   }
+
+  const membership = await getDb().customerMembership.findFirstOrThrow({
+    where: { id: membershipId, userId: user!.id },
+    select: {
+      id: true,
+      companyId: true,
+      userId: true,
+      currentCount: true,
+      totalPurchases: true,
+      totalRewards: true,
+      rewardAvailable: true,
+      pendingReward: true,
+      lastActionAt: true,
+      createdAt: true,
+      updatedAt: true,
+      company: { select: { ...publicCompanySelect, loyaltyProgram: true } },
+    },
+  });
 
   return ok({ membership });
 }

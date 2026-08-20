@@ -160,7 +160,6 @@ export default async function CompanyClientPage({
               <p><span className="font-bold text-[var(--text)]">Телефон:</span> {displayPhone}</p>
               <p><span className="font-bold text-[var(--text)]">Всего покупок:</span> {membership.totalPurchases}</p>
               <p><span className="font-bold text-[var(--text)]">Подарков:</span> {membership.totalRewards}</p>
-              {isAdmin && <p className="break-all"><span className="font-bold text-[var(--text)]">QR-токен:</span> tega:{membership.qrToken}</p>}
             </div>
           </WorkspaceCard>
 
