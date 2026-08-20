@@ -4,144 +4,181 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Bell, BellRing } from "lucide-react";
 
-type PendingCompany = {
-  id: string;
-  name: string;
-  city: string;
-  status: string;
-  createdAt: string;
+type PushStatus = {
+  enabled: boolean;
+  publicKey: string | null;
+  missing: string[];
 };
 
-const STORAGE_KEY = "proplushki_seen_pending_companies";
-
 function canUseNotifications() {
-  return typeof window !== "undefined" && "Notification" in window;
+  return typeof window !== "undefined" && "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;
 }
 
-function readSeenIds() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as string[]);
-  } catch {
-    return new Set<string>();
-  }
+function base64UrlToUint8Array(value: string) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)));
 }
 
-function saveSeenIds(ids: Iterable<string>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(ids).slice(0, 200)));
-}
-
-async function showNotification(title: string, options: NotificationOptions) {
-  const registration = "serviceWorker" in navigator ? await navigator.serviceWorker.ready.catch(() => null) : null;
-  if (registration?.showNotification) {
-    await registration.showNotification(title, options);
-    return;
-  }
-
-  new Notification(title, options);
+async function getExistingSubscription() {
+  const registration = await navigator.serviceWorker.ready;
+  return registration.pushManager.getSubscription();
 }
 
 export function SuperadminNotifications({ pendingCount }: { pendingCount: number }) {
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">(() =>
     canUseNotifications() ? Notification.permission : "unsupported",
   );
+  const [pushStatus, setPushStatus] = useState<PushStatus | null>(null);
+  const [subscribed, setSubscribed] = useState(false);
   const [message, setMessage] = useState("");
 
-  const statusText = useMemo(() => {
-    if (permission === "unsupported") return "Уведомления не поддерживаются этим браузером";
-    if (permission === "granted") return "Уведомления включены";
-    if (permission === "denied") return "Уведомления запрещены в настройках устройства";
-    return "Включите уведомления, чтобы видеть новые заявки";
-  }, [permission]);
-
   useEffect(() => {
-    if (permission !== "granted") return;
-
-    let stopped = false;
-    const seen = readSeenIds();
-
-    async function poll() {
-      try {
-        const response = await fetch("/api/superadmin/companies", { cache: "no-store" });
-        if (!response.ok) return;
-        const data = (await response.json()) as { companies?: PendingCompany[] };
-        const pending = (data.companies ?? []).filter((company) => company.status === "PENDING");
-        const nextSeen = new Set(seen);
-
-        for (const company of pending) {
-          if (!seen.has(company.id)) {
-            await showNotification("Новая заявка компании", {
-              body: `${company.name}${company.city ? `, ${company.city}` : ""}`,
-              icon: "/icon-192.png",
-              badge: "/icon-192.png",
-              tag: `company-application-${company.id}`,
-              data: { url: `/superadmin/companies/${company.id}` },
-            });
-          }
-          nextSeen.add(company.id);
-        }
-
-        seen.clear();
-        nextSeen.forEach((id) => seen.add(id));
-        saveSeenIds(seen);
-      } catch {
-        // Notification polling should never interrupt the admin dashboard.
-      }
+    if (!canUseNotifications()) {
+      return;
     }
 
-    poll();
-    const timer = window.setInterval(() => {
-      if (!stopped) poll();
-    }, 45_000);
+    fetch("/api/superadmin/push/public-key", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: PushStatus | null) => setPushStatus(data))
+      .catch(() => setPushStatus(null));
 
-    return () => {
-      stopped = true;
-      window.clearInterval(timer);
-    };
-  }, [permission]);
+    getExistingSubscription()
+      .then((subscription) => setSubscribed(Boolean(subscription)))
+      .catch(() => setSubscribed(false));
+  }, []);
+
+  const statusText = useMemo(() => {
+    if (permission === "unsupported") return "Этот браузер не поддерживает push-уведомления PWA";
+    if (pushStatus && !pushStatus.enabled) return `Web Push не настроен на сервере: ${pushStatus.missing.join(", ")}`;
+    if (permission === "denied") return "Уведомления запрещены в настройках устройства";
+    if (subscribed) return "Push-уведомления включены для этого устройства";
+    if (permission === "granted") return "Разрешение есть, осталось подписать это устройство";
+    return "Включите уведомления, чтобы получать новые заявки при закрытом приложении";
+  }, [permission, pushStatus, subscribed]);
 
   async function enableNotifications() {
+    setMessage("");
     if (!canUseNotifications()) {
       setPermission("unsupported");
       return;
     }
 
+    const statusResponse = await fetch("/api/superadmin/push/public-key", { cache: "no-store" });
+    const status = (await statusResponse.json()) as PushStatus;
+    setPushStatus(status);
+
+    if (!status.enabled || !status.publicKey) {
+      setMessage(`На сервере не хватает переменных: ${status.missing.join(", ")}`);
+      return;
+    }
+
     const result = await Notification.requestPermission();
     setPermission(result);
-
-    if (result === "granted") {
-      setMessage("Готово. Если приложение установлено на iPhone, оно появится в настройках уведомлений.");
-    } else if (result === "denied") {
-      setMessage("Разрешение отклонено. Включите уведомления в настройках браузера или iPhone.");
+    if (result !== "granted") {
+      setMessage("Разрешение не выдано. Проверьте настройки браузера или iPhone.");
+      return;
     }
+
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    const subscription =
+      existing ??
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64UrlToUint8Array(status.publicKey),
+      }));
+
+    const response = await fetch("/api/superadmin/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(subscription.toJSON()),
+    });
+
+    if (!response.ok) {
+      setMessage("Не удалось сохранить подписку устройства.");
+      return;
+    }
+
+    setSubscribed(true);
+    setMessage("Готово. Теперь новые заявки будут приходить push-уведомлением на это устройство.");
   }
+
+  async function disableNotifications() {
+    const subscription = await getExistingSubscription().catch(() => null);
+    if (subscription) {
+      await fetch("/api/superadmin/push/subscribe", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+      }).catch(() => undefined);
+      await subscription.unsubscribe().catch(() => undefined);
+    }
+
+    setSubscribed(false);
+    setMessage("Push-уведомления отключены для этого устройства.");
+  }
+
+  async function sendTestNotification() {
+    setMessage("");
+    const response = await fetch("/api/superadmin/push/test", { method: "POST" });
+    if (!response.ok) {
+      setMessage("Не удалось отправить тестовое уведомление.");
+      return;
+    }
+
+    setMessage("Тестовое уведомление отправлено на подключенные устройства суперадминов.");
+  }
+
+  const canEnable = permission !== "unsupported" && permission !== "denied" && Boolean(pushStatus?.enabled);
 
   return (
     <section className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
-            {permission === "granted" ? <BellRing aria-hidden className="size-5" /> : <Bell aria-hidden className="size-5" />}
+            {subscribed ? <BellRing aria-hidden className="size-5" /> : <Bell aria-hidden className="size-5" />}
           </div>
           <div>
-            <p className="font-semibold text-slate-950">Уведомления супер-админа</p>
+            <p className="font-semibold text-slate-950">Push-уведомления супер-админа</p>
             <p className="mt-1 text-sm text-slate-600">{statusText}</p>
             <p className="mt-1 text-sm text-slate-600">Заявок на проверку сейчас: {pendingCount}</p>
             {message && <p className="mt-2 text-sm font-semibold text-[var(--brand-ink)]">{message}</p>}
           </div>
         </div>
-        {permission === "default" ? (
-          <button
-            type="button"
-            onClick={enableNotifications}
-            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white"
-          >
-            Включить уведомления
-          </button>
-        ) : (
+        <div className="flex flex-col gap-2 sm:items-end">
+          {subscribed ? (
+            <div className="flex flex-col gap-2 sm:items-end">
+              <button
+                type="button"
+                onClick={sendTestNotification}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white"
+              >
+                Отправить тест
+              </button>
+              <button
+                type="button"
+                onClick={disableNotifications}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+              >
+                Отключить
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={enableNotifications}
+              disabled={!canEnable}
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Включить push
+            </button>
+          )}
           <Link href="/superadmin/companies?status=PENDING" className="text-sm font-semibold text-[var(--brand)]">
             Открыть заявки
           </Link>
-        )}
+        </div>
       </div>
     </section>
   );

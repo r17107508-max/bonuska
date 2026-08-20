@@ -37,6 +37,7 @@ import { getMailConfigStatus, notifyCompanyApplicationReceived, notifyCompanyApp
 import { finalizeRaffle, parseRublesToKopeks } from "@/lib/raffles";
 import { getSettings } from "@/lib/settings";
 import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
+import { notifySuperadminsAboutCompanyPush } from "@/lib/web-push";
 
 function text(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim();
@@ -511,6 +512,7 @@ export async function registerCompany(formData: FormData) {
   await Promise.all([
     notifySuperadminsAboutCompanyApplication(company, meta.origin),
     notifyCompanyApplicationReceived(company, meta.origin),
+    notifySuperadminsAboutCompanyPush(company),
   ]);
   redirect("/company/register?success=1");
 }

@@ -84,6 +84,7 @@ model User {
   companyReviews       CompanyReview[]
   auditLogs            AuditLog[]
   passwordResetTokens  PasswordResetToken[]
+  webPushSubscriptions WebPushSubscription[]
 
   @@unique([phone])
   @@index([email])
@@ -103,6 +104,25 @@ model PasswordResetToken {
 
   @@index([userId, createdAt])
   @@index([expiresAt])
+}
+
+model WebPushSubscription {
+  id              String    @id @default(cuid())
+  userId          String
+  endpoint        String    @unique
+  p256dh          String
+  auth            String
+  contentEncoding String    @default("aes128gcm")
+  userAgent       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastUsedAt      DateTime?
+  failedAt        DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([failedAt])
 }
 
 model Company {

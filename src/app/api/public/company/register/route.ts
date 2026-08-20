@@ -6,6 +6,7 @@ import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, slugify } from "@/lib
 import { ensureGlobalQrToken } from "@/lib/loyalty";
 import { getSettings } from "@/lib/settings";
 import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
+import { notifySuperadminsAboutCompanyPush } from "@/lib/web-push";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -61,6 +62,8 @@ export async function POST(request: NextRequest) {
       auditLogs: { create: { actorUserId: user.id, action: "COMPANY_APPLICATION_CREATED_API", entityType: "Company" } },
     },
   });
+
+  await notifySuperadminsAboutCompanyPush(company);
 
   return ok({ company }, 201);
 }
