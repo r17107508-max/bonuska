@@ -93,6 +93,7 @@ export const superadminNav = [
   { href: "/superadmin", label: "Панель" },
   { href: "/superadmin/companies", label: "Компании" },
   { href: "/superadmin/payments", label: "Оплаты" },
+  { href: "/superadmin/recovery", label: "Восстановление" },
   { href: "/superadmin/settings", label: "Настройки" },
 ];
 

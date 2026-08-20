@@ -135,6 +135,53 @@ export async function sendPasswordResetEmail({
   return result;
 }
 
+export async function notifyPasswordResetSupportRequest({
+  user,
+  resetUrl,
+  requestedAt,
+  expiresAt,
+  ip,
+}: {
+  user: { id: string; name: string; phone: string; email: string | null };
+  resetUrl: string;
+  requestedAt: Date;
+  expiresAt: Date;
+  ip: string;
+}) {
+  const db = getDb();
+  const [settings, admins] = await Promise.all([
+    getSettings(),
+    db.user.findMany({
+      where: { globalRole: GlobalRole.SUPERADMIN },
+      select: { email: true },
+    }),
+  ]);
+
+  const result = await sendMail({
+    to: uniqueEmails([settings.supportEmail, ...admins.map((admin) => admin.email)]),
+    subject: "Заявка на восстановление пароля без email в «ПроПлюшка»",
+    text: [
+      "Пользователь запросил восстановление пароля, но в аккаунте не указан email.",
+      "",
+      `Имя: ${user.name}`,
+      `Телефон: ${user.phone}`,
+      `Email: ${user.email || "не указан"}`,
+      `ID пользователя: ${user.id}`,
+      `Дата запроса: ${formatMoscowDateTime(requestedAt)} (Москва)`,
+      `IP: ${ip}`,
+      "",
+      "Перед передачей ссылки проверьте личность пользователя по телефону.",
+      "Одноразовая ссылка для смены пароля:",
+      resetUrl,
+      "",
+      `Ссылка действует до: ${formatMoscowDateTime(expiresAt)} (Москва).`,
+    ].join("\n"),
+  });
+
+  await writeGlobalEmailAudit(`EMAIL_PASSWORD_RESET_SUPPORT_${result.status.toUpperCase()}`, result);
+  return result;
+}
+
 export async function notifySuperadminsAboutCompanyApplication(
   company: Pick<Company, "id" | "name" | "city" | "ownerName" | "ownerPhone" | "ownerEmail" | "createdAt">,
   origin: string,

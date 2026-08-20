@@ -33,7 +33,7 @@ import {
   redeemRewardClaimByToken,
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
-import { getMailConfigStatus, notifyCompanyApplicationReceived, notifyCompanyApproved, notifySuperadminsAboutCompanyApplication, sendPasswordResetEmail } from "@/lib/notifications";
+import { getMailConfigStatus, notifyCompanyApplicationReceived, notifyCompanyApproved, notifyPasswordResetSupportRequest, notifySuperadminsAboutCompanyApplication, sendPasswordResetEmail } from "@/lib/notifications";
 import { finalizeRaffle, parseRublesToKopeks } from "@/lib/raffles";
 import { getSettings } from "@/lib/settings";
 import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
@@ -180,7 +180,7 @@ export async function loginClientAccount(formData: FormData) {
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const PASSWORD_RESET_RESEND_WINDOW_MS = 10 * 60 * 1000;
 const PASSWORD_RESET_HOURLY_LIMIT = 3;
-const PASSWORD_RESET_NEUTRAL_MESSAGE = "Если пользователь найден, ссылка для восстановления отправлена на email";
+const PASSWORD_RESET_NEUTRAL_MESSAGE = "Если аккаунт найден, мы отправили инструкцию восстановления";
 
 function passwordResetTokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -207,10 +207,10 @@ export async function requestPasswordReset(formData: FormData) {
         ...(phoneValues.length > 0 ? [{ phone: { in: phoneValues } }] : []),
       ],
     },
-    select: { id: true, email: true, name: true },
+    select: { id: true, email: true, name: true, phone: true },
   });
 
-  if (!user?.email) {
+  if (!user) {
     passwordResetDone();
   }
 
@@ -231,6 +231,50 @@ export async function requestPasswordReset(formData: FormData) {
     passwordResetDone();
   }
 
+  const token = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(now.getTime() + PASSWORD_RESET_TTL_MS);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || meta.origin;
+  const resetUrl = `${appUrl.replace(/\/$/, "")}/reset-password/${encodeURIComponent(token)}`;
+  const resetRecord = await db.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash: passwordResetTokenHash(token),
+      expiresAt,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    },
+  });
+
+  if (!user.email) {
+    await db.auditLog.create({
+      data: {
+        actorUserId: user.id,
+        action: "PASSWORD_RESET_SUPPORT_REQUESTED",
+        entityType: "PasswordRecoveryRequest",
+        entityId: resetRecord.id,
+        metadataJson: JSON.stringify({
+          userId: user.id,
+          name: user.name,
+          phone: user.phone,
+          email: user.email,
+          resetUrl,
+          expiresAt: expiresAt.toISOString(),
+          ip: meta.ip,
+          userAgent: meta.userAgent,
+          status: "pending_support_verification",
+        }),
+      },
+    });
+    await notifyPasswordResetSupportRequest({
+      user,
+      resetUrl,
+      requestedAt: now,
+      expiresAt,
+      ip: meta.ip,
+    });
+    passwordResetDone();
+  }
+
   const mailStatus = getMailConfigStatus();
   if (!mailStatus.ready) {
     await db.auditLog.create({
@@ -244,25 +288,16 @@ export async function requestPasswordReset(formData: FormData) {
         }),
       },
     });
+    await db.passwordResetToken.update({
+      where: { id: resetRecord.id },
+      data: { usedAt: new Date() },
+    });
     passwordResetDone();
   }
 
-  const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(now.getTime() + PASSWORD_RESET_TTL_MS);
-  const resetRecord = await db.passwordResetToken.create({
-    data: {
-      userId: user.id,
-      tokenHash: passwordResetTokenHash(token),
-      expiresAt,
-      ip: meta.ip,
-      userAgent: meta.userAgent,
-    },
-  });
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || meta.origin;
   const result = await sendPasswordResetEmail({
     email: user.email,
-    resetUrl: `${appUrl.replace(/\/$/, "")}/reset-password/${encodeURIComponent(token)}`,
+    resetUrl,
     expiresAt,
   });
 
