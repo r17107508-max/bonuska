@@ -15,7 +15,7 @@ export async function getSettings() {
   return db.serviceSettings.create({
     data: {
       id: "default",
-      subscriptionPrice: 499,
+      subscriptionPrice: 4990,
       trialDays: 14,
       offerVersion: serviceDocuments.offerVersion,
       offerText: defaultOfferText,

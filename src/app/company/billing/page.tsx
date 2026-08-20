@@ -103,7 +103,7 @@ export default async function CompanyBillingPage({
               <p className="mt-2 text-sm text-[var(--text-muted)]">Дата отправки: {formatDateTime(lastPaymentRequest?.createdAt)}</p>
             </div>
             <form action={requestPaymentReview} className="mt-4 space-y-4">
-              <TextAreaField label="Комментарий" name="comment" rows={4} placeholder="Например: оплатили 499 рублей, отправитель Иван Петров" />
+              <TextAreaField label="Комментарий" name="comment" rows={4} placeholder="Например: оплатили 4990 рублей, отправитель Иван Петров" />
               <SubmitButton>Сообщить об оплате</SubmitButton>
             </form>
           </WorkspaceCard>

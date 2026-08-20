@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/buttons";
 import { FormField, SelectField, TextAreaField } from "@/components/form-field";
 import { ProgramTypeSettings } from "@/components/program-type-settings";
 import { StatusPill, WorkspaceCard } from "@/components/company-ui";
+import { PosIntegrationCard } from "@/components/pos-integration-card";
 import { requireCompanyAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { findLoyaltyTemplate, loyaltyTemplates } from "@/lib/loyalty-templates";
@@ -77,6 +78,7 @@ export default async function CompanySettingsPage({
           ["#program", "Программа лояльности"],
           ["#appearance", "Оформление"],
           ["#map", "Точка на карте"],
+          ["#pos", "Интеграции"],
           ["#advanced", "Дополнительно"],
         ].map(([href, label]) => (
           <a key={href} href={href} className="inline-flex min-h-10 shrink-0 items-center rounded-xl px-3 text-sm font-bold text-[var(--text-muted)] hover:bg-[var(--inactive)] hover:text-[var(--text)]">
@@ -123,8 +125,9 @@ export default async function CompanySettingsPage({
         </div>
       </WorkspaceCard>
 
-      <form action={saveCompanySettings} className="space-y-6">
+      <form action={saveCompanySettings} className="space-y-6" encType="multipart/form-data">
         <input type="hidden" name="logoUrl" value={access.company.logoUrl ?? ""} />
+        <input type="hidden" name="currentCardBackgroundUrl" value={access.company.cardBackgroundUrl ?? ""} />
 
         <WorkspaceCard id="company">
           <SectionHead title="Компания" text="Эти данные клиенты видят в карточке компании и списке партнёров." />
@@ -182,6 +185,28 @@ export default async function CompanySettingsPage({
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField label="Фирменный цвет" name="themeColor" type="color" defaultValue={defaults.themeColor} />
               <SelectField label="Иконка прогресса" name="icon" defaultValue={defaults.icon} options={icons} />
+              <SelectField
+                label="Фон клиентской карточки"
+                name="cardBackgroundMode"
+                defaultValue={access.company.cardBackgroundMode}
+                options={[
+                  { value: "SOLID", label: "Спокойный цвет" },
+                  { value: "PHOTO", label: "Фото или картинка" },
+                ]}
+              />
+              <FormField label="Цвет поверхности" name="cardSurfaceColor" type="color" defaultValue={access.company.cardSurfaceColor ?? "#FFFFFF"} />
+              <FormField label="Цвет текста на карточке" name="cardTextColor" type="color" defaultValue={access.company.cardTextColor ?? "#1F1B18"} />
+              <FormField label="URL фонового изображения" name="cardBackgroundUrl" defaultValue={access.company.cardBackgroundUrl ?? ""} required={false} placeholder="https://..." />
+              <label className="block sm:col-span-2">
+                <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Загрузить фон</span>
+                <input
+                  name="cardBackgroundImage"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--brand-soft)] file:px-3 file:py-2 file:text-sm file:font-bold file:text-[var(--brand-strong)]"
+                />
+                <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">JPG, PNG или WebP до 2 МБ. Если файл выбран, он заменит URL.</span>
+              </label>
               <div className="sm:col-span-2">
                 <p className="text-xs font-bold uppercase text-[var(--text-muted)]">Готовые пресеты</p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -198,11 +223,25 @@ export default async function CompanySettingsPage({
               </div>
             </div>
             <div className="rounded-3xl border border-[var(--border)] bg-white p-5 shadow-sm">
-              <div className="rounded-2xl p-4 text-white" style={{ backgroundColor: defaults.themeColor }}>
+              <div
+                className="overflow-hidden rounded-2xl bg-cover bg-center p-4"
+                style={{
+                  backgroundColor: defaults.themeColor,
+                  backgroundImage: access.company.cardBackgroundMode === "PHOTO" && access.company.cardBackgroundUrl ? `url(${access.company.cardBackgroundUrl})` : undefined,
+                }}
+              >
+                <div
+                  className="rounded-2xl p-4"
+                  style={{
+                    backgroundColor: access.company.cardSurfaceColor ?? "rgba(255,255,255,0.9)",
+                    color: access.company.cardTextColor ?? "#1F1B18",
+                  }}
+                >
                 <p className="text-sm font-bold opacity-90">{access.company.name}</p>
                 <p className="mt-3 text-3xl">{defaults.icon}</p>
                 <h3 className="mt-3 text-xl font-extrabold">{defaults.rewardTitle}</h3>
                 <p className="mt-1 text-sm opacity-90">{defaults.rewardDescription || "Краткий текст акции"}</p>
+                </div>
               </div>
               <div className="mt-4 grid grid-cols-6 gap-2">
                 {Array.from({ length: Number(defaults.goalCount) || 6 }).map((_, index) => (
@@ -236,6 +275,17 @@ export default async function CompanySettingsPage({
               <p className="font-bold text-[var(--text)]">Выбор точки на карте</p>
               <p className="mt-2">Интерактивный выбор координат и автоматическое геокодирование адреса требуют API карт. Сейчас сохраняются существующие координаты.</p>
             </div>
+          </div>
+        </WorkspaceCard>
+
+        <WorkspaceCard id="pos">
+          <SectionHead title="Интеграции" text="Подключение кассы через защищённый POS API." />
+          <div className="mt-5">
+            <PosIntegrationCard
+              prefix={access.company.posApiKeyPrefix}
+              createdAt={access.company.posApiKeyCreatedAt?.toISOString() ?? null}
+              lastUsedAt={access.company.posApiKeyLastUsedAt?.toISOString() ?? null}
+            />
           </div>
         </WorkspaceCard>
 

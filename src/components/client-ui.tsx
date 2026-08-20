@@ -21,12 +21,14 @@ export function ClientCard({
   children,
   className,
   id,
+  style,
 }: {
   children: React.ReactNode;
   className?: string;
   id?: string;
+  style?: React.CSSProperties;
 }) {
-  return <section id={id} className={clsx("rounded-3xl border border-[var(--border)] bg-white p-4 shadow-sm", className)}>{children}</section>;
+  return <section id={id} style={style} className={clsx("rounded-3xl border border-[var(--border)] bg-white p-4 shadow-sm", className)}>{children}</section>;
 }
 
 export function ClientEmptyState({
@@ -120,6 +122,10 @@ export function ProgramSummaryCard({
   address,
   rewardAvailable,
   themeColor,
+  cardBackgroundUrl,
+  cardBackgroundMode,
+  cardSurfaceColor,
+  cardTextColor,
 }: {
   href: string;
   companyName: string;
@@ -133,22 +139,45 @@ export function ProgramSummaryCard({
   address?: string | null;
   rewardAvailable?: boolean;
   themeColor?: string | null;
+  cardBackgroundUrl?: string | null;
+  cardBackgroundMode?: string | null;
+  cardSurfaceColor?: string | null;
+  cardTextColor?: string | null;
 }) {
   const progress = rewardAvailable ? 100 : Math.round((current / Math.max(goal, 1)) * 100);
   const safeColor = readableThemeColor(themeColor);
+  const hasPhotoBackground = cardBackgroundMode === "PHOTO" && Boolean(cardBackgroundUrl);
 
   return (
-    <Link href={href} className="block rounded-3xl border border-[var(--border)] bg-white p-4 shadow-sm transition active:scale-[0.99] motion-reduce:transition-none">
+    <Link
+      href={href}
+      className={clsx(
+        "block overflow-hidden rounded-3xl border border-[var(--border)] bg-white shadow-sm transition active:scale-[0.99] motion-reduce:transition-none",
+        hasPhotoBackground ? "bg-cover bg-center p-3" : "p-4",
+      )}
+      style={hasPhotoBackground ? { backgroundImage: `url(${cardBackgroundUrl})` } : undefined}
+    >
+      <div
+        className={clsx(hasPhotoBackground && "rounded-3xl p-4 backdrop-blur-[2px]")}
+        style={
+          hasPhotoBackground
+            ? {
+                backgroundColor: cardSurfaceColor ?? "rgba(255,255,255,0.9)",
+                color: cardTextColor ?? "#1F1B18",
+              }
+            : undefined
+        }
+      >
       <div className="flex items-start gap-3">
         <LogoBox logoUrl={logoUrl} fallback={icon} name={companyName} color={safeColor} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-extrabold text-[var(--text)]">{companyName}</p>
-          <p className="mt-0.5 text-sm font-semibold text-[var(--text-muted)]">{businessType}</p>
+          <p className={clsx("truncate text-lg font-extrabold", hasPhotoBackground ? "" : "text-[var(--text)]")}>{companyName}</p>
+          <p className={clsx("mt-0.5 text-sm font-semibold", hasPhotoBackground ? "opacity-75" : "text-[var(--text-muted)]")}>{businessType}</p>
         </div>
         <ArrowRight aria-hidden className="mt-2 size-5 shrink-0 text-[var(--text-muted)]" />
       </div>
-      <p className="mt-4 text-sm font-bold text-[var(--text)]">{rewardTitle}</p>
-      <p className="mt-1 text-sm text-[var(--text-muted)]">
+      <p className={clsx("mt-4 text-sm font-bold", hasPhotoBackground ? "" : "text-[var(--text)]")}>{rewardTitle}</p>
+      <p className={clsx("mt-1 text-sm", hasPhotoBackground ? "opacity-75" : "text-[var(--text-muted)]")}>
         {rewardAvailable ? "Подарок готов" : pluralPurchasesLeft(left)}
       </p>
       <div className="mt-3">
@@ -157,6 +186,7 @@ export function ProgramSummaryCard({
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="font-bold text-[var(--text-muted)]">{current} из {goal}</span>
         {address && <span className="inline-flex min-w-0 items-center gap-1 text-[var(--text-muted)]"><MapPinned aria-hidden className="size-4 shrink-0" /><span className="truncate">{address}</span></span>}
+      </div>
       </div>
     </Link>
   );

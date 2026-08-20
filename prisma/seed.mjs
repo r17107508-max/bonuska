@@ -61,7 +61,7 @@ async function main() {
   await prisma.serviceSettings.upsert({
     where: { id: "default" },
     update: {
-      subscriptionPrice: 499,
+      subscriptionPrice: 4990,
       trialDays: 14,
       offerVersion: serviceDocuments.offerVersion,
       offerText,
@@ -72,7 +72,7 @@ async function main() {
     },
     create: {
       id: "default",
-      subscriptionPrice: 499,
+      subscriptionPrice: 4990,
       trialDays: 14,
       offerVersion: serviceDocuments.offerVersion,
       offerText,

@@ -88,7 +88,7 @@ export default async function CompanyRegisterPage({
               <div className="panel p-5">
                 <h2 className="text-xl font-semibold text-slate-950">Что входит</h2>
                 <div className="mt-4 space-y-3 text-sm text-slate-700">
-                  {["14 дней бесплатно после одобрения", "499 ₽/мес после trial", "QR-плакат для стойки", "Сканер для кассира", "Личные QR-карты клиентов"].map((item) => (
+                  {["14 дней бесплатно после одобрения", "4990 ₽/мес после trial", "QR-плакат для стойки", "Сканер для кассира", "Личные QR-карты клиентов"].map((item) => (
                     <p key={item} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-[var(--brand)]" />{item}</p>
                   ))}
                 </div>

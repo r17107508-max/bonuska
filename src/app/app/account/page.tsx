@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Bell, HelpCircle, History, KeyRound, LogOut, ShieldCheck, Smartphone, Trash2, UserRound, WalletCards } from "lucide-react";
 import { changeCustomerPassword, deleteCustomerAccount, logout, updateCustomerProfile } from "@/app/actions";
+import { AppleWalletCard } from "@/components/apple-wallet-card";
 import { SubmitButton } from "@/components/buttons";
 import { ClientBrandHeader } from "@/components/client-brand-header";
 import { ClientCard, ClientShell } from "@/components/client-ui";
@@ -105,6 +106,8 @@ export default async function AccountPage({
           <ProfileLink href="/privacy" icon={ShieldCheck} label="Политика персональных данных" />
         </nav>
       </ClientCard>
+
+      <AppleWalletCard />
 
       <ClientCard>
         <details className="rounded-2xl border border-[var(--border)] bg-white p-3">

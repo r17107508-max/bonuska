@@ -775,7 +775,7 @@ export async function recordSuspiciousLoyaltyAttempt({
   membershipId: string;
   cashierId: string;
   token?: string;
-  source: "scan" | "api";
+  source: "scan" | "api" | "pos-api";
   operation: "purchase" | "reward";
   reason: SuspiciousLoyaltyReason;
 }) {

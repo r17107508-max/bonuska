@@ -20,6 +20,7 @@ import {
   requireCompanyUser,
   requireSuperadmin,
 } from "@/lib/auth";
+import { cleanHexColor, saveCompanyDesignImage } from "@/lib/company-design";
 import { getDb } from "@/lib/db";
 import { enforceCompanyRatingStatus } from "@/lib/company-reviews";
 import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, phoneLookupValues, slugify } from "@/lib/format";
@@ -709,7 +710,7 @@ export async function saveServiceSettings(formData: FormData) {
   await getDb().serviceSettings.upsert({
     where: { id: "default" },
     update: {
-      subscriptionPrice: numberValue(formData, "subscriptionPrice", 499),
+      subscriptionPrice: numberValue(formData, "subscriptionPrice", 4990),
       trialDays: numberValue(formData, "trialDays", 14),
       paymentRequisites: text(formData, "paymentRequisites"),
       offerText: text(formData, "offerText"),
@@ -720,7 +721,7 @@ export async function saveServiceSettings(formData: FormData) {
     },
     create: {
       id: "default",
-      subscriptionPrice: numberValue(formData, "subscriptionPrice", 499),
+      subscriptionPrice: numberValue(formData, "subscriptionPrice", 4990),
       trialDays: numberValue(formData, "trialDays", 14),
       paymentRequisites: text(formData, "paymentRequisites"),
       offerText: text(formData, "offerText"),
@@ -737,6 +738,16 @@ export async function saveCompanySettings(formData: FormData) {
   const access = await requireCompanyAdmin();
   const goalCount = Math.min(20, Math.max(3, numberValue(formData, "goalCount", 6)));
   const slug = slugify(text(formData, "slug")) || access.company.slug;
+  let uploadedCardBackgroundUrl: string | null = null;
+  try {
+    uploadedCardBackgroundUrl = await saveCompanyDesignImage(access.companyId, formData.get("cardBackgroundImage"));
+  } catch (error) {
+    errorRedirect("/company/settings", error instanceof Error ? error.message : "Не удалось загрузить фоновое изображение");
+  }
+  const submittedCardBackgroundUrl = optionalUrl(formData, "cardBackgroundUrl");
+  const currentCardBackgroundUrl = text(formData, "currentCardBackgroundUrl") || null;
+  const cardBackgroundMode = text(formData, "cardBackgroundMode") === "PHOTO" ? "PHOTO" : "SOLID";
+  const cardBackgroundUrl = uploadedCardBackgroundUrl ?? submittedCardBackgroundUrl ?? currentCardBackgroundUrl;
   const programType = text(formData, "programType") as LoyaltyProgramType;
   const gifts = text(formData, "giftOptions")
     .split("\n")
@@ -769,6 +780,10 @@ export async function saveCompanySettings(formData: FormData) {
         address: text(formData, "address"),
         website: optionalUrl(formData, "website"),
         logoUrl: optionalUrl(formData, "logoUrl"),
+        cardBackgroundMode,
+        cardBackgroundUrl: cardBackgroundMode === "PHOTO" ? cardBackgroundUrl : null,
+        cardSurfaceColor: cleanHexColor(formData.get("cardSurfaceColor"), "#FFFFFF"),
+        cardTextColor: cleanHexColor(formData.get("cardTextColor"), "#1F1B18"),
         latitude: optionalNumber(formData, "latitude"),
         longitude: optionalNumber(formData, "longitude"),
         ownerPhone: text(formData, "phone") || access.company.ownerPhone,

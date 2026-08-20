@@ -133,6 +133,10 @@ export default async function ClientDashboardPage({
                       address={membership.company.address}
                       rewardAvailable={membership.rewardAvailable}
                       themeColor={membership.company.loyaltyProgram?.themeColor ?? membership.company.themeColor}
+                      cardBackgroundUrl={membership.company.cardBackgroundUrl}
+                      cardBackgroundMode={membership.company.cardBackgroundMode}
+                      cardSurfaceColor={membership.company.cardSurfaceColor}
+                      cardTextColor={membership.company.cardTextColor}
                     />
                   </div>
                 ))}
@@ -201,10 +205,21 @@ function NearestGiftHero({
   const left = rewardLeft(membership);
   const progress = membership.rewardAvailable ? 100 : Math.round((membership.currentCount / Math.max(goal, 1)) * 100);
   const color = program.themeColor || membership.company.themeColor || "#C94726";
+  const hasPhotoBackground = membership.company.cardBackgroundMode === "PHOTO" && Boolean(membership.company.cardBackgroundUrl);
 
   return (
-    <ClientCard className="overflow-hidden p-0">
-      <div className="p-5" style={{ borderTop: `8px solid ${color}` }}>
+    <ClientCard
+      className="overflow-hidden bg-cover bg-center p-0"
+      style={hasPhotoBackground ? { backgroundImage: `url(${membership.company.cardBackgroundUrl})` } : undefined}
+    >
+      <div
+        className="p-5"
+        style={{
+          borderTop: `8px solid ${color}`,
+          backgroundColor: hasPhotoBackground ? membership.company.cardSurfaceColor ?? "rgba(255,255,255,0.9)" : undefined,
+          color: hasPhotoBackground ? membership.company.cardTextColor ?? "#1F1B18" : undefined,
+        }}
+      >
         <div className="flex items-start gap-3">
           <LogoBox logoUrl={membership.company.logoUrl} fallback={program.icon || membership.company.icon} name={membership.company.name} color={color} className="size-14" />
           <div className="min-w-0 flex-1">

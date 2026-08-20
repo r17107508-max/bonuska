@@ -32,6 +32,10 @@ export default async function ClientCardsPage() {
             address={membership.company.address}
             rewardAvailable={membership.rewardAvailable}
             themeColor={membership.company.loyaltyProgram?.themeColor ?? membership.company.themeColor}
+            cardBackgroundUrl={membership.company.cardBackgroundUrl}
+            cardBackgroundMode={membership.company.cardBackgroundMode}
+            cardSurfaceColor={membership.company.cardSurfaceColor}
+            cardTextColor={membership.company.cardTextColor}
           />
         ))}
 

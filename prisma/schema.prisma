@@ -137,6 +137,10 @@ model Company {
   address                   String
   website                   String?
   logoUrl                   String?
+  cardBackgroundUrl         String?
+  cardBackgroundMode        String        @default("SOLID")
+  cardSurfaceColor          String?
+  cardTextColor             String?
   latitude                  Float?
   longitude                 Float?
   ownerName                 String
@@ -154,6 +158,10 @@ model Company {
   isBlocked                 Boolean       @default(false)
   ratingLowSince            DateTime?
   ratingBlockedAt           DateTime?
+  posApiKeyHash             String?       @unique
+  posApiKeyPrefix           String?
+  posApiKeyCreatedAt        DateTime?
+  posApiKeyLastUsedAt       DateTime?
   createdAt                 DateTime      @default(now())
   updatedAt                 DateTime      @updatedAt
 
@@ -171,10 +179,29 @@ model Company {
   offerAcceptances     OfferAcceptance[]
   personalDataConsents PersonalDataConsent[]
   auditLogs            AuditLog[]
+  posOperations        PosOperation[]
 
   @@index([status])
   @@index([city])
   @@index([latitude, longitude])
+}
+
+model PosOperation {
+  id             String   @id @default(cuid())
+  companyId      String
+  idempotencyKey String
+  type           String
+  receiptId      String?
+  membershipId   String?
+  requestHash    String?
+  responseJson   String?
+  createdAt      DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, idempotencyKey])
+  @@index([companyId, createdAt])
+  @@index([membershipId])
 }
 
 model CompanyUser {
@@ -456,7 +483,7 @@ model AuditLog {
 
 model ServiceSettings {
   id                String   @id @default("default")
-  subscriptionPrice Int      @default(499)
+  subscriptionPrice Int      @default(4990)
   trialDays         Int      @default(14)
   offerVersion      String   @default("1.0")
   offerText         String

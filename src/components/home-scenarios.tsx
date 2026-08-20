@@ -54,7 +54,7 @@ const navItems = [
 ];
 
 const heroProofs = [
-  "499 ₽/мес после пробного периода",
+  "4990 ₽/мес после пробного периода",
   "0% комиссии с покупок",
   "Без кассовой интеграции",
 ];
@@ -422,7 +422,7 @@ export function HomeScenarios({
               <div>
                 <SectionEyebrow>Тариф</SectionEyebrow>
                 <h2 className="mt-3 text-3xl font-extrabold leading-tight tracking-normal sm:text-4xl lg:text-5xl">
-                  Всё необходимое за 499 ₽ в месяц
+                  Всё необходимое за 4990 ₽ в месяц
                 </h2>
                 <p className="mt-5 text-base font-semibold leading-7 text-[#63594f]">
                   14 дней бесплатно, затем понятная фиксированная стоимость без комиссии с покупок.
