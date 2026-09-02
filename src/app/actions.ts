@@ -148,23 +148,25 @@ export async function loginCompany(formData: FormData) {
 
 export async function loginClient(formData: FormData) {
   const slug = text(formData, "slug");
+  const companyPath = `/c/${encodeURIComponent(slug)}`;
   const user = await authenticate(normalizePhone(formData.get("phone")), text(formData, "password"));
 
   if (!user) {
-    errorRedirect(`/c/${slug}`, "Неверный телефон или пароль");
+    errorRedirect(`${companyPath}?form=login`, "Неверный телефон или пароль");
   }
 
   const membership = await getDb().customerMembership.findFirst({
     where: { userId: user.id, company: { slug, status: { not: CompanyStatus.DELETED } } },
   });
 
-  if (!membership) {
-    errorRedirect(`/c/${slug}`, "Этот телефон не зарегистрирован в компании");
-  }
-
   await ensureGlobalQrToken(user);
   await createSession(user);
-  redirect(`/app/cards/${membership.id}`);
+
+  if (membership) {
+    redirect(`/app/cards/${membership.id}`);
+  }
+
+  redirect(`${companyPath}?login=1#connect-program`);
 }
 
 export async function loginClientAccount(formData: FormData) {

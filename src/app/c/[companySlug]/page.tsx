@@ -14,7 +14,7 @@ export default async function PublicCompanyPage({
   searchParams,
 }: {
   params: Promise<{ companySlug: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; form?: string; login?: string }>;
 }) {
   const [{ companySlug }, query] = await Promise.all([params, searchParams]);
   const company = await getDb().company.findUnique({
@@ -67,7 +67,7 @@ export default async function PublicCompanyPage({
             Сервис компании временно недоступен из-за статуса подписки.
           </p>
         )}
-        {query.error && <p className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">{query.error}</p>}
+        {query.error && query.form !== "login" && <p className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">{query.error}</p>}
 
         <section className="panel p-5">
           <div className="rounded-xl bg-slate-50 p-4 text-slate-700">
@@ -80,9 +80,14 @@ export default async function PublicCompanyPage({
           </div>
 
           {currentUser ? (
-            <form action={joinCompanyFromPublicPage} className="mt-5 space-y-3">
+            <form id="connect-program" action={joinCompanyFromPublicPage} className="mt-5 scroll-mt-4 space-y-3">
               <input type="hidden" name="slug" value={company.slug} />
               <h2 className="text-xl font-semibold text-slate-950">Подключиться к программе</h2>
+              {query.login && (
+                <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800" role="status">
+                  Вход выполнен. Нажмите «Подключиться», чтобы добавить карту этого магазина.
+                </p>
+              )}
               <p className="text-sm text-slate-600">
                 Вы уже вошли как {currentUser.name}. Нажмите кнопку, и карта компании появится в общем кабинете «ПроПлюшка».
               </p>
@@ -117,6 +122,11 @@ export default async function PublicCompanyPage({
           </div>
           <form action={loginClient} className="mt-4 space-y-3">
             <input type="hidden" name="slug" value={company.slug} />
+            {query.error && query.form === "login" && (
+              <p className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800" role="alert">
+                {query.error}
+              </p>
+            )}
             <FormField label="Телефон" name="phone" autoComplete="tel" />
             <FormField label="Пароль" name="password" type="password" autoComplete="current-password" />
             <SubmitButton variant="secondary">Войти в карту</SubmitButton>
