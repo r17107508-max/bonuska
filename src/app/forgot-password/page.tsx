@@ -12,7 +12,7 @@ export default async function ForgotPasswordPage({
   const params = await searchParams;
 
   return (
-    <AuthShell title="Восстановление доступа" subtitle="Введите телефон или email. Если email не указан в аккаунте, заявка уйдёт в поддержку для проверки.">
+    <AuthShell title="Восстановление доступа" subtitle="Введите телефон или email. Мы отправим одноразовую ссылку на почту, указанную в аккаунте.">
       {params.sent && <p className="mt-5 rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{params.message ?? "Если аккаунт найден, мы отправили инструкцию восстановления"}</p>}
       {params.error && <p className="mt-5 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">{params.error}</p>}
       <form action={requestPasswordReset} className="mt-6 space-y-4">

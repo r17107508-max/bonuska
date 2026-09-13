@@ -2,10 +2,17 @@ import { NextRequest } from "next/server";
 import { CompanyStatus, CompanyUserRole } from "@prisma/client";
 import { apiError, ok, safeCompanySelect } from "@/lib/api";
 import { getDb } from "@/lib/db";
-import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, slugify } from "@/lib/format";
+import {
+  EMAIL_ALREADY_REGISTERED_MESSAGE,
+  PHONE_ALREADY_REGISTERED_MESSAGE,
+  isValidEmail,
+  normalizeEmail,
+  normalizePhone,
+  slugify,
+} from "@/lib/format";
 import { ensureGlobalQrToken } from "@/lib/loyalty";
 import { getSettings } from "@/lib/settings";
-import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
+import { createUserWithUniquePhone, isEmailAlreadyRegisteredError, isPhoneAlreadyRegisteredError } from "@/lib/users";
 import { notifySuperadminsAboutCompanyPush } from "@/lib/web-push";
 
 export async function POST(request: NextRequest) {
@@ -13,11 +20,11 @@ export async function POST(request: NextRequest) {
   const name = String(body.name ?? "").trim();
   const ownerName = String(body.ownerName ?? "").trim();
   const phone = normalizePhone(String(body.phone ?? ""));
-  const email = String(body.email ?? "").trim();
+  const email = normalizeEmail(String(body.email ?? ""));
   const password = String(body.password ?? "");
   const city = String(body.city ?? "").trim();
 
-  if (!name || !ownerName || phone.length < 10 || !email || password.length < 6 || !city || !body.offerAccepted || !body.privacyAccepted) {
+  if (!name || !ownerName || phone.length < 10 || !isValidEmail(email) || password.length < 6 || !city || !body.offerAccepted || !body.privacyAccepted) {
     return apiError("Заполните обязательные поля и примите документы");
   }
 
@@ -29,6 +36,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (isPhoneAlreadyRegisteredError(error)) {
       return apiError(PHONE_ALREADY_REGISTERED_MESSAGE, 409);
+    }
+    if (isEmailAlreadyRegisteredError(error)) {
+      return apiError(EMAIL_ALREADY_REGISTERED_MESSAGE, 409);
     }
 
     throw error;

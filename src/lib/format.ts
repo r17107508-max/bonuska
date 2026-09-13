@@ -29,6 +29,22 @@ export const formatMoscowDate = formatDate;
 export const formatMoscowDateTime = formatDateTime;
 
 export const PHONE_ALREADY_REGISTERED_MESSAGE = "Этот номер телефона уже зарегистрирован. Укажите другой номер";
+export const EMAIL_ALREADY_REGISTERED_MESSAGE = "Этот email уже зарегистрирован. Войдите или восстановите пароль";
+export const INVALID_EMAIL_MESSAGE = "Укажите корректный email для восстановления пароля";
+
+export function normalizeEmail(value: FormDataEntryValue | string | null) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+export function isValidEmail(value: FormDataEntryValue | string | null) {
+  const email = normalizeEmail(value);
+
+  if (!email || email.length > 254) {
+    return false;
+  }
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(email);
+}
 
 export function normalizePhone(value: FormDataEntryValue | string | null) {
   const digits = String(value ?? "").replace(/\D/g, "");

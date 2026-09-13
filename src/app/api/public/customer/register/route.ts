@@ -3,10 +3,17 @@ import { CompanyStatus } from "@prisma/client";
 import { createSession } from "@/lib/auth";
 import { apiError, ok } from "@/lib/api";
 import { getDb } from "@/lib/db";
-import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone } from "@/lib/format";
+import {
+  EMAIL_ALREADY_REGISTERED_MESSAGE,
+  INVALID_EMAIL_MESSAGE,
+  PHONE_ALREADY_REGISTERED_MESSAGE,
+  isValidEmail,
+  normalizeEmail,
+  normalizePhone,
+} from "@/lib/format";
 import { ensureGlobalQrToken, joinCompanyProgram } from "@/lib/loyalty";
 import { getSettings } from "@/lib/settings";
-import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
+import { createUserWithUniquePhone, isEmailAlreadyRegisteredError, isPhoneAlreadyRegisteredError } from "@/lib/users";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -18,20 +25,27 @@ export async function POST(request: NextRequest) {
 
   const name = String(body.name ?? "").trim();
   const phone = normalizePhone(String(body.phone ?? ""));
+  const email = normalizeEmail(String(body.email ?? ""));
   const password = String(body.password ?? "");
   const city = String(body.city ?? company.city ?? "").trim();
   if (!name || phone.length < 10 || password.length < 6 || !city || !body.privacyAccepted) {
     return apiError("Заполните данные и примите согласие");
+  }
+  if (!isValidEmail(email)) {
+    return apiError(INVALID_EMAIL_MESSAGE);
   }
 
   const db = getDb();
   const settings = await getSettings();
   let user: Awaited<ReturnType<typeof createUserWithUniquePhone>>;
   try {
-    user = await createUserWithUniquePhone({ name, phone, city, password }, db);
+    user = await createUserWithUniquePhone({ name, phone, email, city, password }, db);
   } catch (error) {
     if (isPhoneAlreadyRegisteredError(error)) {
       return apiError(PHONE_ALREADY_REGISTERED_MESSAGE, 409);
+    }
+    if (isEmailAlreadyRegisteredError(error)) {
+      return apiError(EMAIL_ALREADY_REGISTERED_MESSAGE, 409);
     }
 
     throw error;

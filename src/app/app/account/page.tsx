@@ -73,8 +73,11 @@ export default async function AccountPage({
                 type="email"
                 defaultValue={user.email ?? ""}
                 placeholder="email@example.ru"
+                autoComplete="email"
+                required
                 className="mt-1.5 min-h-11 w-full rounded-2xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none transition focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.16)]"
               />
+              <span className="mt-1.5 block text-xs leading-5 text-[var(--text-muted)]">На этот email придёт ссылка, если вы запросите восстановление пароля.</span>
             </label>
             <label className="block">
               <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Город</span>

@@ -99,6 +99,8 @@ export default async function PublicCompanyPage({
               <h2 className="text-xl font-semibold text-slate-950">Получить бонусную карту</h2>
               <FormField label="Имя" name="name" autoComplete="name" />
               <FormField label="Телефон" name="phone" autoComplete="tel" />
+              <FormField label="Email для восстановления пароля" name="email" type="email" autoComplete="email" placeholder="name@example.ru" />
+              <p className="text-xs leading-5 text-slate-500">Если вы забудете пароль, одноразовая ссылка для его смены придёт на эту почту.</p>
               <FormField label="Город" name="city" defaultValue={company.city} autoComplete="address-level2" />
               <FormField label="Пароль для входа на другом телефоне" name="password" type="password" autoComplete="new-password" />
               <label className="flex gap-3 text-sm font-medium text-slate-700">

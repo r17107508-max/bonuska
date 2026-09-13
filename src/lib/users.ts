@@ -1,7 +1,13 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient, type User } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getDb } from "@/lib/db";
-import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, phoneLookupValues } from "@/lib/format";
+import {
+  EMAIL_ALREADY_REGISTERED_MESSAGE,
+  PHONE_ALREADY_REGISTERED_MESSAGE,
+  normalizeEmail,
+  normalizePhone,
+  phoneLookupValues,
+} from "@/lib/format";
 import { newGlobalQrToken } from "@/lib/loyalty";
 
 type DbClient = PrismaClient;
@@ -13,8 +19,19 @@ export class PhoneAlreadyRegisteredError extends Error {
   }
 }
 
+export class EmailAlreadyRegisteredError extends Error {
+  constructor() {
+    super(EMAIL_ALREADY_REGISTERED_MESSAGE);
+    this.name = "EmailAlreadyRegisteredError";
+  }
+}
+
 export function isPhoneAlreadyRegisteredError(error: unknown) {
   return error instanceof PhoneAlreadyRegisteredError;
+}
+
+export function isEmailAlreadyRegisteredError(error: unknown) {
+  return error instanceof EmailAlreadyRegisteredError;
 }
 
 export async function findUserByPhone(phone: FormDataEntryValue | string | null, db: DbClient = getDb()) {
@@ -29,6 +46,24 @@ export async function findUserByPhone(phone: FormDataEntryValue | string | null,
   });
 }
 
+export async function findUsersByEmail(email: FormDataEntryValue | string | null, db: DbClient = getDb()) {
+  const normalizedEmail = normalizeEmail(email);
+
+  if (!normalizedEmail) {
+    return [];
+  }
+
+  return db.$queryRaw<User[]>(
+    Prisma.sql`SELECT * FROM "User" WHERE LOWER("email") = ${normalizedEmail} ORDER BY "createdAt" ASC LIMIT 2`,
+  );
+}
+
+export async function findUserByEmail(email: FormDataEntryValue | string | null, db: DbClient = getDb()) {
+  const [user] = await findUsersByEmail(email, db);
+
+  return user ?? null;
+}
+
 export async function createUserWithUniquePhone(
   data: {
     name: string;
@@ -40,10 +75,18 @@ export async function createUserWithUniquePhone(
   db: DbClient = getDb(),
 ) {
   const phone = normalizePhone(data.phone);
-  const existing = await findUserByPhone(phone, db);
+  const email = data.email ? normalizeEmail(data.email) : null;
+  const [existing, existingEmail] = await Promise.all([
+    findUserByPhone(phone, db),
+    email ? findUserByEmail(email, db) : null,
+  ]);
 
   if (existing) {
     throw new PhoneAlreadyRegisteredError();
+  }
+
+  if (existingEmail) {
+    throw new EmailAlreadyRegisteredError();
   }
 
   try {
@@ -51,7 +94,7 @@ export async function createUserWithUniquePhone(
       data: {
         name: data.name,
         phone,
-        email: data.email || undefined,
+        email: email || undefined,
         city: data.city || undefined,
         passwordHash: await bcrypt.hash(data.password, 10),
         globalQrToken: newGlobalQrToken(),

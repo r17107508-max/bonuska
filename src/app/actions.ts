@@ -23,7 +23,16 @@ import {
 import { cleanHexColor, saveCompanyDesignImage } from "@/lib/company-design";
 import { getDb } from "@/lib/db";
 import { enforceCompanyRatingStatus } from "@/lib/company-reviews";
-import { PHONE_ALREADY_REGISTERED_MESSAGE, normalizePhone, phoneLookupValues, slugify } from "@/lib/format";
+import {
+  EMAIL_ALREADY_REGISTERED_MESSAGE,
+  INVALID_EMAIL_MESSAGE,
+  PHONE_ALREADY_REGISTERED_MESSAGE,
+  isValidEmail,
+  normalizeEmail,
+  normalizePhone,
+  phoneLookupValues,
+  slugify,
+} from "@/lib/format";
 import {
   addPurchase,
   ensureGlobalQrToken,
@@ -37,7 +46,13 @@ import {
 import { getMailConfigStatus, notifyCompanyApplicationReceived, notifyCompanyApproved, notifyPasswordResetSupportRequest, notifySuperadminsAboutCompanyApplication, sendPasswordResetEmail } from "@/lib/notifications";
 import { finalizeRaffle, parseRublesToKopeks } from "@/lib/raffles";
 import { getSettings } from "@/lib/settings";
-import { createUserWithUniquePhone, isPhoneAlreadyRegisteredError } from "@/lib/users";
+import {
+  createUserWithUniquePhone,
+  findUserByEmail,
+  findUsersByEmail,
+  isEmailAlreadyRegisteredError,
+  isPhoneAlreadyRegisteredError,
+} from "@/lib/users";
 import { notifySuperadminsAboutCompanyPush } from "@/lib/web-push";
 
 function text(formData: FormData, name: string) {
@@ -103,9 +118,13 @@ async function getOrCreateUser(data: {
   return createUserWithUniquePhone(data);
 }
 
-function phoneAlreadyRegisteredRedirect(error: unknown, path: string): never {
+function registrationConflictRedirect(error: unknown, path: string): never {
   if (isPhoneAlreadyRegisteredError(error)) {
     errorRedirect(path, PHONE_ALREADY_REGISTERED_MESSAGE);
+  }
+
+  if (isEmailAlreadyRegisteredError(error)) {
+    errorRedirect(path, EMAIL_ALREADY_REGISTERED_MESSAGE);
   }
 
   throw error;
@@ -204,15 +223,13 @@ export async function requestPasswordReset(formData: FormData) {
   const db = getDb();
   const meta = await requestMeta();
   const phoneValues = phoneLookupValues(identifier);
-  const user = await db.user.findFirst({
-    where: {
-      OR: [
-        { email: identifier },
-        ...(phoneValues.length > 0 ? [{ phone: { in: phoneValues } }] : []),
-      ],
-    },
-    select: { id: true, email: true, name: true, phone: true },
-  });
+  const emailUsers = identifier.includes("@") ? await findUsersByEmail(identifier, db) : null;
+  const user = emailUsers
+    ? emailUsers.length === 1 ? emailUsers[0] : null
+    : await db.user.findFirst({
+        where: phoneValues.length > 0 ? { phone: { in: phoneValues } } : { id: "" },
+        select: { id: true, email: true, name: true, phone: true },
+      });
 
   if (!user) {
     passwordResetDone();
@@ -366,7 +383,7 @@ export async function logout() {
 export async function updateCustomerProfile(formData: FormData) {
   const user = await requireUser("/app/account");
   const name = text(formData, "name");
-  const email = text(formData, "email").toLowerCase();
+  const email = normalizeEmail(formData.get("email"));
   const city = text(formData, "city");
 
   if (!name) {
@@ -377,11 +394,20 @@ export async function updateCustomerProfile(formData: FormData) {
     errorRedirect("/app/account", "Укажите город");
   }
 
+  if (!isValidEmail(email)) {
+    errorRedirect("/app/account", INVALID_EMAIL_MESSAGE);
+  }
+
+  const userWithEmail = await findUserByEmail(email);
+  if (userWithEmail && userWithEmail.id !== user.id) {
+    errorRedirect("/app/account", EMAIL_ALREADY_REGISTERED_MESSAGE);
+  }
+
   await getDb().user.update({
     where: { id: user.id },
     data: {
       name,
-      email: email || null,
+      email,
       city,
     },
   });
@@ -424,14 +450,14 @@ export async function registerCompany(formData: FormData) {
   const name = text(formData, "name");
   const ownerName = text(formData, "ownerName");
   const phone = normalizePhone(formData.get("phone"));
-  const email = text(formData, "email");
+  const email = normalizeEmail(formData.get("email"));
   const password = text(formData, "password");
   const city = text(formData, "city");
   const address = text(formData, "address");
   const acceptedOffer = formData.get("offerAccepted") === "on";
   const acceptedPrivacy = formData.get("privacyAccepted") === "on";
 
-  if (!name || !ownerName || phone.length < 10 || !email || password.length < 6 || !city) {
+  if (!name || !ownerName || phone.length < 10 || !isValidEmail(email) || password.length < 6 || !city) {
     errorRedirect("/company/register", "Заполните обязательные поля");
   }
 
@@ -453,7 +479,7 @@ export async function registerCompany(formData: FormData) {
   try {
     user = await getOrCreateUser({ name: ownerName, phone, email, city, password });
   } catch (error) {
-    phoneAlreadyRegisteredRedirect(error, "/company/register");
+    registrationConflictRedirect(error, "/company/register");
   }
   await ensureGlobalQrToken(user);
   const company = await db.company.create({
@@ -898,7 +924,7 @@ export async function createStaff(formData: FormData) {
       password,
     });
   } catch (error) {
-    phoneAlreadyRegisteredRedirect(error, "/company/staff");
+    registrationConflictRedirect(error, "/company/staff");
   }
   await ensureGlobalQrToken(user);
 
@@ -995,10 +1021,11 @@ export async function registerCustomer(formData: FormData) {
   }
 
   const phone = normalizePhone(formData.get("phone"));
+  const email = normalizeEmail(formData.get("email"));
   const password = text(formData, "password");
   const city = text(formData, "city") || company.city;
-  if (!text(formData, "name") || phone.length < 10 || password.length < 6 || !city) {
-    errorRedirect(`/c/${slug}`, "Заполните имя, телефон и пароль от 6 символов");
+  if (!text(formData, "name") || phone.length < 10 || !isValidEmail(email) || password.length < 6 || !city) {
+    errorRedirect(`/c/${slug}`, "Заполните имя, телефон, email и пароль от 6 символов");
   }
 
   if (formData.get("privacyAccepted") !== "on") {
@@ -1012,11 +1039,12 @@ export async function registerCustomer(formData: FormData) {
     user = await getOrCreateUser({
       name: text(formData, "name"),
       phone,
+      email,
       city,
       password,
     });
   } catch (error) {
-    phoneAlreadyRegisteredRedirect(error, `/c/${slug}`);
+    registrationConflictRedirect(error, `/c/${slug}`);
   }
   await ensureGlobalQrToken(user);
 
@@ -1043,11 +1071,12 @@ export async function registerCustomer(formData: FormData) {
 export async function registerClientAccount(formData: FormData) {
   const name = text(formData, "name");
   const phone = normalizePhone(formData.get("phone"));
+  const email = normalizeEmail(formData.get("email"));
   const password = text(formData, "password");
   const city = text(formData, "city");
 
-  if (!name || phone.length < 10 || password.length < 6 || !city) {
-    errorRedirect("/client/register", "Заполните имя, телефон и пароль от 6 символов");
+  if (!name || phone.length < 10 || !isValidEmail(email) || password.length < 6 || !city) {
+    errorRedirect("/client/register", "Заполните имя, телефон, email и пароль от 6 символов");
   }
 
   if (formData.get("privacyAccepted") !== "on") {
@@ -1061,11 +1090,12 @@ export async function registerClientAccount(formData: FormData) {
     user = await createUserWithUniquePhone({
       name,
       phone,
+      email,
       city,
       password,
     });
   } catch (error) {
-    phoneAlreadyRegisteredRedirect(error, "/client/register");
+    registrationConflictRedirect(error, "/client/register");
   }
 
   await getDb().personalDataConsent.create({
