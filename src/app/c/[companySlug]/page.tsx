@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CompanyStatus } from "@prisma/client";
-import { Gift, QrCode, ScanLine, Smartphone } from "lucide-react";
+import { Smartphone } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { joinCompanyFromPublicPage, loginClient, registerCustomer } from "@/app/actions";
 import { SubmitButton } from "@/components/buttons";
@@ -44,7 +44,7 @@ export default async function PublicCompanyPage({
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-5">
       <section className="mx-auto max-w-md space-y-4">
-        <header className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+        <header className="overflow-hidden rounded-2xl shadow-sm ring-1 ring-slate-200">
           <div className="p-6 text-white" style={{ backgroundColor: company.loyaltyProgram.themeColor }}>
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -54,11 +54,6 @@ export default async function PublicCompanyPage({
               </div>
               <span className="text-5xl">{company.loyaltyProgram.icon}</span>
             </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 p-4 text-center text-xs font-semibold text-slate-600">
-            <MiniStep icon={<QrCode aria-hidden className="size-5" />} text="Получите QR" />
-            <MiniStep icon={<ScanLine aria-hidden className="size-5" />} text="Покажите кассиру" />
-            <MiniStep icon={<Gift aria-hidden className="size-5" />} text="Заберите подарок" />
           </div>
         </header>
 
@@ -70,17 +65,8 @@ export default async function PublicCompanyPage({
         {query.error && query.form !== "login" && <p className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800">{query.error}</p>}
 
         <section className="panel p-5">
-          <div className="rounded-xl bg-slate-50 p-4 text-slate-700">
-            <p className="flex items-center gap-2 text-xl font-semibold text-slate-950">
-              <Gift aria-hidden className="size-5 text-[var(--brand)]" />
-              {company.loyaltyProgram.rewardTitle}
-            </p>
-            <p className="mt-2">Нужно покупок до подарка: <span className="font-semibold text-slate-950">{company.loyaltyProgram.goalCount}</span></p>
-            <p className="mt-1 text-sm text-slate-500">Регистрация займёт меньше минуты. После неё вы сразу получите личный QR-код.</p>
-          </div>
-
           {currentUser ? (
-            <form id="connect-program" action={joinCompanyFromPublicPage} className="mt-5 scroll-mt-4 space-y-3">
+            <form id="connect-program" action={joinCompanyFromPublicPage} className="scroll-mt-4 space-y-3">
               <input type="hidden" name="slug" value={company.slug} />
               <h2 className="text-xl font-semibold text-slate-950">Подключиться к программе</h2>
               {query.login && (
@@ -94,7 +80,7 @@ export default async function PublicCompanyPage({
               <SubmitButton>Подключиться</SubmitButton>
             </form>
           ) : (
-            <form action={registerCustomer} className="mt-5 space-y-3">
+            <form action={registerCustomer} className="space-y-3">
               <input type="hidden" name="slug" value={company.slug} />
               <h2 className="text-xl font-semibold text-slate-950">Получить бонусную карту</h2>
               <FormField label="Имя" name="name" autoComplete="name" />
@@ -102,7 +88,13 @@ export default async function PublicCompanyPage({
               <FormField label="Email для восстановления пароля" name="email" type="email" autoComplete="email" placeholder="name@example.ru" />
               <p className="text-xs leading-5 text-slate-500">Если вы забудете пароль, одноразовая ссылка для его смены придёт на эту почту.</p>
               <FormField label="Город" name="city" defaultValue={company.city} autoComplete="address-level2" />
-              <FormField label="Пароль для входа на другом телефоне" name="password" type="password" autoComplete="new-password" />
+              <FormField label="Пароль" name="password" type="password" autoComplete="new-password" />
+              <details className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                <summary className="cursor-pointer font-semibold text-slate-700">Зачем нужен пароль?</summary>
+                <p className="mt-2 leading-5">
+                  Это основной пароль вашего аккаунта. Он понадобится, чтобы снова открыть бонусную карту после смены телефона, переустановки приложения или входа с другого устройства.
+                </p>
+              </details>
               <label className="flex gap-3 text-sm font-medium text-slate-700">
                 <input name="privacyAccepted" type="checkbox" required className="mt-1 size-4" />
                 <span>Согласен на обработку персональных данных. <Link href="/privacy" className="font-semibold text-[var(--brand)]" target="_blank">Политика</Link></span>
@@ -136,14 +128,5 @@ export default async function PublicCompanyPage({
         </section>
       </section>
     </main>
-  );
-}
-
-function MiniStep({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <div className="rounded-lg bg-slate-50 p-3">
-      <div className="mx-auto flex size-9 items-center justify-center rounded-lg bg-white text-[var(--brand)] shadow-sm">{icon}</div>
-      <p className="mt-2">{text}</p>
-    </div>
   );
 }
