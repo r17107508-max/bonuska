@@ -11,6 +11,7 @@ import {
   type User,
 } from "@prisma/client";
 import { getDb } from "@/lib/db";
+import { calculateCashbackPurchase, isCashbackProgram } from "@/lib/cashback";
 import { verifyDynamicCustomerQr } from "@/lib/dynamic-qr";
 import { calculateLoyaltyLevel, ensureDefaultLoyaltyLevels, isCustomerLevelsProgram } from "@/lib/loyalty-levels";
 import { issueRaffleTicketForPurchase } from "@/lib/raffles";
@@ -402,7 +403,14 @@ function normalizePurchaseQuantity(quantity: number) {
   return quantity;
 }
 
-export async function addPurchase(companyId: string, membershipId: string, cashierId: string, quantity = 1, purchaseAmountKopeks = 0) {
+export async function addPurchase(
+  companyId: string,
+  membershipId: string,
+  cashierId: string,
+  quantity = 1,
+  purchaseAmountKopeks = 0,
+  redeemAmountKopeks = 0,
+) {
   const purchaseQuantity = normalizePurchaseQuantity(quantity);
 
   return getDb().$transaction(async (tx: Prisma.TransactionClient) => {
@@ -429,8 +437,9 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
 
     const program = membership.company.loyaltyProgram;
     const isCustomerLevels = isCustomerLevelsProgram(program);
+    const isCashback = isCashbackProgram(program);
 
-    if (!isCustomerLevels && membership.rewardAvailable) {
+    if (!isCustomerLevels && !isCashback && membership.rewardAvailable) {
       throw new Error("Сначала выдайте доступный подарок");
     }
 
@@ -453,6 +462,88 @@ export async function addPurchase(companyId: string, membershipId: string, cashi
 
     if (purchaseCountToday + purchaseQuantity > DAILY_PURCHASE_LIMIT_PER_CUSTOMER) {
       throw new Error(DAILY_LIMIT_MESSAGE);
+    }
+
+    if (isCashback) {
+      if (purchaseQuantity !== 1) {
+        throw new Error("Для кешбэка оформляйте один чек за одну операцию");
+      }
+
+      const cashback = calculateCashbackPurchase({
+        purchaseAmountKopeks,
+        redeemAmountKopeks,
+        balanceKopeks: membership.cashbackBalanceKopeks,
+        cashbackPercentBasisPoints: program.cashbackPercentBasisPoints,
+      });
+      const totalPurchasesAfter = membership.totalPurchases + 1;
+      const now = new Date();
+      const updated = await tx.customerMembership.updateMany({
+        where: {
+          id: membership.id,
+          companyId,
+          cashbackBalanceKopeks: membership.cashbackBalanceKopeks,
+        },
+        data: {
+          totalPurchases: { increment: 1 },
+          cashbackBalanceKopeks: cashback.balanceAfterKopeks,
+          rewardAvailable: false,
+          pendingReward: null,
+          lastActionAt: now,
+        },
+      });
+
+      if (updated.count !== 1) {
+        throw new Error("Баланс клиента уже изменился. Обновите карточку и повторите операцию");
+      }
+
+      await tx.loyaltyTransaction.create({
+        data: {
+          companyId,
+          membershipId,
+          cashierId,
+          type: LoyaltyTransactionType.PURCHASE,
+          quantity: 1,
+          countBefore: membership.totalPurchases,
+          countAfter: totalPurchasesAfter,
+          purchaseAmountKopeks: cashback.purchaseAmountKopeks,
+          paidAmountKopeks: cashback.paidAmountKopeks,
+          cashbackEarnedKopeks: cashback.cashbackEarnedKopeks,
+          cashbackRedeemedKopeks: cashback.cashbackRedeemedKopeks,
+          balanceBeforeKopeks: cashback.balanceBeforeKopeks,
+          balanceAfterKopeks: cashback.balanceAfterKopeks,
+        },
+      });
+
+      const raffleTicket = await issueRaffleTicketForPurchase(tx, {
+        companyId,
+        membershipId,
+        userId: membership.userId,
+        purchaseAmountKopeks: cashback.paidAmountKopeks,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: cashierId,
+          companyId,
+          action: "CASHBACK_PURCHASE",
+          entityType: "CustomerMembership",
+          entityId: membershipId,
+          metadataJson: JSON.stringify({
+            ...cashback,
+            cashbackPercentBasisPoints: program.cashbackPercentBasisPoints,
+            totalPurchases: totalPurchasesAfter,
+            raffleTicketNumber: raffleTicket?.number ?? null,
+          }),
+        },
+      });
+
+      return {
+        quantity: 1,
+        rewardAvailable: false,
+        levelUp: null,
+        raffleTicket,
+        ...cashback,
+      };
     }
 
     if (isCustomerLevels) {

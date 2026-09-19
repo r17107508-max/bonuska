@@ -10,6 +10,7 @@ import { GiftOpenCard } from "@/components/gift-open-card";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { formatCashbackPercent, isCashbackProgram } from "@/lib/cashback";
 import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
 import { finalizeDueRafflesForCompany, formatKopeks, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
 
@@ -42,6 +43,7 @@ export default async function ClientCardPage({
   await finalizeDueRafflesForCompany(membership.companyId);
 
   const program = membership.company.loyaltyProgram;
+  const isCashback = isCashbackProgram(program);
   const goal = program.goalCount;
   const left = membership.rewardAvailable ? 0 : Math.max(goal - membership.currentCount, 0);
   const progress = membership.rewardAvailable ? 100 : Math.round((membership.currentCount / Math.max(goal, 1)) * 100);
@@ -102,15 +104,17 @@ export default async function ClientCardPage({
           </div>
 
           <div className="mt-5 rounded-3xl bg-[var(--inactive)] p-4">
-            <p className="text-sm font-bold text-[var(--text-muted)]">Награда</p>
-            <h2 className="mt-1 text-xl font-extrabold text-[var(--text)]">{program.rewardTitle || "Подарок"}</h2>
-            <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">{promoText}</p>
-            <div className="mt-4">
+            <p className="text-sm font-bold text-[var(--text-muted)]">{isCashback ? "Баланс кешбэка" : "Награда"}</p>
+            <h2 className="mt-1 text-xl font-extrabold text-[var(--text)]">{isCashback ? formatKopeks(membership.cashbackBalanceKopeks) : program.rewardTitle || "Подарок"}</h2>
+            <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">
+              {isCashback ? `${formatCashbackPercent(program.cashbackPercentBasisPoints)}% от суммы, оплаченной деньгами` : promoText}
+            </p>
+            {!isCashback && <><div className="mt-4">
               <ProgressBar value={progress} tone={membership.rewardAvailable ? "warning" : "brand"} />
             </div>
             <p className="mt-2 text-sm font-bold text-[var(--text)]">
               {membership.rewardAvailable ? "Подарок доступен" : pluralPurchasesLeft(left)}
-            </p>
+            </p></>}
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -140,18 +144,18 @@ export default async function ClientCardPage({
 
       {tab === "progress" && (
         <ClientCard>
-          <h2 className="text-xl font-extrabold text-[var(--text)]">Прогресс</h2>
-          <div className="mt-4">
+          <h2 className="text-xl font-extrabold text-[var(--text)]">{isCashback ? "Накопления" : "Прогресс"}</h2>
+          {!isCashback && <div className="mt-4">
             <ProgramProgressDots icon={program.icon} current={membership.currentCount} goal={goal} rewardAvailable={membership.rewardAvailable} />
-          </div>
+          </div>}
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-2xl bg-[var(--inactive)] p-3">
               <dt className="text-[var(--text-muted)]">Покупок всего</dt>
               <dd className="mt-1 text-2xl font-extrabold text-[var(--text)]">{membership.totalPurchases}</dd>
             </div>
             <div className="rounded-2xl bg-[var(--inactive)] p-3">
-              <dt className="text-[var(--text-muted)]">Подарков выдано</dt>
-              <dd className="mt-1 text-2xl font-extrabold text-[var(--text)]">{membership.totalRewards}</dd>
+              <dt className="text-[var(--text-muted)]">{isCashback ? "Баланс" : "Подарков выдано"}</dt>
+              <dd className="mt-1 text-2xl font-extrabold text-[var(--text)]">{isCashback ? formatKopeks(membership.cashbackBalanceKopeks) : membership.totalRewards}</dd>
             </div>
           </dl>
           {membership.lastActionAt && <p className="mt-3 text-sm text-[var(--text-muted)]">Последняя операция: {formatDate(membership.lastActionAt)}</p>}
@@ -171,7 +175,12 @@ export default async function ClientCardPage({
                   <p className="font-bold text-[var(--text)]">{operationLabel(transaction.type, transaction.quantity)}</p>
                   <time className="shrink-0 text-xs font-bold text-[var(--text-muted)]" dateTime={transaction.createdAt.toISOString()}>{formatDateTime(transaction.createdAt)}</time>
                 </div>
-                <p className="mt-1 text-sm text-[var(--text-muted)]">Прогресс: {transaction.countAfter} из {goal}</p>
+                <p className="mt-1 text-sm text-[var(--text-muted)]">
+                  {transaction.purchaseAmountKopeks !== null
+                    ? `Чек: ${formatKopeks(transaction.purchaseAmountKopeks)} · Начислено: ${formatKopeks(transaction.cashbackEarnedKopeks ?? 0)}${(transaction.cashbackRedeemedKopeks ?? 0) > 0 ? ` · Списано: ${formatKopeks(transaction.cashbackRedeemedKopeks ?? 0)}` : ""}`
+                    : `Прогресс: ${transaction.countAfter} из ${goal}`}
+                </p>
+                {transaction.balanceAfterKopeks !== null && <p className="mt-1 text-sm font-bold text-emerald-800">Баланс: {formatKopeks(transaction.balanceAfterKopeks)}</p>}
                 {transaction.rewardTitle && <p className="mt-1 text-sm font-bold text-[#7a4b00]">Подарок: {transaction.rewardTitle}</p>}
               </div>
             ))}
@@ -186,8 +195,10 @@ export default async function ClientCardPage({
         <ClientCard>
           <h2 className="text-xl font-extrabold text-[var(--text)]">Правила</h2>
           <div className="mt-3 space-y-3 text-sm leading-6 text-[var(--text-muted)]">
-            <p>Покажите универсальный QR кассиру при покупке. Начисление и выдачу подарка подтверждает сотрудник партнёра.</p>
-            <p>Цель программы: {goal} покупок. Награда: {program.rewardTitle || "подарок"}.</p>
+            <p>Покажите универсальный QR кассиру при покупке. Операцию подтверждает сотрудник партнёра.</p>
+            <p>{isCashback
+              ? `На баланс начисляется ${formatCashbackPercent(program.cashbackPercentBasisPoints)}% от суммы, оплаченной деньгами. Накопленную сумму можно списать как скидку, но не больше суммы чека.`
+              : `Цель программы: ${goal} покупок. Награда: ${program.rewardTitle || "подарок"}.`}</p>
             {program.rewardDescription && <p>{program.rewardDescription}</p>}
             {membership.company.address && (
               <p className="inline-flex gap-2">

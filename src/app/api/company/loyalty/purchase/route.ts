@@ -9,8 +9,9 @@ export async function POST(request: Request) {
   const membershipId = String(body.membershipId ?? "");
   const quantity = Number(body.quantity ?? 1);
   const purchaseAmountKopeks = parseRublesToKopeks(body.purchaseAmount ?? body.purchaseAmountRubles ?? "");
+  const redeemAmountKopeks = parseRublesToKopeks(body.redeemAmount ?? body.redeemAmountRubles ?? "");
   try {
-    const result = await addPurchase(access!.companyId, membershipId, access!.userId, quantity, purchaseAmountKopeks);
+    const result = await addPurchase(access!.companyId, membershipId, access!.userId, quantity, purchaseAmountKopeks, redeemAmountKopeks);
     return ok({ ok: true, ...result });
   } catch (err) {
     const suspiciousReason = getSuspiciousLoyaltyReason(err);

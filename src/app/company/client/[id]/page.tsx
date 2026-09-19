@@ -5,10 +5,12 @@ import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
+import { PurchaseControls } from "@/components/purchase-controls";
 import { KpiCard, maskPhone, StatusPill, WorkspaceCard } from "@/components/company-ui";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
+import { isCashbackProgram } from "@/lib/cashback";
 import { DAILY_PURCHASE_LIMIT_PER_CUSTOMER } from "@/lib/loyalty";
 import { formatKopeks, getActiveCompanyRaffle } from "@/lib/raffles";
 
@@ -39,6 +41,7 @@ export default async function CompanyClientPage({
   }
 
   const program = membership.company.loyaltyProgram;
+  const isCashback = isCashbackProgram(program);
   const activeRaffle = await getActiveCompanyRaffle(access.companyId);
   const lastPurchase = membership.transactions.find((item) => item.type === "PURCHASE");
   const isAdmin = access.role === CompanyUserRole.COMPANY_ADMIN;
@@ -58,22 +61,22 @@ export default async function CompanyClientPage({
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-2xl font-extrabold text-[var(--text)]">{membership.user.name}</h2>
-                  {membership.rewardAvailable ? <StatusPill tone="warning">Подарок доступен</StatusPill> : <StatusPill tone="success">Активный клиент</StatusPill>}
+                  {!isCashback && membership.rewardAvailable ? <StatusPill tone="warning">Подарок доступен</StatusPill> : <StatusPill tone="success">Активный клиент</StatusPill>}
                 </div>
                 <p className="mt-1 text-sm text-[var(--text-muted)]">{displayPhone}</p>
                 <p className="mt-2 text-sm text-[var(--text)]">Последняя покупка: {formatDateTime(lastPurchase?.createdAt ?? membership.lastActionAt)}</p>
               </div>
               <div className="rounded-xl bg-white p-3 text-sm font-semibold text-[var(--text)] sm:w-64">
-                <p>Текущий подарок</p>
-                <p className="mt-1 text-[var(--text-muted)]">{membership.pendingReward ?? program.rewardTitle}</p>
+                <p>{isCashback ? "Баланс кешбэка" : "Текущий подарок"}</p>
+                <p className="mt-1 text-[var(--text-muted)]">{isCashback ? formatKopeks(membership.cashbackBalanceKopeks) : membership.pendingReward ?? program.rewardTitle}</p>
               </div>
             </div>
           </WorkspaceCard>
 
           <div className="grid gap-3 sm:grid-cols-3">
             <KpiCard label="Покупок" value={membership.totalPurchases} />
-            <KpiCard label="Подарков" value={membership.totalRewards} />
-            <KpiCard label="Прогресс" value={`${membership.currentCount}/${program.goalCount}`} />
+            <KpiCard label={isCashback ? "Кешбэк" : "Подарков"} value={isCashback ? `${program.cashbackPercentBasisPoints / 100}%` : membership.totalRewards} />
+            <KpiCard label={isCashback ? "Баланс" : "Прогресс"} value={isCashback ? formatKopeks(membership.cashbackBalanceKopeks) : `${membership.currentCount}/${program.goalCount}`} />
           </div>
 
           <WorkspaceCard className="xl:hidden">
@@ -83,50 +86,27 @@ export default async function CompanyClientPage({
               <input type="hidden" name="returnTo" value={`/company/client/${membership.id}`} />
               <h2 className="text-xl font-extrabold text-[var(--text)]">Начислить покупку</h2>
               <p className="mt-1 text-sm text-[var(--text-muted)]">Если клиент без телефона, начислите покупку по найденной карточке.</p>
-              <label className="mt-4 block">
-                <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Покупок</span>
-                <input
-                  type="number"
-                  name="quantity"
-                  min={1}
-                  max={DAILY_PURCHASE_LIMIT_PER_CUSTOMER}
-                  defaultValue={1}
-                  className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
-                />
-              </label>
-              <label className="mt-4 block">
-                <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Сумма покупки</span>
-                <input
-                  name="purchaseAmount"
-                  inputMode="decimal"
-                  placeholder="Например, 450"
-                  required={Boolean(activeRaffle)}
-                  className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
-                />
-              </label>
-              <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
-                {activeRaffle
-                  ? `Для розыгрыша «${activeRaffle.title}» нужен чек от ${formatKopeks(activeRaffle.minPurchaseAmountKopeks)}.`
-                  : "Если активного розыгрыша нет, поле можно оставить пустым."}
-              </p>
               <div className="mt-4">
-                <ConfirmSubmit
+                <PurchaseControls
+                  maxQuantity={DAILY_PURCHASE_LIMIT_PER_CUSTOMER}
+                  activeRaffle={activeRaffle}
                   title="Начислить покупку?"
                   confirmText="Подтвердите, что клиент совершил покупку сейчас. Повторное начисление одному клиенту временно блокируется сервером."
-                  buttonText="Начислить покупку"
+                  buttonText={isCashback ? "Провести покупку" : "Начислить покупку"}
+                  cashback={isCashback ? { balanceKopeks: membership.cashbackBalanceKopeks, percentBasisPoints: program.cashbackPercentBasisPoints } : null}
                 />
               </div>
             </form>
           </WorkspaceCard>
 
-          <ProgressIcons icon={program.icon} current={membership.currentCount} goal={program.goalCount} rewardAvailable={membership.rewardAvailable} rewardTitle={membership.pendingReward ?? program.rewardTitle} />
+          {!isCashback && <ProgressIcons icon={program.icon} current={membership.currentCount} goal={program.goalCount} rewardAvailable={membership.rewardAvailable} rewardTitle={membership.pendingReward ?? program.rewardTitle} />}
 
           <section>
             <h2 className="mb-3 text-xl font-extrabold text-[var(--text)]">История операций</h2>
             <HistoryList transactions={membership.transactions} />
           </section>
 
-          <WorkspaceCard>
+          {!isCashback && <WorkspaceCard>
             <h2 className="text-xl font-extrabold text-[var(--text)]">Подарки клиента</h2>
             <div className="mt-4 divide-y divide-[var(--border)]">
               {membership.rewardClaims.map((claim) => (
@@ -150,7 +130,7 @@ export default async function CompanyClientPage({
               ))}
               {membership.rewardClaims.length === 0 && <p className="py-3 text-sm text-[var(--text-muted)]">Подарков пока нет.</p>}
             </div>
-          </WorkspaceCard>
+          </WorkspaceCard>}
         </div>
 
         <aside className="space-y-4">
@@ -159,7 +139,7 @@ export default async function CompanyClientPage({
             <div className="mt-4 space-y-3 text-sm text-[var(--text-muted)]">
               <p><span className="font-bold text-[var(--text)]">Телефон:</span> {displayPhone}</p>
               <p><span className="font-bold text-[var(--text)]">Всего покупок:</span> {membership.totalPurchases}</p>
-              <p><span className="font-bold text-[var(--text)]">Подарков:</span> {membership.totalRewards}</p>
+              <p><span className="font-bold text-[var(--text)]">{isCashback ? "Баланс:" : "Подарков:"}</span> {isCashback ? formatKopeks(membership.cashbackBalanceKopeks) : membership.totalRewards}</p>
             </div>
           </WorkspaceCard>
 
@@ -170,37 +150,14 @@ export default async function CompanyClientPage({
               <input type="hidden" name="returnTo" value={`/company/client/${membership.id}`} />
               <h2 className="text-xl font-extrabold text-[var(--text)]">Начислить покупку</h2>
               <p className="mt-1 text-sm text-[var(--text-muted)]">Для владельца: начисление без перехода в сканер.</p>
-              <label className="mt-4 block">
-                <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Покупок</span>
-                <input
-                  type="number"
-                  name="quantity"
-                  min={1}
-                  max={DAILY_PURCHASE_LIMIT_PER_CUSTOMER}
-                  defaultValue={1}
-                  className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
-                />
-              </label>
-              <label className="mt-4 block">
-                <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Сумма покупки</span>
-                <input
-                  name="purchaseAmount"
-                  inputMode="decimal"
-                  placeholder="Например, 450"
-                  required={Boolean(activeRaffle)}
-                  className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-sm text-[var(--text)] outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
-                />
-              </label>
-              <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">
-                {activeRaffle
-                  ? `Для розыгрыша «${activeRaffle.title}» нужен чек от ${formatKopeks(activeRaffle.minPurchaseAmountKopeks)}.`
-                  : "Если активного розыгрыша нет, поле можно оставить пустым."}
-              </p>
               <div className="mt-4">
-                <ConfirmSubmit
+                <PurchaseControls
+                  maxQuantity={DAILY_PURCHASE_LIMIT_PER_CUSTOMER}
+                  activeRaffle={activeRaffle}
                   title="Начислить покупку?"
                   confirmText="Подтвердите, что клиент совершил покупку сейчас. Повторное начисление одному клиенту временно блокируется сервером."
-                  buttonText="Начислить покупку"
+                  buttonText={isCashback ? "Провести покупку" : "Начислить покупку"}
+                  cashback={isCashback ? { balanceKopeks: membership.cashbackBalanceKopeks, percentBasisPoints: program.cashbackPercentBasisPoints } : null}
                 />
               </div>
             </form>

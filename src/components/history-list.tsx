@@ -1,5 +1,6 @@
 import type { LoyaltyTransaction, User } from "@prisma/client";
 import { formatDateTime, operationLabel } from "@/lib/format";
+import { formatKopeks } from "@/lib/raffles";
 
 type TransactionWithCashier = LoyaltyTransaction & {
   cashier: Pick<User, "id" | "name">;
@@ -36,11 +37,21 @@ export function HistoryList({
               </div>
               <p className="text-right text-xs font-semibold text-[var(--text-muted)]">{formatDateTime(transaction.createdAt)}</p>
             </div>
-            <p className="mt-3 font-mono text-xs text-[var(--text-muted)]">
-              {transaction.countBefore} {"->"} {transaction.countAfter}
-              {quantity > 1 ? ` · +${quantity}` : ""}
-              {transaction.rewardTitle ? ` · ${transaction.rewardTitle}` : ""}
-            </p>
+            {transaction.purchaseAmountKopeks !== null ? (
+              <div className="mt-3 grid gap-1 text-xs font-semibold text-[var(--text-muted)] sm:grid-cols-2">
+                <p>Чек: {formatKopeks(transaction.purchaseAmountKopeks)}</p>
+                <p>Оплачено: {formatKopeks(transaction.paidAmountKopeks ?? transaction.purchaseAmountKopeks)}</p>
+                <p className="text-emerald-800">+Кешбэк: {formatKopeks(transaction.cashbackEarnedKopeks ?? 0)}</p>
+                {(transaction.cashbackRedeemedKopeks ?? 0) > 0 && <p className="text-amber-800">Списано: {formatKopeks(transaction.cashbackRedeemedKopeks ?? 0)}</p>}
+                <p className="sm:col-span-2">Баланс после операции: {formatKopeks(transaction.balanceAfterKopeks ?? 0)}</p>
+              </div>
+            ) : (
+              <p className="mt-3 font-mono text-xs text-[var(--text-muted)]">
+                {transaction.countBefore} {"->"} {transaction.countAfter}
+                {quantity > 1 ? ` · +${quantity}` : ""}
+                {transaction.rewardTitle ? ` · ${transaction.rewardTitle}` : ""}
+              </p>
+            )}
           </div>
         );
       })}

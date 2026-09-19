@@ -1,6 +1,7 @@
 import { HomeScenarios, type PartnerPreview } from "@/components/home-scenarios";
 import { getCurrentUser, getUserHomePath } from "@/lib/auth";
 import { getActivePartnerCompanies } from "@/lib/customer-app";
+import { isCashbackProgram } from "@/lib/cashback";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
@@ -24,7 +25,9 @@ export default async function Home() {
     name: company.name,
     type: company.businessType,
     address: [company.city, company.address].filter(Boolean).join(", "),
-    promo: company.loyaltyProgram?.rewardDescription || `${company.loyaltyProgram?.goalCount ?? 6} покупок - подарок`,
+    promo: isCashbackProgram(company.loyaltyProgram)
+      ? `${(company.loyaltyProgram?.cashbackPercentBasisPoints ?? 0) / 100}% кешбэка на баланс`
+      : company.loyaltyProgram?.rewardDescription || `${company.loyaltyProgram?.goalCount ?? 6} покупок - подарок`,
     href: `/c/${company.slug}`,
     icon: company.loyaltyProgram?.icon ?? company.icon,
   }));

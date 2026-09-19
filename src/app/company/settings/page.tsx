@@ -125,7 +125,7 @@ export default async function CompanySettingsPage({
         </div>
       </WorkspaceCard>
 
-      <form action={saveCompanySettings} className="space-y-6" encType="multipart/form-data">
+      <form action={saveCompanySettings} className="space-y-6">
         <input type="hidden" name="logoUrl" value={access.company.logoUrl ?? ""} />
         <input type="hidden" name="currentCardBackgroundUrl" value={access.company.cardBackgroundUrl ?? ""} />
 
@@ -167,9 +167,13 @@ export default async function CompanySettingsPage({
             <ProgramTypeSettings
               defaultProgramType={program?.programType ?? "CLASSIC_REWARD"}
               giftOptionsDefaultValue={giftOptions.length > 0 ? giftOptions.map((gift) => gift.title).join("\n") : ""}
+              cashbackPercentDefaultValue={String((program?.cashbackPercentBasisPoints ?? 200) / 100)}
               loyaltyLevelsDefaultValue={[]}
             />
             <div className="grid gap-4 sm:grid-cols-2">
+              <p className="sm:col-span-2 rounded-xl bg-[var(--background)] p-3 text-xs font-semibold leading-5 text-[var(--text-muted)]">
+                Поля ниже используются для подарочных программ. В режиме «Кешбэк» расчёт идёт по проценту, указанному выше.
+              </p>
               <FormField label="Количество шагов" name="goalCount" type="number" defaultValue={defaults.goalCount} />
               <FormField label="Название подарка" name="rewardTitle" defaultValue={defaults.rewardTitle} />
               <div className="sm:col-span-2">

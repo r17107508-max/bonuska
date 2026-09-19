@@ -1,4 +1,4 @@
-import { CompanyStatus, Prisma } from "@prisma/client";
+import { CompanyStatus, LoyaltyProgramType, Prisma } from "@prisma/client";
 import { getDb } from "@/lib/db";
 import { publicCompanySelect } from "@/lib/api";
 import { enforceCompaniesRatingStatus, getCompanyRatingSummaries } from "@/lib/company-reviews";
@@ -16,6 +16,7 @@ const clientMembershipSelect = {
   levelReachedAt: true,
   rewardAvailable: true,
   pendingReward: true,
+  cashbackBalanceKopeks: true,
   lastActionAt: true,
   createdAt: true,
   updatedAt: true,
@@ -66,7 +67,7 @@ export function rewardLeft(membership: RewardProgressMembership) {
 
 export function pickNearestGift(memberships: (ClientMembership | ClientDashboardMembership)[]) {
   return [...memberships]
-    .filter((membership) => membership.company.loyaltyProgram)
+    .filter((membership) => membership.company.loyaltyProgram?.programType !== LoyaltyProgramType.CASHBACK)
     .sort((a, b) => {
       if (a.rewardAvailable && !b.rewardAvailable) return -1;
       if (!a.rewardAvailable && b.rewardAvailable) return 1;

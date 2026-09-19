@@ -8,6 +8,7 @@ import { FormField } from "@/components/form-field";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
+import { formatCashbackPercent, isCashbackProgram } from "@/lib/cashback";
 
 export default async function PublicCompanyPage({
   params,
@@ -50,7 +51,11 @@ export default async function PublicCompanyPage({
               <div>
                 <p className="text-sm font-semibold opacity-80">{company.businessType}</p>
                 <h1 className="mt-1 text-3xl font-semibold">{company.name}</h1>
-                <p className="mt-4 text-lg font-medium">{company.loyaltyProgram.rewardDescription}</p>
+                <p className="mt-4 text-lg font-medium">
+                  {isCashbackProgram(company.loyaltyProgram)
+                    ? `${formatCashbackPercent(company.loyaltyProgram.cashbackPercentBasisPoints)}% кешбэка на баланс с каждой покупки`
+                    : company.loyaltyProgram.rewardDescription}
+                </p>
               </div>
               <span className="text-5xl">{company.loyaltyProgram.icon}</span>
             </div>

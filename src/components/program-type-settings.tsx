@@ -23,6 +23,11 @@ const programDescriptions = {
     scheme: "Покупки -> скидка доступна -> кассир применяет скидку -> прогресс сбрасывается",
     description: "Используйте название подарка и описание для размера скидки, например «Скидка 15%».",
   },
+  CASHBACK: {
+    label: "Кешбэк на баланс",
+    scheme: "Сумма чека -> кешбэк -> списание как скидки",
+    description: "Клиент получает процент от оплаченной суммы на баланс и может списать его при следующей покупке.",
+  },
 } as const;
 
 type ProgramType = keyof typeof programDescriptions;
@@ -32,14 +37,17 @@ const availableProgramTypes: ProgramType[] = [
   "COLLECT_AND_REWARD",
   "GIFT_BOX",
   "DISCOUNT_AFTER_N",
+  "CASHBACK",
 ];
 
 export function ProgramTypeSettings({
   defaultProgramType,
   giftOptionsDefaultValue,
+  cashbackPercentDefaultValue,
 }: {
   defaultProgramType: string;
   giftOptionsDefaultValue: string;
+  cashbackPercentDefaultValue: string;
   loyaltyLevelsDefaultValue: unknown[];
 }) {
   const initialProgramType = availableProgramTypes.includes(defaultProgramType as ProgramType)
@@ -52,7 +60,7 @@ export function ProgramTypeSettings({
       <input type="hidden" name="programType" value={programType} />
       <div>
         <p className="text-sm font-bold text-[var(--text)]">Тип программы</p>
-        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {availableProgramTypes.map((type) => {
             const selected = type === programType;
             const item = programDescriptions[type];
@@ -88,6 +96,29 @@ export function ProgramTypeSettings({
             className="mt-1.5 w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 text-base leading-6 text-[var(--text)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
           />
           <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">Поле сохраняется только для механики «Коробка с подарком».</span>
+        </label>
+      )}
+
+      {programType === "CASHBACK" && (
+        <label className="block max-w-md">
+          <span className="text-sm font-bold text-[var(--text)]">Процент кешбэка</span>
+          <div className="relative mt-1.5">
+            <input
+              name="cashbackPercent"
+              type="number"
+              min="0.01"
+              max="100"
+              step="0.01"
+              required
+              defaultValue={cashbackPercentDefaultValue}
+              inputMode="decimal"
+              className="min-h-12 w-full rounded-xl border border-[var(--border)] bg-white px-3 pr-10 text-base font-semibold text-[var(--text)] outline-none transition focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-bold text-[var(--text-muted)]">%</span>
+          </div>
+          <span className="mt-1 block text-xs font-semibold leading-5 text-[var(--text-muted)]">
+            Кешбэк начисляется на сумму, которую клиент оплатил деньгами после списания с баланса.
+          </span>
         </label>
       )}
     </div>

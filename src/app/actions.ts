@@ -21,6 +21,10 @@ import {
   requireSuperadmin,
 } from "@/lib/auth";
 import { cleanHexColor, saveCompanyDesignImage } from "@/lib/company-design";
+import {
+  DEFAULT_CASHBACK_PERCENT_BASIS_POINTS,
+  parseCashbackPercentToBasisPoints,
+} from "@/lib/cashback";
 import { getDb } from "@/lib/db";
 import { enforceCompanyRatingStatus } from "@/lib/company-reviews";
 import {
@@ -44,7 +48,7 @@ import {
   recordSuspiciousLoyaltyAttempt,
 } from "@/lib/loyalty";
 import { getMailConfigStatus, notifyCompanyApplicationReceived, notifyCompanyApproved, notifyPasswordResetSupportRequest, notifySuperadminsAboutCompanyApplication, sendPasswordResetEmail } from "@/lib/notifications";
-import { finalizeRaffle, parseRublesToKopeks } from "@/lib/raffles";
+import { finalizeRaffle, formatKopeks, parseRublesToKopeks } from "@/lib/raffles";
 import { getSettings } from "@/lib/settings";
 import {
   createUserWithUniquePhone,
@@ -821,6 +825,7 @@ export async function saveCompanySettings(formData: FormData) {
   const cardBackgroundMode = text(formData, "cardBackgroundMode") === "PHOTO" ? "PHOTO" : "SOLID";
   const cardBackgroundUrl = uploadedCardBackgroundUrl ?? submittedCardBackgroundUrl ?? currentCardBackgroundUrl;
   const programType = text(formData, "programType") as LoyaltyProgramType;
+  let cashbackPercentBasisPoints = DEFAULT_CASHBACK_PERCENT_BASIS_POINTS;
   const gifts = text(formData, "giftOptions")
     .split("\n")
     .map((item) => item.trim())
@@ -836,6 +841,14 @@ export async function saveCompanySettings(formData: FormData) {
 
   if (programType === LoyaltyProgramType.GIFT_BOX && gifts.length === 0) {
     errorRedirect("/company/settings", "Для режима «Коробка с подарком» нужно указать хотя бы один подарок");
+  }
+
+  if (programType === LoyaltyProgramType.CASHBACK) {
+    try {
+      cashbackPercentBasisPoints = parseCashbackPercentToBasisPoints(formData.get("cashbackPercent"));
+    } catch (error) {
+      errorRedirect("/company/settings", error instanceof Error ? error.message : "Неверно указан процент кешбэка");
+    }
   }
 
   await getDb().$transaction(async (tx) => {
@@ -867,6 +880,7 @@ export async function saveCompanySettings(formData: FormData) {
               goalCount,
               rewardTitle: text(formData, "rewardTitle"),
               rewardDescription: text(formData, "rewardDescription"),
+              cashbackPercentBasisPoints,
               themeColor: text(formData, "themeColor") || "#0f766e",
               isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
             },
@@ -876,6 +890,7 @@ export async function saveCompanySettings(formData: FormData) {
               goalCount,
               rewardTitle: text(formData, "rewardTitle"),
               rewardDescription: text(formData, "rewardDescription"),
+              cashbackPercentBasisPoints,
               themeColor: text(formData, "themeColor") || "#0f766e",
               isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
             },
@@ -1211,9 +1226,10 @@ export async function confirmPurchase(formData: FormData) {
   const returnTo = safeCompanyReturnPath(text(formData, "returnTo"), fallbackPath);
   const quantity = numberValue(formData, "quantity", 1);
   const purchaseAmountKopeks = parseRublesToKopeks(formData.get("purchaseAmount"));
+  const redeemAmountKopeks = parseRublesToKopeks(formData.get("redeemAmount"));
   let successMessage = "Начислено";
   try {
-    const result = await addPurchase(access.companyId, membershipId, access.userId, quantity, purchaseAmountKopeks);
+    const result = await addPurchase(access.companyId, membershipId, access.userId, quantity, purchaseAmountKopeks, redeemAmountKopeks);
     successMessage = purchaseSuccessMessage(result);
   } catch (error) {
     const suspiciousReason = getSuspiciousLoyaltyReason(error);
@@ -1241,6 +1257,7 @@ export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) 
   const token = text(formData, "token");
   const quantity = numberValue(formData, "quantity", 1);
   const purchaseAmountKopeks = parseRublesToKopeks(formData.get("purchaseAmount"));
+  const redeemAmountKopeks = parseRublesToKopeks(formData.get("redeemAmount"));
   let membershipIdForLog = "";
   let successMessage = "Клиент подключён, покупка начислена";
 
@@ -1255,7 +1272,7 @@ export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) 
 
     const membership = await joinCompanyProgram(access.companyId, customer.id, access.userId);
     membershipIdForLog = membership.id;
-    const result = await addPurchase(access.companyId, membership.id, access.userId, quantity, purchaseAmountKopeks);
+    const result = await addPurchase(access.companyId, membership.id, access.userId, quantity, purchaseAmountKopeks, redeemAmountKopeks);
     successMessage = `Клиент подключён. ${purchaseSuccessMessage(result)}`;
   } catch (error) {
     const suspiciousReason = getSuspiciousLoyaltyReason(error);
@@ -1278,6 +1295,16 @@ export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) 
 }
 
 function purchaseSuccessMessage(result: Awaited<ReturnType<typeof addPurchase>>) {
+  if ("cashbackEarnedKopeks" in result) {
+    const parts = [
+      `Начислено ${formatKopeks(result.cashbackEarnedKopeks)}`,
+      result.cashbackRedeemedKopeks > 0 ? `Списано ${formatKopeks(result.cashbackRedeemedKopeks)}` : null,
+      `Баланс ${formatKopeks(result.balanceAfterKopeks)}`,
+    ].filter(Boolean);
+    const base = parts.join(". ");
+    return result.raffleTicket ? `${base}. Номер для розыгрыша: ${result.raffleTicket.number}` : base;
+  }
+
   const base = result.levelUp
     ? `🎉 Клиент достиг нового уровня: ${result.levelUp.name}`
     : result.rewardAvailable

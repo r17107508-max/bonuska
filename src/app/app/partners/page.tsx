@@ -6,6 +6,7 @@ import { PartnersBrowser } from "@/components/partners-browser";
 import { PartnersMap } from "@/components/partners-map";
 import { getActivePartnerCompanies, getPartnerCategories, getPartnerCities } from "@/lib/customer-app";
 import { requireUser } from "@/lib/auth";
+import { isCashbackProgram } from "@/lib/cashback";
 
 export default async function PartnersPage({
   searchParams,
@@ -144,7 +145,9 @@ export default async function PartnersPage({
             logoUrl: company.logoUrl,
             icon: company.icon,
             programIcon: company.loyaltyProgram?.icon ?? null,
-            promoText: company.loyaltyProgram?.rewardDescription || `${company.loyaltyProgram?.goalCount ?? 6} покупок - подарок`,
+            promoText: isCashbackProgram(company.loyaltyProgram)
+              ? `${(company.loyaltyProgram?.cashbackPercentBasisPoints ?? 0) / 100}% кешбэка на баланс`
+              : company.loyaltyProgram?.rewardDescription || `${company.loyaltyProgram?.goalCount ?? 6} покупок - подарок`,
             latitude: company.latitude,
             longitude: company.longitude,
             ratingAverage: company.ratingAverage,

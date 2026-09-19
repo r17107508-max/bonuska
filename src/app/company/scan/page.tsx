@@ -8,10 +8,12 @@ import { CompanyScanSearch } from "@/components/company-scan-search";
 import { QrScanner } from "@/components/scanner";
 import { HistoryList } from "@/components/history-list";
 import { ProgressIcons } from "@/components/progress-cups";
+import { PurchaseControls } from "@/components/purchase-controls";
 import { StatusPill, WorkspaceCard, maskPhone } from "@/components/company-ui";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDateTime, statusLabel } from "@/lib/format";
+import { isCashbackProgram } from "@/lib/cashback";
 import { DAILY_PURCHASE_LIMIT_PER_CUSTOMER, findCustomerForGlobalScan, findMembershipForScan, findRewardClaimForScan, hasActiveAccess, isGiftBoxProgram, refreshCompanySubscription } from "@/lib/loyalty";
 import { formatKopeks, getActiveCompanyRaffle } from "@/lib/raffles";
 
@@ -55,7 +57,7 @@ export default async function CompanyScanPage({
         orderBy: [{ openedAt: "desc" }, { createdAt: "desc" }],
       })
     : null;
-  const purchaseQuantityMax = membership && membership.company.loyaltyProgram && !membership.rewardAvailable
+  const purchaseQuantityMax = membership && membership.company.loyaltyProgram && (!membership.rewardAvailable || isCashbackProgram(membership.company.loyaltyProgram))
     ? await getAvailablePurchaseQuantity({
         companyId: access.companyId,
         membershipId: membership.id,
@@ -120,6 +122,10 @@ export default async function CompanyScanPage({
                     title="Подключить клиента?"
                     confirmText="Клиент будет подключён к программе вашей компании. После подтверждения выбранное количество покупок будет начислено сразу."
                     buttonText="Подключить и начислить"
+                    cashback={isCashbackProgram(access.company.loyaltyProgram) ? {
+                      balanceKopeks: 0,
+                      percentBasisPoints: access.company.loyaltyProgram!.cashbackPercentBasisPoints,
+                    } : null}
                   />
                 </div>
               </form>
@@ -137,20 +143,24 @@ export default async function CompanyScanPage({
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-2xl font-extrabold text-[var(--text)]">{membership.user.name}</h2>
-                        {membership.rewardAvailable && <StatusPill tone="warning">Подарок доступен</StatusPill>}
+                        {!isCashbackProgram(membership.company.loyaltyProgram) && membership.rewardAvailable && <StatusPill tone="warning">Подарок доступен</StatusPill>}
                       </div>
                       <p className="mt-1 text-sm text-[var(--text-muted)]">{isCashier ? maskPhone(membership.user.phone) : membership.user.phone}</p>
                       <p className="mt-2 text-sm text-[var(--text)]">
-                        Прогресс: {membership.currentCount} из {membership.company.loyaltyProgram.goalCount}
+                        {isCashbackProgram(membership.company.loyaltyProgram)
+                          ? `Баланс: ${formatKopeks(membership.cashbackBalanceKopeks)}`
+                          : `Прогресс: ${membership.currentCount} из ${membership.company.loyaltyProgram.goalCount}`}
                         {" · "}
                         Последняя покупка: {formatDateTime(membership.lastActionAt)}
                       </p>
                     </div>
                   </div>
                   <div className="rounded-xl bg-white p-3 text-sm font-semibold text-[var(--text)] lg:w-64">
-                    <p>Доступный подарок</p>
+                    <p>{isCashbackProgram(membership.company.loyaltyProgram) ? "Кешбэк" : "Доступный подарок"}</p>
                     <p className="mt-1 text-[var(--text-muted)]">
-                      {membership.rewardAvailable ? membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle : "Пока недоступен"}
+                      {isCashbackProgram(membership.company.loyaltyProgram)
+                        ? `${membership.company.loyaltyProgram.cashbackPercentBasisPoints / 100}% от оплаченной суммы`
+                        : membership.rewardAvailable ? membership.pendingReward ?? membership.company.loyaltyProgram.rewardTitle : "Пока недоступен"}
                     </p>
                   </div>
                 </div>
@@ -167,7 +177,7 @@ export default async function CompanyScanPage({
                 />
               )}
 
-              <ProgressIcons
+              {!isCashbackProgram(membership.company.loyaltyProgram) && <ProgressIcons
                 icon={membership.company.loyaltyProgram.icon}
                 current={membership.currentCount}
                 goal={membership.company.loyaltyProgram.goalCount}
@@ -181,7 +191,7 @@ export default async function CompanyScanPage({
                       : "Клиент должен открыть коробку в приложении и показать подарочный QR."
                     : undefined
                 }
-              />
+              />}
 
               <section>
                 <h2 className="mb-3 text-xl font-extrabold text-[var(--text)]">Последние операции</h2>
@@ -218,7 +228,7 @@ export default async function CompanyScanPage({
               <p className="text-sm text-[var(--text-muted)]">Если QR не сканируется, найдите клиента по имени или телефону.</p>
             </div>
             <div className="mt-4 space-y-4">
-              <CompanyScanSearch initialQuery={q} />
+              <CompanyScanSearch initialQuery={q} requirePurchaseAmount={isCashbackProgram(access.company.loyaltyProgram)} />
 
               <form action="/company/scan" method="get" className="grid gap-3 sm:grid-cols-[1fr_auto]">
                 <input type="hidden" name="source" value="manual" />
@@ -301,6 +311,9 @@ function MembershipActionCard({
 }) {
   const program = membership.company.loyaltyProgram;
   if (!program) return null;
+  const cashback = isCashbackProgram(program)
+    ? { balanceKopeks: membership.cashbackBalanceKopeks, percentBasisPoints: program.cashbackPercentBasisPoints }
+    : null;
 
   return (
     <WorkspaceCard>
@@ -310,9 +323,9 @@ function MembershipActionCard({
         <p className="mt-1">Операция будет записана на сервере. Защита от повторного начисления остаётся серверной.</p>
       </div>
       <div className="mt-4">
-        {membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
+        {!cashback && membership.rewardAvailable && scannedMembershipUsesGiftBox && openedRewardClaim ? (
           <OpenedGiftClaim openedRewardClaim={openedRewardClaim} />
-        ) : membership.rewardAvailable ? (
+        ) : !cashback && membership.rewardAvailable ? (
           <form action={giveReward}>
             <input type="hidden" name="membershipId" value={membership.id} />
             <input type="hidden" name="token" value={token} />
@@ -341,6 +354,7 @@ function MembershipActionCard({
               title="Начислить покупку?"
               confirmText="Проверьте количество покупок в чеке. После подтверждения операция будет начислена сразу."
               buttonText="Начислить покупку"
+              cashback={cashback}
             />
           </form>
         )}
@@ -398,61 +412,6 @@ async function getAvailablePurchaseQuantity({
   const dailyRemaining = Math.max(DAILY_PURCHASE_LIMIT_PER_CUSTOMER - (purchasesToday._sum.quantity ?? 0), 0);
 
   return Math.min(DAILY_PURCHASE_LIMIT_PER_CUSTOMER, dailyRemaining);
-}
-
-function PurchaseControls({
-  maxQuantity,
-  activeRaffle,
-  title,
-  confirmText,
-  buttonText,
-}: {
-  maxQuantity: number;
-  activeRaffle: Awaited<ReturnType<typeof getActiveCompanyRaffle>>;
-  title: string;
-  confirmText: string;
-  buttonText: string;
-}) {
-  if (maxQuantity <= 0) {
-    return (
-      <div className="rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">
-        Сейчас этому клиенту нельзя начислить ещё покупки: достигнут дневной лимит или уже доступен подарок.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <label className="block">
-        <span className="mb-1 block text-sm font-bold text-[var(--text)]">Покупок в чеке</span>
-        <input
-          type="number"
-          name="quantity"
-          min={1}
-          max={maxQuantity}
-          defaultValue={1}
-          inputMode="numeric"
-          className="min-h-12 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-base font-semibold text-[var(--text)] outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
-        />
-        <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">Доступно сейчас: до {maxQuantity}</span>
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-sm font-bold text-[var(--text)]">Сумма покупки</span>
-        <input
-          name="purchaseAmount"
-          inputMode="decimal"
-          placeholder="Например, 450"
-          className="min-h-12 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-base font-semibold text-[var(--text)] outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
-        />
-        <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">
-          {activeRaffle
-            ? `Для участия в розыгрыше «${activeRaffle.title}» нужен чек от ${formatKopeks(activeRaffle.minPurchaseAmountKopeks)}. Без суммы покупка всё равно начислится, но билет не создастся.`
-            : "Поле можно оставить пустым: покупка начислится без суммы чека."}
-        </span>
-      </label>
-      <ConfirmSubmit title={title} confirmText={confirmText} buttonText={buttonText} />
-    </div>
-  );
 }
 
 function Notice({ tone, text }: { tone: "success" | "danger"; text: string }) {

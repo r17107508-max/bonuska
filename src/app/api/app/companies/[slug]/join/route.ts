@@ -39,6 +39,7 @@ export async function POST(
       totalRewards: true,
       rewardAvailable: true,
       pendingReward: true,
+      cashbackBalanceKopeks: true,
       lastActionAt: true,
       createdAt: true,
       updatedAt: true,

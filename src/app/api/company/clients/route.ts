@@ -18,6 +18,7 @@ export async function GET() {
       levelReachedAt: true,
       rewardAvailable: true,
       pendingReward: true,
+      cashbackBalanceKopeks: true,
       lastActionAt: true,
       createdAt: true,
       updatedAt: true,

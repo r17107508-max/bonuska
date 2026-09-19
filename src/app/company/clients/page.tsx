@@ -7,7 +7,9 @@ import { ConfirmSubmit } from "@/components/confirm-submit";
 import { EmptyCompanyState, maskPhone, SegmentedLinks, StatusPill } from "@/components/company-ui";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { isCashbackProgram } from "@/lib/cashback";
 import { formatDateTime, phoneLookupValues } from "@/lib/format";
+import { formatKopeks } from "@/lib/raffles";
 
 const pageSize = 30;
 
@@ -24,6 +26,7 @@ export default async function CompanyClientsPage({
   const page = Math.max(Number(params.page ?? 1), 1);
   const phoneValues = phoneLookupValues(q);
   const goalCount = access.company.loyaltyProgram?.goalCount ?? 6;
+  const isCashback = isCashbackProgram(access.company.loyaltyProgram);
   const nearRewardStart = Math.max(goalCount - 1, 1);
   const activeSince = new Date();
   activeSince.setDate(activeSince.getDate() - 30);
@@ -70,7 +73,7 @@ export default async function CompanyClientsPage({
   const currentHref = currentParams.toString() ? `/company/clients?${currentParams}` : "/company/clients";
 
   return (
-    <AdminShell title="Клиенты" subtitle="Поиск, фильтры, прогресс до подарка и история операций." nav={companyNavForRole(access.role)}>
+    <AdminShell title="Клиенты" subtitle={isCashback ? "Поиск, баланс кешбэка и история операций." : "Поиск, фильтры, прогресс до подарка и история операций."} nav={companyNavForRole(access.role)}>
       {clientsTotal === 0 ? (
         <EmptyCompanyState
           image="empty-clients"
@@ -96,8 +99,8 @@ export default async function CompanyClientsPage({
                 <option value="all">Все</option>
                 <option value="active">Активные</option>
                 <option value="sleeping">Спящие</option>
-                <option value="near">Близко к подарку</option>
-                <option value="reward">Подарок доступен</option>
+                {!isCashback && <option value="near">Близко к подарку</option>}
+                {!isCashback && <option value="reward">Подарок доступен</option>}
               </select>
             </label>
             <label className="block">
@@ -120,8 +123,10 @@ export default async function CompanyClientsPage({
                 { value: "all", label: "Все", href: clientsHref(q, "all", sort) },
                 { value: "active", label: "Активные", href: clientsHref(q, "active", sort) },
                 { value: "sleeping", label: "Спящие", href: clientsHref(q, "sleeping", sort) },
-                { value: "near", label: "Близко к подарку", href: clientsHref(q, "near", sort) },
-                { value: "reward", label: "Подарок доступен", href: clientsHref(q, "reward", sort) },
+                ...(!isCashback ? [
+                  { value: "near", label: "Близко к подарку", href: clientsHref(q, "near", sort) },
+                  { value: "reward", label: "Подарок доступен", href: clientsHref(q, "reward", sort) },
+                ] : []),
               ]}
             />
           </div>
@@ -132,7 +137,7 @@ export default async function CompanyClientsPage({
             <>
               <div className="grid gap-3 lg:hidden">
                 {clients.map((client) => (
-                  <ClientCard key={client.id} client={client} goalCount={goalCount} canSeePhone={canSeePhone} activeSince={activeSince} returnTo={currentHref} />
+                  <ClientCard key={client.id} client={client} goalCount={goalCount} canSeePhone={canSeePhone} activeSince={activeSince} returnTo={currentHref} isCashback={isCashback} />
                 ))}
               </div>
 
@@ -142,9 +147,9 @@ export default async function CompanyClientsPage({
                     <tr>
                       <th className="px-4 py-3">Клиент</th>
                       <th className="px-4 py-3">Телефон</th>
-                      <th className="px-4 py-3">Прогресс</th>
+                      <th className="px-4 py-3">{isCashback ? "Баланс" : "Прогресс"}</th>
                       <th className="px-4 py-3">Покупок</th>
-                      <th className="px-4 py-3">Подарков</th>
+                      <th className="px-4 py-3">{isCashback ? "Ставка" : "Подарков"}</th>
                       <th className="px-4 py-3">Последняя операция</th>
                       <th className="px-4 py-3">Действие</th>
                     </tr>
@@ -154,13 +159,13 @@ export default async function CompanyClientsPage({
                       <tr key={client.id} className="bg-white">
                         <td className="px-4 py-3 font-bold text-[var(--text)]">{client.user.name}</td>
                         <td className="px-4 py-3 text-[var(--text-muted)]">{canSeePhone ? client.user.phone : maskPhone(client.user.phone)}</td>
-                        <td className="px-4 py-3 text-[var(--text-muted)]">{client.currentCount}/{goalCount}</td>
+                        <td className="px-4 py-3 text-[var(--text-muted)]">{isCashback ? formatKopeks(client.cashbackBalanceKopeks) : `${client.currentCount}/${goalCount}`}</td>
                         <td className="px-4 py-3 text-[var(--text-muted)]">{client.totalPurchases}</td>
-                        <td className="px-4 py-3 text-[var(--text-muted)]">{client.totalRewards}</td>
+                        <td className="px-4 py-3 text-[var(--text-muted)]">{isCashback ? `${(access.company.loyaltyProgram?.cashbackPercentBasisPoints ?? 0) / 100}%` : client.totalRewards}</td>
                         <td className="px-4 py-3 text-[var(--text-muted)]">{formatDateTime(client.transactions[0]?.createdAt)}</td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap items-center gap-2">
-                            <QuickPurchaseForm membershipId={client.id} qrToken={client.qrToken} returnTo={currentHref} compact />
+                            {!isCashback && <QuickPurchaseForm membershipId={client.id} qrToken={client.qrToken} returnTo={currentHref} compact />}
                             <Link href={`/company/client/${client.id}`} className="font-bold text-[var(--brand-strong)]">Открыть</Link>
                           </div>
                         </td>
@@ -222,6 +227,7 @@ function ClientCard({
   canSeePhone,
   activeSince,
   returnTo,
+  isCashback,
 }: {
   client: {
     id: string;
@@ -230,6 +236,7 @@ function ClientCard({
     currentCount: number;
     totalPurchases: number;
     totalRewards: number;
+    cashbackBalanceKopeks: number;
     rewardAvailable: boolean;
     lastActionAt: Date | null;
     transactions: { createdAt: Date }[];
@@ -238,8 +245,9 @@ function ClientCard({
   canSeePhone: boolean;
   activeSince: Date;
   returnTo: string;
+  isCashback: boolean;
 }) {
-  const status = client.rewardAvailable
+  const status = !isCashback && client.rewardAvailable
     ? { label: "Подарок доступен", tone: "success" as const }
     : client.currentCount >= Math.max(goalCount - 1, 1)
       ? { label: "Близко к подарку", tone: "brand" as const }
@@ -258,12 +266,12 @@ function ClientCard({
       </div>
       <div className="mt-4">
         <div className="flex justify-between text-sm font-semibold text-[var(--text-muted)]">
-          <span>Прогресс до подарка</span>
-          <span>{client.currentCount}/{goalCount}</span>
+          <span>{isCashback ? "Баланс кешбэка" : "Прогресс до подарка"}</span>
+          <span>{isCashback ? formatKopeks(client.cashbackBalanceKopeks) : `${client.currentCount}/${goalCount}`}</span>
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--inactive)]">
+        {!isCashback && <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--inactive)]">
           <div className="h-full rounded-full bg-[var(--brand-strong)]" style={{ width: `${progress}%` }} />
-        </div>
+        </div>}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
         <Small label="Покупок" value={client.totalPurchases} />
@@ -276,7 +284,7 @@ function ClientCard({
     <article className="panel p-4">
       {content}
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <QuickPurchaseForm membershipId={client.id} qrToken={client.qrToken} returnTo={returnTo} />
+        {!isCashback && <QuickPurchaseForm membershipId={client.id} qrToken={client.qrToken} returnTo={returnTo} />}
         <Link href={`/company/client/${client.id}`} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[var(--border)] bg-white px-4 text-sm font-bold text-[var(--brand-strong)]">
           Открыть карточку
         </Link>

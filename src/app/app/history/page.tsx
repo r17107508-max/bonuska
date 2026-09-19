@@ -6,6 +6,7 @@ import { ClientEmptyState, ClientShell, QuickQrButton } from "@/components/clien
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
+import { formatKopeks } from "@/lib/raffles";
 
 type HistoryFilter = "all" | "purchase" | "rewards" | "levels";
 
@@ -96,10 +97,19 @@ export default async function ClientHistoryPage({
                             </time>
                           </div>
                           <p className="mt-2 text-sm leading-5 text-[var(--text-muted)]">
-                            {transaction.type === "LEVEL_UP"
+                            {transaction.purchaseAmountKopeks !== null
+                              ? `Чек: ${formatKopeks(transaction.purchaseAmountKopeks)} · Оплачено: ${formatKopeks(transaction.paidAmountKopeks ?? transaction.purchaseAmountKopeks)}`
+                              : transaction.type === "LEVEL_UP"
                               ? `Покупок всего: ${transaction.countAfter}`
                               : `Прогресс: ${transaction.countAfter} из ${goal}`}
                           </p>
+                          {transaction.cashbackEarnedKopeks !== null && (
+                            <p className="mt-1 text-sm font-bold text-emerald-800">
+                              Начислено: {formatKopeks(transaction.cashbackEarnedKopeks)}
+                              {(transaction.cashbackRedeemedKopeks ?? 0) > 0 ? ` · Списано: ${formatKopeks(transaction.cashbackRedeemedKopeks ?? 0)}` : ""}
+                              {` · Баланс: ${formatKopeks(transaction.balanceAfterKopeks ?? 0)}`}
+                            </p>
+                          )}
                           {transaction.rewardTitle && (
                             <p className="mt-1 text-sm font-bold text-[#7a4b00]">
                               {transaction.type === "LEVEL_UP" ? `Уровень: ${transaction.rewardTitle}` : `Подарок: ${transaction.rewardTitle}`}

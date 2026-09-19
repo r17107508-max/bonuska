@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Gift, MapPinned, QrCode, Store } from "lucide-react";
 import { clsx } from "clsx";
+import { formatKopeks } from "@/lib/raffles";
 
 export function ClientShell({
   children,
@@ -126,6 +127,8 @@ export function ProgramSummaryCard({
   cardBackgroundMode,
   cardSurfaceColor,
   cardTextColor,
+  cashbackBalanceKopeks,
+  cashbackPercentBasisPoints,
 }: {
   href: string;
   companyName: string;
@@ -143,7 +146,10 @@ export function ProgramSummaryCard({
   cardBackgroundMode?: string | null;
   cardSurfaceColor?: string | null;
   cardTextColor?: string | null;
+  cashbackBalanceKopeks?: number | null;
+  cashbackPercentBasisPoints?: number | null;
 }) {
+  const isCashback = cashbackBalanceKopeks !== null && cashbackBalanceKopeks !== undefined;
   const progress = rewardAvailable ? 100 : Math.round((current / Math.max(goal, 1)) * 100);
   const safeColor = readableThemeColor(themeColor);
   const hasPhotoBackground = cardBackgroundMode === "PHOTO" && Boolean(cardBackgroundUrl);
@@ -176,15 +182,17 @@ export function ProgramSummaryCard({
         </div>
         <ArrowRight aria-hidden className="mt-2 size-5 shrink-0 text-[var(--text-muted)]" />
       </div>
-      <p className={clsx("mt-4 text-sm font-bold", hasPhotoBackground ? "" : "text-[var(--text)]")}>{rewardTitle}</p>
-      <p className={clsx("mt-1 text-sm", hasPhotoBackground ? "opacity-75" : "text-[var(--text-muted)]")}>
-        {rewardAvailable ? "Подарок готов" : pluralPurchasesLeft(left)}
+      <p className={clsx("mt-4 text-sm font-bold", hasPhotoBackground ? "" : "text-[var(--text)]")}>
+        {isCashback ? `Кешбэк ${(cashbackPercentBasisPoints ?? 0) / 100}%` : rewardTitle}
       </p>
-      <div className="mt-3">
+      <p className={clsx("mt-1 text-sm", hasPhotoBackground ? "opacity-75" : "text-[var(--text-muted)]")}>
+        {isCashback ? `Баланс: ${formatKopeks(cashbackBalanceKopeks ?? 0)}` : rewardAvailable ? "Подарок готов" : pluralPurchasesLeft(left)}
+      </p>
+      {!isCashback && <div className="mt-3">
         <ProgressBar value={progress} tone={rewardAvailable ? "warning" : "brand"} />
-      </div>
+      </div>}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className="font-bold text-[var(--text-muted)]">{current} из {goal}</span>
+        <span className="font-bold text-[var(--text-muted)]">{isCashback ? `Покупок: ${current}` : `${current} из ${goal}`}</span>
         {address && <span className="inline-flex min-w-0 items-center gap-1 text-[var(--text-muted)]"><MapPinned aria-hidden className="size-4 shrink-0" /><span className="truncate">{address}</span></span>}
       </div>
       </div>

@@ -2,6 +2,7 @@ import { ClientBrandHeader } from "@/components/client-brand-header";
 import { ClientEmptyState, ClientShell, ProgramSummaryCard } from "@/components/client-ui";
 import { requireUser } from "@/lib/auth";
 import { getClientMemberships, rewardGoal, rewardLeft } from "@/lib/customer-app";
+import { isCashbackProgram } from "@/lib/cashback";
 
 export default async function ClientCardsPage() {
   const user = await requireUser("/company/login");
@@ -26,7 +27,7 @@ export default async function ClientCardsPage() {
             logoUrl={membership.company.logoUrl}
             icon={membership.company.loyaltyProgram?.icon ?? membership.company.icon}
             rewardTitle={membership.company.loyaltyProgram?.rewardTitle ?? "Подарок"}
-            current={membership.currentCount}
+            current={isCashbackProgram(membership.company.loyaltyProgram) ? membership.totalPurchases : membership.currentCount}
             goal={rewardGoal(membership)}
             left={rewardLeft(membership)}
             address={membership.company.address}
@@ -36,6 +37,8 @@ export default async function ClientCardsPage() {
             cardBackgroundMode={membership.company.cardBackgroundMode}
             cardSurfaceColor={membership.company.cardSurfaceColor}
             cardTextColor={membership.company.cardTextColor}
+            cashbackBalanceKopeks={isCashbackProgram(membership.company.loyaltyProgram) ? membership.cashbackBalanceKopeks : null}
+            cashbackPercentBasisPoints={membership.company.loyaltyProgram?.cashbackPercentBasisPoints}
           />
         ))}
 

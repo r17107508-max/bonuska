@@ -5,6 +5,7 @@ import { ClientEmptyState, ClientShell, ProgressBar, pluralPurchasesLeft } from 
 import { requireUser } from "@/lib/auth";
 import { getClientMemberships, rewardGoal, rewardLeft, type ClientMembership } from "@/lib/customer-app";
 import { isGiftBoxProgram } from "@/lib/loyalty";
+import { isCashbackProgram } from "@/lib/cashback";
 
 type RewardTab = "ready" | "soon" | "all";
 
@@ -73,7 +74,7 @@ export default async function ClientRewardsPage({
 
 function buildRewardItems(membership: ClientMembership) {
   const program = membership.company.loyaltyProgram;
-  if (!program) return [];
+  if (!program || isCashbackProgram(program)) return [];
 
   const goal = rewardGoal(membership);
   const left = rewardLeft(membership);

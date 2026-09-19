@@ -32,6 +32,7 @@ enum LoyaltyProgramType {
   COLLECT_AND_REWARD
   GIFT_BOX
   DISCOUNT_AFTER_N
+  CASHBACK
   CUSTOMER_LEVELS
 }
 
@@ -221,17 +222,18 @@ model CompanyUser {
 }
 
 model LoyaltyProgram {
-  id                String             @id @default(cuid())
-  companyId         String             @unique
-  programType       LoyaltyProgramType @default(CLASSIC_REWARD)
-  icon              String             @default("☕")
-  goalCount         Int                @default(6)
-  rewardTitle       String             @default("Подарок")
-  rewardDescription String             @default("Следующая покупка или подарок по правилам компании")
-  themeColor        String             @default("#0f766e")
-  isGiftBoxEnabled  Boolean            @default(false)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id                         String             @id @default(cuid())
+  companyId                  String             @unique
+  programType                LoyaltyProgramType @default(CLASSIC_REWARD)
+  icon                       String             @default("☕")
+  goalCount                  Int                @default(6)
+  rewardTitle                String             @default("Подарок")
+  rewardDescription          String             @default("Следующая покупка или подарок по правилам компании")
+  cashbackPercentBasisPoints Int                @default(200)
+  themeColor                 String             @default("#0f766e")
+  isGiftBoxEnabled           Boolean            @default(false)
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
@@ -257,21 +259,22 @@ model LoyaltyLevel {
 }
 
 model CustomerMembership {
-  id               String    @id @default(cuid())
-  companyId        String
-  userId           String
-  qrToken          String    @unique
-  currentCount     Int       @default(0)
-  totalPurchases   Int       @default(0)
-  totalRewards     Int       @default(0)
-  levelId          String?
-  currentLevelName String?
-  levelReachedAt   DateTime?
-  rewardAvailable  Boolean   @default(false)
-  pendingReward    String?
-  lastActionAt     DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  companyId             String
+  userId                String
+  qrToken               String    @unique
+  currentCount          Int       @default(0)
+  totalPurchases        Int       @default(0)
+  totalRewards          Int       @default(0)
+  levelId               String?
+  currentLevelName      String?
+  levelReachedAt        DateTime?
+  rewardAvailable       Boolean   @default(false)
+  pendingReward         String?
+  cashbackBalanceKopeks Int       @default(0)
+  lastActionAt          DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   company       Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -350,16 +353,22 @@ model RaffleTicket {
 }
 
 model LoyaltyTransaction {
-  id           String                 @id @default(cuid())
-  companyId    String
-  membershipId String
-  cashierId    String
-  type         LoyaltyTransactionType
-  quantity     Int                    @default(1)
-  countBefore  Int
-  countAfter   Int
-  rewardTitle  String?
-  createdAt    DateTime               @default(now())
+  id                     String                 @id @default(cuid())
+  companyId              String
+  membershipId           String
+  cashierId              String
+  type                   LoyaltyTransactionType
+  quantity               Int                    @default(1)
+  countBefore            Int
+  countAfter             Int
+  rewardTitle            String?
+  purchaseAmountKopeks   Int?
+  paidAmountKopeks       Int?
+  cashbackEarnedKopeks   Int?
+  cashbackRedeemedKopeks Int?
+  balanceBeforeKopeks    Int?
+  balanceAfterKopeks     Int?
+  createdAt              DateTime               @default(now())
 
   company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   membership CustomerMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)

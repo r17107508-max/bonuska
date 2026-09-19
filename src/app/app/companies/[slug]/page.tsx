@@ -11,6 +11,8 @@ import { enforceCompanyRatingStatus, getCompanyRatingSummary } from "@/lib/compa
 import { rewardGoal, rewardLeft } from "@/lib/customer-app";
 import { getDb } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
+import { formatCashbackPercent, isCashbackProgram } from "@/lib/cashback";
+import { formatKopeks } from "@/lib/raffles";
 
 export default async function ClientCompanyPage({
   params,
@@ -59,6 +61,7 @@ export default async function ClientCompanyPage({
   const goal = membership ? rewardGoal(membership) : company.loyaltyProgram.goalCount;
   const left = membership ? rewardLeft(membership) : goal;
   const progress = membership ? (membership.rewardAvailable ? 100 : Math.round((membership.currentCount / Math.max(goal, 1)) * 100)) : 0;
+  const isCashback = isCashbackProgram(company.loyaltyProgram);
 
   return (
     <ClientShell>
@@ -134,16 +137,16 @@ export default async function ClientCompanyPage({
       </ClientCard>
 
       <ClientCard>
-        <h2 className="text-xl font-extrabold text-[var(--text)]">Награда</h2>
-        <p className="mt-1 text-base font-bold text-[var(--text)]">{company.loyaltyProgram.rewardTitle}</p>
-        <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">{company.loyaltyProgram.rewardDescription}</p>
+        <h2 className="text-xl font-extrabold text-[var(--text)]">{isCashback ? "Кешбэк" : "Награда"}</h2>
+        <p className="mt-1 text-base font-bold text-[var(--text)]">{isCashback ? `${formatCashbackPercent(company.loyaltyProgram.cashbackPercentBasisPoints)}% на баланс` : company.loyaltyProgram.rewardTitle}</p>
+        <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">{isCashback ? "Накапливайте кешбэк и списывайте его как скидку при следующих покупках." : company.loyaltyProgram.rewardDescription}</p>
         {membership ? (
           <>
-            <div className="mt-4">
+            {!isCashback && <div className="mt-4">
               <ProgressBar value={progress} tone={membership.rewardAvailable ? "warning" : "brand"} />
-            </div>
+            </div>}
             <p className="mt-2 text-sm font-bold text-[var(--text)]">
-              {membership.rewardAvailable ? "Подарок доступен" : pluralPurchasesLeft(left)}
+              {isCashback ? `Ваш баланс: ${formatKopeks(membership.cashbackBalanceKopeks)}` : membership.rewardAvailable ? "Подарок доступен" : pluralPurchasesLeft(left)}
             </p>
             <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <QuickQrButton label="Показать мой QR" />
@@ -167,10 +170,10 @@ export default async function ClientCompanyPage({
             {membership.transactions.map((transaction) => (
               <div key={transaction.id} className="rounded-2xl border border-[var(--border)] bg-white p-3">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="font-bold text-[var(--text)]">{transaction.type === "PURCHASE" ? "Покупка начислена" : "Операция"}</p>
+                  <p className="font-bold text-[var(--text)]">{transaction.type === "PURCHASE" ? (transaction.cashbackEarnedKopeks !== null ? "Кешбэк начислен" : "Покупка начислена") : "Операция"}</p>
                   <time className="shrink-0 text-xs font-bold text-[var(--text-muted)]" dateTime={transaction.createdAt.toISOString()}>{formatDateTime(transaction.createdAt)}</time>
                 </div>
-                <p className="mt-1 text-sm text-[var(--text-muted)]">Прогресс: {transaction.countAfter} из {goal}</p>
+                <p className="mt-1 text-sm text-[var(--text-muted)]">{transaction.cashbackEarnedKopeks !== null ? `+Кешбэк: ${formatKopeks(transaction.cashbackEarnedKopeks)} · Баланс: ${formatKopeks(transaction.balanceAfterKopeks ?? 0)}` : `Прогресс: ${transaction.countAfter} из ${goal}`}</p>
               </div>
             ))}
             {membership.transactions.length === 0 && <p className="rounded-2xl border border-dashed border-[var(--border)] p-4 text-sm text-[var(--text-muted)]">Покупок у партнёра пока нет.</p>}

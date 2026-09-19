@@ -14,7 +14,7 @@ type SearchMatch = {
   scanHref: string;
 };
 
-export function CompanyScanSearch({ initialQuery = "" }: { initialQuery?: string }) {
+export function CompanyScanSearch({ initialQuery = "", requirePurchaseAmount = false }: { initialQuery?: string; requirePurchaseAmount?: boolean }) {
   const [query, setQuery] = useState(initialQuery);
   const [matches, setMatches] = useState<SearchMatch[]>([]);
   const [searched, setSearched] = useState(false);
@@ -88,7 +88,7 @@ export function CompanyScanSearch({ initialQuery = "" }: { initialQuery?: string
                 <span className="mt-0.5 block text-sm text-[var(--text-muted)]">{item.phone}</span>
               </Link>
               <div className="grid gap-2 sm:grid-cols-[auto_auto]">
-                <form action={confirmPurchase}>
+                {!requirePurchaseAmount && <form action={confirmPurchase}>
                   <input type="hidden" name="membershipId" value={item.id} />
                   <input type="hidden" name="token" value={item.scanToken} />
                   <input type="hidden" name="returnTo" value={item.scanHref} />
@@ -98,7 +98,7 @@ export function CompanyScanSearch({ initialQuery = "" }: { initialQuery?: string
                     confirmText={`Клиент: ${item.name}. Будет начислена 1 покупка без сканирования QR.`}
                     buttonText="Начислить покупку"
                   />
-                </form>
+                </form>}
                 <Link
                   href={item.scanHref}
                   className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--border)] bg-white px-4 text-sm font-bold text-[var(--brand-strong)]"

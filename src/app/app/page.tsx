@@ -10,7 +10,8 @@ import { getDb } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getActivePartnerCompanies, getClientMemberships, pickNearestGift, rewardGoal, rewardLeft, type ClientMembership } from "@/lib/customer-app";
 import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
-import { finalizeDueRafflesForUser, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
+import { isCashbackProgram } from "@/lib/cashback";
+import { finalizeDueRafflesForUser, formatKopeks, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
 
 export default async function ClientDashboardPage({
   searchParams,
@@ -114,7 +115,7 @@ export default async function ClientDashboardPage({
           {otherMemberships.length > 0 && (
             <section>
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-xl font-extrabold text-[var(--text)]">Остальные программы</h2>
+                <h2 className="text-xl font-extrabold text-[var(--text)]">{nearest ? "Остальные программы" : "Мои программы"}</h2>
                 <Link href="/app/cards" className="text-sm font-bold text-[var(--brand-strong)]">Все</Link>
               </div>
               <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
@@ -127,7 +128,7 @@ export default async function ClientDashboardPage({
                       logoUrl={membership.company.logoUrl}
                       icon={membership.company.loyaltyProgram?.icon ?? membership.company.icon}
                       rewardTitle={membership.company.loyaltyProgram?.rewardTitle ?? "Подарок"}
-                      current={membership.currentCount}
+                      current={isCashbackProgram(membership.company.loyaltyProgram) ? membership.totalPurchases : membership.currentCount}
                       goal={rewardGoal(membership)}
                       left={rewardLeft(membership)}
                       address={membership.company.address}
@@ -137,6 +138,8 @@ export default async function ClientDashboardPage({
                       cardBackgroundMode={membership.company.cardBackgroundMode}
                       cardSurfaceColor={membership.company.cardSurfaceColor}
                       cardTextColor={membership.company.cardTextColor}
+                      cashbackBalanceKopeks={isCashbackProgram(membership.company.loyaltyProgram) ? membership.cashbackBalanceKopeks : null}
+                      cashbackPercentBasisPoints={membership.company.loyaltyProgram?.cashbackPercentBasisPoints}
                     />
                   </div>
                 ))}
@@ -157,7 +160,7 @@ export default async function ClientDashboardPage({
               <LogoBox logoUrl={partner.logoUrl} fallback={partner.loyaltyProgram?.icon ?? partner.icon} name={partner.name} color={partner.themeColor} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-extrabold text-[var(--text)]">{partner.name}</span>
-                <span className="mt-1 block truncate text-sm text-[var(--text-muted)]">{partner.loyaltyProgram?.rewardDescription || `${partner.loyaltyProgram?.goalCount ?? 6} покупок - подарок`}</span>
+                <span className="mt-1 block truncate text-sm text-[var(--text-muted)]">{isCashbackProgram(partner.loyaltyProgram) ? `${(partner.loyaltyProgram?.cashbackPercentBasisPoints ?? 0) / 100}% кешбэка` : partner.loyaltyProgram?.rewardDescription || `${partner.loyaltyProgram?.goalCount ?? 6} покупок - подарок`}</span>
               </span>
               <ArrowRight aria-hidden className="size-5 shrink-0 text-[var(--text-muted)]" />
             </Link>
@@ -181,7 +184,11 @@ export default async function ClientDashboardPage({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-bold text-[var(--text)]">{transaction.company.name}</span>
-                <span className="block text-sm text-[var(--text-muted)]">{clientOperationLabel(transaction.type, transaction.quantity)}</span>
+                <span className="block text-sm text-[var(--text-muted)]">
+                  {transaction.cashbackEarnedKopeks !== null
+                    ? `+Кешбэк ${formatKopeks(transaction.cashbackEarnedKopeks)}`
+                    : clientOperationLabel(transaction.type, transaction.quantity)}
+                </span>
               </span>
               <span className="shrink-0 text-xs font-bold text-[var(--text-muted)]">{formatDate(transaction.createdAt)}</span>
             </div>

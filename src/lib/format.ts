@@ -131,6 +131,7 @@ export function programTypeLabel(type: LoyaltyProgramType) {
     COLLECT_AND_REWARD: "Накопи и получи подарок",
     GIFT_BOX: "Коробка с подарком",
     DISCOUNT_AFTER_N: "Скидка после N покупок",
+    CASHBACK: "Кешбэк на баланс",
     CUSTOMER_LEVELS: "Постоянный уровень клиента",
   };
 

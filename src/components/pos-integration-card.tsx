@@ -54,7 +54,7 @@ export function PosIntegrationCard({ prefix, createdAt, lastUsedAt }: PosIntegra
         <div>
           <p className="text-sm font-extrabold text-[var(--text)]">Интеграция с кассой</p>
           <p className="mt-1 text-sm leading-5 text-[var(--text-muted)]">
-            POS API начисляет покупки по QR клиента. Списание баллов требует отдельной модели баланса.
+            POS API проводит покупки по QR клиента. Для кешбэка передайте сумму чека и, если нужно, сумму списания.
           </p>
         </div>
         <span className="rounded-full bg-[var(--inactive)] px-3 py-1 text-xs font-bold text-[var(--text-muted)]">
@@ -104,7 +104,7 @@ export function PosIntegrationCard({ prefix, createdAt, lastUsedAt }: PosIntegra
       <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-xs leading-5 text-[var(--text-muted)]">
         Endpoint: <span className="font-mono text-[var(--text)]">POST /api/pos/v1/purchases</span>. Заголовок:{" "}
         <span className="font-mono text-[var(--text)]">Authorization: Bearer ключ</span>. Тело:{" "}
-        <span className="font-mono text-[var(--text)]">qr, receiptId, quantity, purchaseAmount, cashierPhone</span>.
+        <span className="font-mono text-[var(--text)]">qr, receiptId, quantity, purchaseAmount, redeemAmount, cashierPhone</span>.
       </div>
     </div>
   );

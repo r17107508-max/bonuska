@@ -11,6 +11,8 @@ type PosPurchaseBody = {
   quantity?: number;
   purchaseAmount?: string | number;
   purchaseAmountRubles?: string | number;
+  redeemAmount?: string | number;
+  redeemAmountRubles?: string | number;
   cashierPhone?: string;
 };
 
@@ -31,6 +33,7 @@ export async function POST(request: Request) {
   const idempotencyKey = String(body.idempotencyKey ?? receiptId).trim();
   const quantity = Number(body.quantity ?? 1);
   const purchaseAmountKopeks = parseRublesToKopeks(String(body.purchaseAmount ?? body.purchaseAmountRubles ?? ""));
+  const redeemAmountKopeks = parseRublesToKopeks(String(body.redeemAmount ?? body.redeemAmountRubles ?? ""));
 
   if (!qr) {
     return apiError("Передайте QR клиента в поле qr");
@@ -71,7 +74,7 @@ export async function POST(request: Request) {
   });
 
   try {
-    const result = await addPurchase(company.id, membership.id, cashier.id, quantity, purchaseAmountKopeks);
+    const result = await addPurchase(company.id, membership.id, cashier.id, quantity, purchaseAmountKopeks, redeemAmountKopeks);
     const response = {
       membershipId: membership.id,
       customerName: membership.user.name,
