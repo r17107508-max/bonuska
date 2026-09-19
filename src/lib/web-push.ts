@@ -106,8 +106,8 @@ export async function notifySuperadminsAboutCompanyPush(
   company: Pick<Company, "id" | "name" | "city">,
 ) {
   await sendPushToSuperadmins({
-    title: "Новая заявка компании",
-    body: `${company.name}${company.city ? `, ${company.city}` : ""}`,
+    title: "Новая компания зарегистрирована",
+    body: `${company.name}${company.city ? `, ${company.city}` : ""} · trial активен`,
     url: `/superadmin/companies/${company.id}`,
     tag: `company-application-${company.id}`,
   });

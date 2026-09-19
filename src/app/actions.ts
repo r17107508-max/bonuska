@@ -445,7 +445,14 @@ export async function changeCustomerPassword(formData: FormData) {
   redirect("/app/account?success=password");
 }
 
-export async function registerCompany(formData: FormData) {
+export type CompanyRegistrationState = {
+  error: string | null;
+};
+
+export async function registerCompany(
+  _previousState: CompanyRegistrationState,
+  formData: FormData,
+): Promise<CompanyRegistrationState> {
   const settings = await getSettings();
   const name = text(formData, "name");
   const ownerName = text(formData, "ownerName");
@@ -457,12 +464,27 @@ export async function registerCompany(formData: FormData) {
   const acceptedOffer = formData.get("offerAccepted") === "on";
   const acceptedPrivacy = formData.get("privacyAccepted") === "on";
 
-  if (!name || !ownerName || phone.length < 10 || !isValidEmail(email) || password.length < 6 || !city) {
-    errorRedirect("/company/register", "Заполните обязательные поля");
+  if (!name) {
+    return { error: "Укажите название компании" };
+  }
+  if (!city) {
+    return { error: "Укажите город" };
+  }
+  if (!ownerName) {
+    return { error: "Укажите ФИО владельца или управляющего" };
+  }
+  if (phone.length < 10) {
+    return { error: "Укажите корректный номер телефона" };
+  }
+  if (!isValidEmail(email)) {
+    return { error: "Укажите корректный email" };
+  }
+  if (password.length < 10) {
+    return { error: "Пароль должен содержать не менее 10 символов" };
   }
 
   if (!acceptedOffer || !acceptedPrivacy) {
-    errorRedirect("/company/register", "Нужно принять оферту и согласие на обработку данных");
+    return { error: "Нужно принять оферту и согласие на обработку данных" };
   }
 
   const db = getDb();
@@ -475,75 +497,97 @@ export async function registerCompany(formData: FormData) {
   }
 
   const meta = await requestMeta();
-  let user: Awaited<ReturnType<typeof getOrCreateUser>>;
-  try {
-    user = await getOrCreateUser({ name: ownerName, phone, email, city, password });
-  } catch (error) {
-    registrationConflictRedirect(error, "/company/register");
-  }
-  await ensureGlobalQrToken(user);
-  const company = await db.company.create({
-    data: {
-      name,
-      slug,
-      businessType: text(formData, "businessType"),
-      city,
-      address,
-      ownerName,
-      ownerPhone: phone,
-      ownerEmail: email,
-      inn: text(formData, "inn") || null,
-      comment: text(formData, "comment") || null,
-      status: CompanyStatus.PENDING,
-      users: {
-        create: {
-          userId: user.id,
-          role: CompanyUserRole.COMPANY_ADMIN,
-        },
-      },
-      loyaltyProgram: {
-        create: {
-          programType: LoyaltyProgramType.CLASSIC_REWARD,
-          icon: "🎁",
-          goalCount: 6,
-          rewardTitle: "Подарок",
-          rewardDescription: "Подарок после нужного количества покупок",
-          themeColor: "#0f766e",
-        },
-      },
-      offerAcceptances: {
-        create: {
-          userId: user.id,
-          offerVersion: settings.offerVersion,
-          ip: meta.ip,
-          userAgent: meta.userAgent,
-        },
-      },
-      personalDataConsents: {
-        create: {
-          userId: user.id,
-          consentVersion: settings.privacyVersion,
-          ip: meta.ip,
-          userAgent: meta.userAgent,
-        },
-      },
-      auditLogs: {
-        create: {
-          actorUserId: user.id,
-          action: "COMPANY_APPLICATION_CREATED",
-          entityType: "Company",
-          metadataJson: JSON.stringify({ ownerEmail: email }),
-        },
-      },
-    },
-  });
+  const now = new Date();
+  const trialEndsAt = new Date(now);
+  trialEndsAt.setDate(trialEndsAt.getDate() + settings.trialDays);
 
-  await Promise.all([
+  let registration: {
+    user: Awaited<ReturnType<typeof getOrCreateUser>>;
+    company: Awaited<ReturnType<typeof db.company.create>>;
+  };
+  try {
+    registration = await db.$transaction(async (transaction) => {
+      const user = await createUserWithUniquePhone({ name: ownerName, phone, email, city, password }, transaction);
+      const company = await transaction.company.create({
+        data: {
+          name,
+          slug,
+          businessType: text(formData, "businessType"),
+          city,
+          address,
+          ownerName,
+          ownerPhone: phone,
+          ownerEmail: email,
+          inn: text(formData, "inn") || null,
+          comment: text(formData, "comment") || null,
+          status: CompanyStatus.ACTIVE_TRIAL,
+          isBlocked: false,
+          trialStartedAt: now,
+          trialEndsAt,
+          users: {
+            create: {
+              userId: user.id,
+              role: CompanyUserRole.COMPANY_ADMIN,
+            },
+          },
+          loyaltyProgram: {
+            create: {
+              programType: LoyaltyProgramType.CLASSIC_REWARD,
+              icon: "🎁",
+              goalCount: 6,
+              rewardTitle: "Подарок",
+              rewardDescription: "Подарок после нужного количества покупок",
+              themeColor: "#0f766e",
+            },
+          },
+          offerAcceptances: {
+            create: {
+              userId: user.id,
+              offerVersion: settings.offerVersion,
+              ip: meta.ip,
+              userAgent: meta.userAgent,
+            },
+          },
+          personalDataConsents: {
+            create: {
+              userId: user.id,
+              consentVersion: settings.privacyVersion,
+              ip: meta.ip,
+              userAgent: meta.userAgent,
+            },
+          },
+          auditLogs: {
+            create: {
+              actorUserId: user.id,
+              action: "COMPANY_REGISTERED_TRIAL_STARTED",
+              entityType: "Company",
+              metadataJson: JSON.stringify({ ownerEmail: email, trialEndsAt: trialEndsAt.toISOString() }),
+            },
+          },
+        },
+      });
+
+      return { user, company };
+    });
+  } catch (error) {
+    if (isPhoneAlreadyRegisteredError(error)) {
+      return { error: PHONE_ALREADY_REGISTERED_MESSAGE };
+    }
+    if (isEmailAlreadyRegisteredError(error)) {
+      return { error: EMAIL_ALREADY_REGISTERED_MESSAGE };
+    }
+    throw error;
+  }
+
+  const { user, company } = registration;
+  await createSession(user);
+
+  await Promise.allSettled([
     notifySuperadminsAboutCompanyApplication(company, meta.origin),
     notifyCompanyApplicationReceived(company, meta.origin),
     notifySuperadminsAboutCompanyPush(company),
   ]);
-  redirect("/company/register?success=1");
+  redirect(`/company?success=${encodeURIComponent("Компания зарегистрирована. Пробный период на 14 дней уже начался")}`);
 }
 
 export async function approveCompany(formData: FormData) {
@@ -695,7 +739,7 @@ export async function markPayment(formData: FormData) {
 }
 
 export async function requestPaymentReview(formData: FormData) {
-  const access = await requireCompanyAdmin();
+  const access = await requireCompanyAdmin({ allowInactive: true });
   await getDb().auditLog.create({
     data: {
       actorUserId: access.userId,

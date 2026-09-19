@@ -22,11 +22,13 @@ export async function getSettings() {
   const existing = await db.serviceSettings.findUnique({ where: { id: "default" } });
 
   if (existing) {
-    const shouldRefreshOffer = hasOutdatedCommercialTerms(existing.offerText);
+    const shouldRefreshOffer = existing.offerVersion !== serviceDocuments.offerVersion || hasOutdatedCommercialTerms(existing.offerText);
+    const shouldRefreshPrivacy = existing.privacyVersion !== serviceDocuments.privacyVersion;
     const shouldRefreshTerms =
       existing.subscriptionPrice !== defaultSubscriptionPrice ||
       existing.trialDays !== defaultTrialDays ||
-      shouldRefreshOffer;
+      shouldRefreshOffer ||
+      shouldRefreshPrivacy;
 
     if (shouldRefreshTerms) {
       return db.serviceSettings.update({
@@ -38,6 +40,12 @@ export async function getSettings() {
             ? {
                 offerVersion: serviceDocuments.offerVersion,
                 offerText: defaultOfferText,
+              }
+            : {}),
+          ...(shouldRefreshPrivacy
+            ? {
+                privacyVersion: serviceDocuments.privacyVersion,
+                privacyText: defaultPrivacyText,
               }
             : {}),
         },

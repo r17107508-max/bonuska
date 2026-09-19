@@ -197,34 +197,36 @@ export async function notifySuperadminsAboutCompanyApplication(
 
   const result = await sendMail({
     to: uniqueEmails([settings.supportEmail, ...admins.map((admin) => admin.email)]),
-    subject: `Новая заявка компании в сервисе «ПроПлюшка»: ${company.name}`,
+    subject: `Новая компания в сервисе «ПроПлюшка»: ${company.name}`,
     text: [
-      `В сервисе «ПроПлюшка» зарегистрировалась новая компания и ждёт подтверждения.`,
+      `В сервисе «ПроПлюшка» зарегистрировалась новая компания. Пробный период уже активирован автоматически.`,
       ``,
       `Компания: ${company.name}`,
       `Город: ${company.city || "не указан"}`,
       `Представитель: ${company.ownerName}`,
       `Телефон: ${company.ownerPhone}`,
       `Email: ${company.ownerEmail}`,
-      `Дата заявки: ${formatMoscowDateTime(company.createdAt)}`,
+      `Дата регистрации: ${formatMoscowDateTime(company.createdAt)}`,
       ``,
-      `Откройте заявку: ${origin}/superadmin/companies/${company.id}`,
+      `Открыть компанию: ${origin}/superadmin/companies/${company.id}`,
     ].join("\n"),
   });
 
   await writeEmailAudit(company.id, `EMAIL_SUPERADMIN_APPLICATION_${result.status.toUpperCase()}`, result);
 }
 
-export async function notifyCompanyApplicationReceived(company: Pick<Company, "id" | "name" | "ownerEmail">, origin: string) {
+export async function notifyCompanyApplicationReceived(company: Pick<Company, "id" | "name" | "ownerEmail" | "trialEndsAt">, origin: string) {
+  const trialText = company.trialEndsAt ? formatMoscowDate(company.trialEndsAt) : "через 14 дней после регистрации";
   const result = await sendMail({
     to: uniqueEmails([company.ownerEmail]),
-    subject: `Заявка компании ${company.name} получена в сервисе «ПроПлюшка»`,
+    subject: `Компания ${company.name} зарегистрирована в сервисе «ПроПлюшка»`,
     text: [
       `Спасибо за регистрацию компании «${company.name}» в сервисе «ПроПлюшка».`,
       ``,
-      `Заявка отправлена на проверку. После подтверждения мы пришлём письмо на этот email, и вы сможете войти в кабинет компании.`,
+      `Кабинет уже доступен. Пробный период действует до ${trialText}`,
+      `После окончания пробного периода для продолжения работы потребуется оплатить подписку.`,
       ``,
-      `Страница входа: ${origin}/company/login`,
+      `Открыть кабинет: ${origin}/company`,
     ].join("\n"),
   });
 

@@ -15,7 +15,7 @@ export default async function CompanyBillingPage({
 }: {
   searchParams: Promise<{ success?: string }>;
 }) {
-  const access = await requireCompanyAdmin();
+  const access = await requireCompanyAdmin({ allowInactive: true });
   const [settings, params, company, lastPaymentRequest] = await Promise.all([
     getSettings(),
     searchParams,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { CompanyStatus, CompanyUserRole, GlobalRole } from "@prisma/client";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isCompanyAccessible } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
 export function ok(data: unknown = { ok: true }, status = 200) {
@@ -105,7 +105,11 @@ export async function requireApiUser() {
   return { error: null, user };
 }
 
-export async function requireApiCompanyUser(roles?: CompanyUserRole[]) {
+type ApiCompanyAccessOptions = {
+  allowInactive?: boolean;
+};
+
+export async function requireApiCompanyUser(roles?: CompanyUserRole[], options: ApiCompanyAccessOptions = {}) {
   const user = await getCurrentUser();
   if (!user) {
     return { error: apiError("Требуется вход", 401), access: null };
@@ -135,9 +139,33 @@ export async function requireApiCompanyUser(roles?: CompanyUserRole[]) {
     return { error: apiError("Нет доступа к компании", 403), access: null };
   }
 
+  const now = new Date();
+  const trialExpired = access.company.status === CompanyStatus.ACTIVE_TRIAL
+    && Boolean(access.company.trialEndsAt && access.company.trialEndsAt <= now);
+  const paidPeriodExpired = access.company.status === CompanyStatus.ACTIVE_PAID
+    && Boolean(access.company.paidUntil && access.company.paidUntil <= now);
+
+  if (trialExpired || paidPeriodExpired) {
+    access.company = await getDb().company.update({
+      where: { id: access.companyId },
+      data: { status: CompanyStatus.PAYMENT_REQUIRED },
+      select: safeCompanySelect,
+    });
+  }
+
+  const hasAccess = !access.company.isBlocked && isCompanyAccessible(
+    access.company.status,
+    access.company.paidUntil,
+    access.company.trialEndsAt,
+  );
+
+  if (!options.allowInactive && !hasAccess) {
+    return { error: apiError("Доступ приостановлен. Оплатите подписку 4990 ₽ для продолжения работы", 402), access: null };
+  }
+
   return { error: null, access };
 }
 
-export function requireApiCompanyAdmin() {
-  return requireApiCompanyUser([CompanyUserRole.COMPANY_ADMIN]);
+export function requireApiCompanyAdmin(options: ApiCompanyAccessOptions = {}) {
+  return requireApiCompanyUser([CompanyUserRole.COMPANY_ADMIN], options);
 }

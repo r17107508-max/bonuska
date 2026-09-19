@@ -7,8 +7,9 @@ import { AdminShell, companyNavForRole } from "@/components/admin-shell";
 import { KpiCard, SegmentedLinks, SimpleBars, StatusPill, WorkspaceCard } from "@/components/company-ui";
 import { requireCompanyUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { daysLeft, formatDateTime, operationLabel, statusClass, statusLabel } from "@/lib/format";
+import { daysLeft, formatDateTime, money, operationLabel, statusClass, statusLabel } from "@/lib/format";
 import { hasActiveAccess, refreshCompanySubscription } from "@/lib/loyalty";
+import { getSettings } from "@/lib/settings";
 
 type Period = "7" | "30" | "90";
 
@@ -17,7 +18,7 @@ export default async function CompanyDashboardPage({
 }: {
   searchParams: Promise<{ period?: string; success?: string; error?: string }>;
 }) {
-  const access = await requireCompanyUser();
+  const access = await requireCompanyUser(undefined, { allowInactive: true });
   const params = await searchParams;
   const period = ["7", "30", "90"].includes(params.period ?? "") ? params.period as Period : "30";
   const company = await refreshCompanySubscription(access.companyId);
@@ -26,6 +27,36 @@ export default async function CompanyDashboardPage({
   const left = company?.status === "ACTIVE_TRIAL" ? daysLeft(company.trialEndsAt) : daysLeft(company?.paidUntil);
   const last30Start = daysAgo(30);
   const chartStart = daysAgo(Number(period) - 1);
+
+  if (!active) {
+    const settings = await getSettings();
+    return (
+      <AdminShell
+        title={access.company.name}
+        subtitle="Доступ к рабочим функциям компании временно приостановлен."
+        nav={companyNavForRole(access.role)}
+        cashier={isCashier ? { companyName: access.company.name, status: statusLabel(company?.status ?? access.company.status) } : undefined}
+      >
+        <WorkspaceCard className="border-red-200 bg-red-50">
+          <p className="text-sm font-bold uppercase text-[var(--danger)]">Доступ приостановлен</p>
+          <h2 className="mt-2 text-2xl font-extrabold text-[var(--text)]">
+            {company?.status === "PAYMENT_REQUIRED" ? "Пробный или оплаченный период завершён" : "Компания временно недоступна"}
+          </h2>
+          <p className="mt-3 max-w-2xl leading-7 text-[var(--text-muted)]">
+            {company?.status === "PAYMENT_REQUIRED"
+              ? `Оплатите подписку ${money(settings.subscriptionPrice)} за 30 дней. После подтверждения оплаты доступ к кабинету и QR-программе будет продлён, а данные компании сохранятся.`
+              : "Обратитесь к владельцу компании или в поддержку «ПроПлюшки», чтобы уточнить причину ограничения."}
+          </p>
+          {!isCashier && company?.status === "PAYMENT_REQUIRED" && (
+            <Link href="/company/billing" className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--brand-strong)] px-5 text-sm font-bold text-white">
+              Оплатить подписку
+            </Link>
+          )}
+          {isCashier && <p className="mt-4 text-sm font-bold text-[var(--danger)]">Обратитесь к администратору компании.</p>}
+        </WorkspaceCard>
+      </AdminShell>
+    );
+  }
 
   const [
     clientsTotal,

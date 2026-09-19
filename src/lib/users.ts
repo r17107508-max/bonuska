@@ -10,7 +10,7 @@ import {
 } from "@/lib/format";
 import { newGlobalQrToken } from "@/lib/loyalty";
 
-type DbClient = PrismaClient;
+type DbClient = PrismaClient | Prisma.TransactionClient;
 
 export class PhoneAlreadyRegisteredError extends Error {
   constructor() {

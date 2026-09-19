@@ -130,7 +130,11 @@ export async function requireSuperadmin() {
   return user;
 }
 
-export async function requireCompanyUser(roles?: CompanyUserRole[]) {
+type CompanyAccessOptions = {
+  allowInactive?: boolean;
+};
+
+export async function requireCompanyUser(roles?: CompanyUserRole[], options: CompanyAccessOptions = {}) {
   const user = await requireUser("/company/login");
   const companyUser = await getDb().companyUser.findFirst({
     where: {
@@ -152,11 +156,35 @@ export async function requireCompanyUser(roles?: CompanyUserRole[]) {
     redirect(`/company/login?error=${encodeURIComponent("Нет доступа к кабинету компании")}`);
   }
 
+  const now = new Date();
+  const trialExpired = companyUser.company.status === CompanyStatus.ACTIVE_TRIAL
+    && Boolean(companyUser.company.trialEndsAt && companyUser.company.trialEndsAt <= now);
+  const paidPeriodExpired = companyUser.company.status === CompanyStatus.ACTIVE_PAID
+    && Boolean(companyUser.company.paidUntil && companyUser.company.paidUntil <= now);
+
+  if (trialExpired || paidPeriodExpired) {
+    companyUser.company = await getDb().company.update({
+      where: { id: companyUser.companyId },
+      data: { status: CompanyStatus.PAYMENT_REQUIRED },
+      include: { loyaltyProgram: true },
+    });
+  }
+
+  const hasAccess = !companyUser.company.isBlocked && isCompanyAccessible(
+    companyUser.company.status,
+    companyUser.company.paidUntil,
+    companyUser.company.trialEndsAt,
+  );
+
+  if (!options.allowInactive && !hasAccess) {
+    redirect("/company?access=payment-required");
+  }
+
   return companyUser;
 }
 
-export async function requireCompanyAdmin() {
-  return requireCompanyUser([CompanyUserRole.COMPANY_ADMIN]);
+export async function requireCompanyAdmin(options: CompanyAccessOptions = {}) {
+  return requireCompanyUser([CompanyUserRole.COMPANY_ADMIN], options);
 }
 
 export async function requireCustomerMembership(slug: string) {
