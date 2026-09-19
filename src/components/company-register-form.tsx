@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState, type ChangeEvent } from "react";
+import { useActionState, useState, type ChangeEvent, type FormEvent } from "react";
 import { registerCompany, type CompanyRegistrationState } from "@/app/actions";
 
 const initialState: CompanyRegistrationState = { error: null };
@@ -37,6 +37,7 @@ const initialValues: FormValues = {
 export function CompanyRegisterForm() {
   const [state, formAction, pending] = useActionState(registerCompany, initialState);
   const [values, setValues] = useState(initialValues);
+  const [clientError, setClientError] = useState<ValidationError | null>(null);
 
   function updateField(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.currentTarget;
@@ -48,11 +49,26 @@ export function CompanyRegisterForm() {
     setValues((current) => ({ ...current, [name]: checked }));
   }
 
+  function validateBeforeSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    const error = validateRegistration(values);
+    setClientError(error);
+
+    if (!error) return;
+
+    event.preventDefault();
+    requestAnimationFrame(() => {
+      form.querySelector<HTMLElement>(`[name="${error.field}"]`)?.focus();
+    });
+  }
+
+  const errorMessage = clientError?.message ?? state.error;
+
   return (
-    <form action={formAction} onReset={(event) => event.preventDefault()} className="mt-6 grid gap-4 sm:grid-cols-2">
-      {state.error && (
+    <form action={formAction} noValidate onSubmit={validateBeforeSubmit} onReset={(event) => event.preventDefault()} className="mt-6 grid gap-4 sm:grid-cols-2">
+      {errorMessage && (
         <p role="alert" aria-live="polite" className="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700 sm:col-span-2">
-          {state.error}. Проверьте данные — заполненные поля сохранены.
+          {errorMessage}. Проверьте данные — заполненные поля сохранены.
         </p>
       )}
 
@@ -115,6 +131,28 @@ export function CompanyRegisterForm() {
       </div>
     </form>
   );
+}
+
+type ValidationError = {
+  field: keyof FormValues;
+  message: string;
+};
+
+function validateRegistration(values: FormValues): ValidationError | null {
+  if (!values.name.trim()) return { field: "name", message: "Укажите название компании" };
+  if (!values.city.trim()) return { field: "city", message: "Укажите город" };
+  if (!values.ownerName.trim()) return { field: "ownerName", message: "Укажите ФИО владельца или управляющего" };
+  if (values.phone.replace(/\D/g, "").length < 10) return { field: "phone", message: "Укажите корректный номер телефона — не менее 10 цифр" };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) return { field: "email", message: "Укажите корректный email" };
+  if (values.password.length < 10) {
+    return {
+      field: "password",
+      message: `Пароль слишком короткий: введено ${values.password.length} из 10 символов. Введите не менее 10 символов`,
+    };
+  }
+  if (!values.offerAccepted) return { field: "offerAccepted", message: "Примите условия договора-оферты" };
+  if (!values.privacyAccepted) return { field: "privacyAccepted", message: "Подтвердите согласие на обработку персональных данных" };
+  return null;
 }
 
 function RegistrationField({
