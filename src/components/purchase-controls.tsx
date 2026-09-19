@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { ConfirmSubmit } from "@/components/confirm-submit";
 import { formatCashbackPercent } from "@/lib/cashback";
 import { formatKopeks } from "@/lib/raffles";
@@ -25,6 +28,8 @@ export function PurchaseControls({
     percentBasisPoints: number;
   } | null;
 }) {
+  const [cashbackAction, setCashbackAction] = useState<"EARN" | "REDEEM">("EARN");
+
   if (maxQuantity <= 0) {
     return (
       <div className="rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">
@@ -44,6 +49,60 @@ export function PurchaseControls({
             <p className="font-extrabold">Баланс клиента: {formatKopeks(cashback!.balanceKopeks)}</p>
             <p className="mt-1">Начисление: {formatCashbackPercent(cashback!.percentBasisPoints)}% от суммы, оплаченной деньгами.</p>
           </div>
+
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-bold text-[var(--text)]">Что хочет сделать клиент?</legend>
+            <label
+              className={`flex min-h-14 cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
+                cashbackAction === "EARN"
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-[var(--border)] bg-white"
+              }`}
+            >
+              <input
+                type="radio"
+                name="cashbackAction"
+                value="EARN"
+                checked={cashbackAction === "EARN"}
+                onChange={() => setCashbackAction("EARN")}
+                className="mt-1 h-5 w-5 accent-emerald-600"
+              />
+              <span>
+                <span className="block font-extrabold text-[var(--text)]">Накопить кешбэк</span>
+                <span className="mt-0.5 block text-xs font-semibold text-[var(--text-muted)]">
+                  Ничего не списывать. Новый кешбэк прибавится к текущему балансу клиента.
+                </span>
+              </span>
+            </label>
+
+            <label
+              className={`flex min-h-14 items-start gap-3 rounded-xl border p-3 transition ${
+                cashback!.balanceKopeks <= 0
+                  ? "cursor-not-allowed border-[var(--border)] bg-[var(--inactive)] opacity-70"
+                  : cashbackAction === "REDEEM"
+                    ? "cursor-pointer border-orange-500 bg-orange-50"
+                    : "cursor-pointer border-[var(--border)] bg-white"
+              }`}
+            >
+              <input
+                type="radio"
+                name="cashbackAction"
+                value="REDEEM"
+                checked={cashbackAction === "REDEEM"}
+                onChange={() => setCashbackAction("REDEEM")}
+                disabled={cashback!.balanceKopeks <= 0}
+                className="mt-1 h-5 w-5 accent-orange-600"
+              />
+              <span>
+                <span className="block font-extrabold text-[var(--text)]">Списать с баланса</span>
+                <span className="mt-0.5 block text-xs font-semibold text-[var(--text-muted)]">
+                  {cashback!.balanceKopeks > 0
+                    ? "Указать сумму, которую клиент хочет использовать как скидку."
+                    : "Списание станет доступно после первого начисления кешбэка."}
+                </span>
+              </span>
+            </label>
+          </fieldset>
         </>
       ) : (
         <label className="block">
@@ -83,24 +142,22 @@ export function PurchaseControls({
         </span>
       </label>
 
-      {isCashback && (
+      {isCashback && cashbackAction === "REDEEM" && cashback!.balanceKopeks > 0 && (
         <label className="block">
           <span className="mb-1 block text-sm font-bold text-[var(--text)]">Списать с баланса, руб.</span>
           <input
             name="redeemAmount"
             type="number"
             inputMode="decimal"
-            min="0"
+            min="0.01"
             max={(cashback!.balanceKopeks / 100).toFixed(2)}
             step="0.01"
-            defaultValue="0"
-            disabled={cashback!.balanceKopeks <= 0}
-            className="min-h-12 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-base font-semibold text-[var(--text)] outline-none disabled:bg-[var(--inactive)] disabled:text-[var(--text-muted)] focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
+            placeholder="Например, 300"
+            required
+            className="min-h-12 w-full rounded-xl border border-[var(--border)] bg-white px-3 text-base font-semibold text-[var(--text)] outline-none focus:border-[var(--brand-strong)] focus:ring-4 focus:ring-[rgba(201,71,38,0.14)]"
           />
           <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">
-            {cashback!.balanceKopeks > 0
-              ? `Можно списать не больше ${formatKopeks(cashback!.balanceKopeks)} и не больше суммы чека.`
-              : "На балансе пока нет средств для списания."}
+            Можно списать не больше {formatKopeks(cashback!.balanceKopeks)} и не больше суммы чека.
           </span>
         </label>
       )}

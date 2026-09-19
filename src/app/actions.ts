@@ -100,6 +100,21 @@ function safeCompanyReturnPath(value: string, fallback: string) {
   return fallback;
 }
 
+function cashbackRedemptionFromForm(formData: FormData, returnPath: string) {
+  const action = text(formData, "cashbackAction");
+  const amountKopeks = parseRublesToKopeks(formData.get("redeemAmount"));
+
+  if (action === "EARN") {
+    return 0;
+  }
+
+  if (action === "REDEEM" && amountKopeks <= 0) {
+    errorRedirect(returnPath, "Укажите сумму кешбэка для списания");
+  }
+
+  return amountKopeks;
+}
+
 async function requestMeta() {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
@@ -1226,7 +1241,7 @@ export async function confirmPurchase(formData: FormData) {
   const returnTo = safeCompanyReturnPath(text(formData, "returnTo"), fallbackPath);
   const quantity = numberValue(formData, "quantity", 1);
   const purchaseAmountKopeks = parseRublesToKopeks(formData.get("purchaseAmount"));
-  const redeemAmountKopeks = parseRublesToKopeks(formData.get("redeemAmount"));
+  const redeemAmountKopeks = cashbackRedemptionFromForm(formData, returnTo);
   let successMessage = "Начислено";
   try {
     const result = await addPurchase(access.companyId, membershipId, access.userId, quantity, purchaseAmountKopeks, redeemAmountKopeks);
@@ -1255,9 +1270,10 @@ export async function confirmPurchase(formData: FormData) {
 export async function joinScannedCustomerAndConfirmPurchase(formData: FormData) {
   const access = await requireCompanyUser();
   const token = text(formData, "token");
+  const returnPath = `/company/scan?token=${encodeURIComponent(token)}`;
   const quantity = numberValue(formData, "quantity", 1);
   const purchaseAmountKopeks = parseRublesToKopeks(formData.get("purchaseAmount"));
-  const redeemAmountKopeks = parseRublesToKopeks(formData.get("redeemAmount"));
+  const redeemAmountKopeks = cashbackRedemptionFromForm(formData, returnPath);
   let membershipIdForLog = "";
   let successMessage = "Клиент подключён, покупка начислена";
 
