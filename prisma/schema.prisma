@@ -142,6 +142,7 @@ model Company {
   cardBackgroundMode        String        @default("SOLID")
   cardSurfaceColor          String?
   cardTextColor             String?
+  cardFontFamily            String        @default("SYSTEM")
   latitude                  Float?
   longitude                 Float?
   ownerName                 String

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { Gift } from "lucide-react";
@@ -8,6 +7,8 @@ import { RegistrationQrPoster } from "@/components/registration-qr-poster";
 import { SubmitButton } from "@/components/buttons";
 import { FormField, SelectField, TextAreaField } from "@/components/form-field";
 import { ProgramTypeSettings } from "@/components/program-type-settings";
+import { CompanyAppearanceSettings } from "@/components/company-appearance-settings";
+import { CompanyLogoUpload } from "@/components/company-logo-upload";
 import { StatusPill, WorkspaceCard } from "@/components/company-ui";
 import { PosIntegrationCard } from "@/components/pos-integration-card";
 import { requireCompanyAdmin } from "@/lib/auth";
@@ -28,8 +29,6 @@ const icons = [
   { value: "⭐", label: "Звезда" },
   { value: "🎁", label: "Подарок" },
 ];
-const colorPresets = ["#F36B45", "#C94726", "#16866E", "#B7791F", "#1F1B18", "#0F766E"];
-
 export default async function CompanySettingsPage({
   searchParams,
 }: {
@@ -126,9 +125,6 @@ export default async function CompanySettingsPage({
       </WorkspaceCard>
 
       <form action={saveCompanySettings} className="space-y-6">
-        <input type="hidden" name="logoUrl" value={access.company.logoUrl ?? ""} />
-        <input type="hidden" name="currentCardBackgroundUrl" value={access.company.cardBackgroundUrl ?? ""} />
-
         <WorkspaceCard id="company">
           <SectionHead title="Компания" text="Эти данные клиенты видят в карточке компании и списке партнёров." />
           <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_260px]">
@@ -143,21 +139,7 @@ export default async function CompanySettingsPage({
                 <TextAreaField label="Описание" name="description" defaultValue={access.company.description} rows={3} required={false} />
               </div>
             </div>
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4">
-              <p className="text-sm font-bold text-[var(--text)]">Логотип</p>
-              <div className="mt-3 flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
-                {access.company.logoUrl ? (
-                  <Image src={access.company.logoUrl} alt={`Логотип ${access.company.name}`} width={220} height={220} loading="lazy" className="h-full w-full object-contain p-4" />
-                ) : (
-                  <span className="text-sm font-semibold text-[var(--text-muted)]">Логотип не загружен</span>
-                )}
-              </div>
-              <label className="mt-3 block">
-                <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Загрузка файла</span>
-                <input type="file" accept="image/*" disabled className="mt-1.5 w-full text-sm text-[var(--text-muted)]" />
-              </label>
-              <p className="mt-2 text-xs font-semibold text-[var(--warning)]">Файловая загрузка требует backend-хранилища. Текущий логотип сохраняется без изменений.</p>
-            </div>
+            <CompanyLogoUpload companyName={access.company.name} defaultLogoUrl={access.company.logoUrl} />
           </div>
         </WorkspaceCard>
 
@@ -184,78 +166,21 @@ export default async function CompanySettingsPage({
         </WorkspaceCard>
 
         <WorkspaceCard id="appearance">
-          <SectionHead title="Оформление" text="Цвет, иконка прогресса и живой предпросмотр клиентской карты." />
-          <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px]">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Фирменный цвет" name="themeColor" type="color" defaultValue={defaults.themeColor} />
-              <SelectField label="Иконка прогресса" name="icon" defaultValue={defaults.icon} options={icons} />
-              <SelectField
-                label="Фон клиентской карточки"
-                name="cardBackgroundMode"
-                defaultValue={access.company.cardBackgroundMode}
-                options={[
-                  { value: "SOLID", label: "Спокойный цвет" },
-                  { value: "PHOTO", label: "Фото или картинка" },
-                ]}
-              />
-              <FormField label="Цвет поверхности" name="cardSurfaceColor" type="color" defaultValue={access.company.cardSurfaceColor ?? "#FFFFFF"} />
-              <FormField label="Цвет текста на карточке" name="cardTextColor" type="color" defaultValue={access.company.cardTextColor ?? "#1F1B18"} />
-              <FormField label="URL фонового изображения" name="cardBackgroundUrl" defaultValue={access.company.cardBackgroundUrl ?? ""} required={false} placeholder="https://..." />
-              <label className="block sm:col-span-2">
-                <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Загрузить фон</span>
-                <input
-                  name="cardBackgroundImage"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--brand-soft)] file:px-3 file:py-2 file:text-sm file:font-bold file:text-[var(--brand-strong)]"
-                />
-                <span className="mt-1 block text-xs font-semibold text-[var(--text-muted)]">JPG, PNG или WebP до 2 МБ. Если файл выбран, он заменит URL.</span>
-              </label>
-              <div className="sm:col-span-2">
-                <p className="text-xs font-bold uppercase text-[var(--text-muted)]">Готовые пресеты</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {colorPresets.map((color) => (
-                    <span key={color} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-3 text-xs font-bold text-[var(--text)]">
-                      <span className="size-5 rounded-full border border-black/10" style={{ backgroundColor: color }} />
-                      {color}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-xl border border-[var(--border)] bg-emerald-50 p-4 text-sm font-semibold text-emerald-800 sm:col-span-2">
-                Контраст основного текста на белой карточке соответствует WCAG AA. Для коралловых кнопок используется тёмный цвет #C94726.
-              </div>
-            </div>
-            <div className="rounded-3xl border border-[var(--border)] bg-white p-5 shadow-sm">
-              <div
-                className="overflow-hidden rounded-2xl bg-cover bg-center p-4"
-                style={{
-                  backgroundColor: defaults.themeColor,
-                  backgroundImage: access.company.cardBackgroundMode === "PHOTO" && access.company.cardBackgroundUrl ? `url(${access.company.cardBackgroundUrl})` : undefined,
-                }}
-              >
-                <div
-                  className="rounded-2xl p-4"
-                  style={{
-                    backgroundColor: access.company.cardSurfaceColor ?? "rgba(255,255,255,0.9)",
-                    color: access.company.cardTextColor ?? "#1F1B18",
-                  }}
-                >
-                <p className="text-sm font-bold opacity-90">{access.company.name}</p>
-                <p className="mt-3 text-3xl">{defaults.icon}</p>
-                <h3 className="mt-3 text-xl font-extrabold">{defaults.rewardTitle}</h3>
-                <p className="mt-1 text-sm opacity-90">{defaults.rewardDescription || "Краткий текст акции"}</p>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-6 gap-2">
-                {Array.from({ length: Number(defaults.goalCount) || 6 }).map((_, index) => (
-                  <span key={index} className="aspect-square rounded-full border border-[var(--border)] bg-[var(--background)] text-center text-sm leading-9 text-[var(--text-muted)]">
-                    {defaults.icon}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+          <SectionHead title="Оформление" text="Загрузите фон, выберите цвета и шрифт — результат сразу появится в предпросмотре." />
+          <CompanyAppearanceSettings
+            companyName={access.company.name}
+            rewardTitle={defaults.rewardTitle}
+            rewardDescription={defaults.rewardDescription}
+            goalCount={Number(defaults.goalCount) || 6}
+            icons={icons}
+            defaultIcon={defaults.icon}
+            defaultThemeColor={defaults.themeColor}
+            defaultBackgroundMode={access.company.cardBackgroundMode}
+            defaultBackgroundUrl={access.company.cardBackgroundUrl}
+            defaultSurfaceColor={access.company.cardSurfaceColor}
+            defaultTextColor={access.company.cardTextColor}
+            defaultFontFamily={access.company.cardFontFamily}
+          />
         </WorkspaceCard>
 
         <WorkspaceCard id="map">

@@ -37,6 +37,7 @@ export default async function ClientCardsPage() {
             cardBackgroundMode={membership.company.cardBackgroundMode}
             cardSurfaceColor={membership.company.cardSurfaceColor}
             cardTextColor={membership.company.cardTextColor}
+            cardFontFamily={membership.company.cardFontFamily}
             cashbackBalanceKopeks={isCashbackProgram(membership.company.loyaltyProgram) ? membership.cashbackBalanceKopeks : null}
             cashbackPercentBasisPoints={membership.company.loyaltyProgram?.cashbackPercentBasisPoints}
           />

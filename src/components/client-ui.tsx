@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Gift, MapPinned, QrCode, Store } from "lucide-react";
 import { clsx } from "clsx";
+import { cardFontStack } from "@/lib/company-appearance";
 import { formatKopeks } from "@/lib/raffles";
 
 export function ClientShell({
@@ -127,6 +128,7 @@ export function ProgramSummaryCard({
   cardBackgroundMode,
   cardSurfaceColor,
   cardTextColor,
+  cardFontFamily,
   cashbackBalanceKopeks,
   cashbackPercentBasisPoints,
 }: {
@@ -146,6 +148,7 @@ export function ProgramSummaryCard({
   cardBackgroundMode?: string | null;
   cardSurfaceColor?: string | null;
   cardTextColor?: string | null;
+  cardFontFamily?: string | null;
   cashbackBalanceKopeks?: number | null;
   cashbackPercentBasisPoints?: number | null;
 }) {
@@ -161,7 +164,10 @@ export function ProgramSummaryCard({
         "block overflow-hidden rounded-3xl border border-[var(--border)] bg-white shadow-sm transition active:scale-[0.99] motion-reduce:transition-none",
         hasPhotoBackground ? "bg-cover bg-center p-3" : "p-4",
       )}
-      style={hasPhotoBackground ? { backgroundImage: `url(${cardBackgroundUrl})` } : undefined}
+      style={{
+        fontFamily: cardFontStack(cardFontFamily),
+        backgroundImage: hasPhotoBackground ? `url(${cardBackgroundUrl})` : undefined,
+      }}
     >
       <div
         className={clsx(hasPhotoBackground && "rounded-3xl p-4 backdrop-blur-[2px]")}
@@ -217,7 +223,7 @@ export function LogoBox({
     return (
       // Remote partner logos are user data and are not restricted in next/image config.
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={logoUrl} alt={`Логотип ${name}`} className={clsx("size-12 shrink-0 rounded-2xl border border-[var(--border)] bg-white object-cover", className)} />
+      <img src={logoUrl} alt={`Логотип ${name}`} className={clsx("size-12 shrink-0 rounded-2xl border border-[var(--border)] bg-white object-contain p-1", className)} />
     );
   }
 

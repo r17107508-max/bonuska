@@ -11,6 +11,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { getActivePartnerCompanies, getClientMemberships, pickNearestGift, rewardGoal, rewardLeft, type ClientMembership } from "@/lib/customer-app";
 import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
 import { isCashbackProgram } from "@/lib/cashback";
+import { cardFontStack } from "@/lib/company-appearance";
 import { finalizeDueRafflesForUser, formatKopeks, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
 
 export default async function ClientDashboardPage({
@@ -138,6 +139,7 @@ export default async function ClientDashboardPage({
                       cardBackgroundMode={membership.company.cardBackgroundMode}
                       cardSurfaceColor={membership.company.cardSurfaceColor}
                       cardTextColor={membership.company.cardTextColor}
+                      cardFontFamily={membership.company.cardFontFamily}
                       cashbackBalanceKopeks={isCashbackProgram(membership.company.loyaltyProgram) ? membership.cashbackBalanceKopeks : null}
                       cashbackPercentBasisPoints={membership.company.loyaltyProgram?.cashbackPercentBasisPoints}
                     />
@@ -217,7 +219,10 @@ function NearestGiftHero({
   return (
     <ClientCard
       className="overflow-hidden bg-cover bg-center p-0"
-      style={hasPhotoBackground ? { backgroundImage: `url(${membership.company.cardBackgroundUrl})` } : undefined}
+      style={{
+        backgroundImage: hasPhotoBackground ? `url(${membership.company.cardBackgroundUrl})` : undefined,
+        fontFamily: cardFontStack(membership.company.cardFontFamily),
+      }}
     >
       <div
         className="p-5"

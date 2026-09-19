@@ -12,6 +12,7 @@ import { rewardGoal, rewardLeft } from "@/lib/customer-app";
 import { getDb } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { formatCashbackPercent, isCashbackProgram } from "@/lib/cashback";
+import { cardFontStack } from "@/lib/company-appearance";
 import { formatKopeks } from "@/lib/raffles";
 
 export default async function ClientCompanyPage({
@@ -62,6 +63,7 @@ export default async function ClientCompanyPage({
   const left = membership ? rewardLeft(membership) : goal;
   const progress = membership ? (membership.rewardAvailable ? 100 : Math.round((membership.currentCount / Math.max(goal, 1)) * 100)) : 0;
   const isCashback = isCashbackProgram(company.loyaltyProgram);
+  const hasPhotoBackground = company.cardBackgroundMode === "PHOTO" && Boolean(company.cardBackgroundUrl);
 
   return (
     <ClientShell>
@@ -70,8 +72,21 @@ export default async function ClientCompanyPage({
         Назад к карте
       </Link>
 
-      <ClientCard className="overflow-hidden p-0">
-        <div className="p-5" style={{ borderTop: `8px solid ${company.loyaltyProgram.themeColor}` }}>
+      <ClientCard
+        className="overflow-hidden bg-cover bg-center p-0"
+        style={{
+          backgroundImage: hasPhotoBackground ? `url(${company.cardBackgroundUrl})` : undefined,
+          fontFamily: cardFontStack(company.cardFontFamily),
+        }}
+      >
+        <div
+          className="p-5"
+          style={{
+            borderTop: `8px solid ${company.loyaltyProgram.themeColor}`,
+            backgroundColor: hasPhotoBackground ? company.cardSurfaceColor ?? "rgba(255,255,255,0.9)" : undefined,
+            color: hasPhotoBackground ? company.cardTextColor ?? "#1F1B18" : undefined,
+          }}
+        >
           <div className="flex items-start gap-3">
             <LogoBox logoUrl={company.logoUrl} fallback={company.loyaltyProgram.icon || company.icon} name={company.name} color={company.loyaltyProgram.themeColor} className="size-14" />
             <div className="min-w-0 flex-1">

@@ -20,7 +20,8 @@ import {
   requireCompanyUser,
   requireSuperadmin,
 } from "@/lib/auth";
-import { cleanHexColor, saveCompanyDesignImage } from "@/lib/company-design";
+import { normalizeCardFontFamily } from "@/lib/company-appearance";
+import { cleanHexColor, normalizeCompanyImageUrl, saveCompanyDesignImage } from "@/lib/company-design";
 import {
   DEFAULT_CASHBACK_PERCENT_BASIS_POINTS,
   parseCashbackPercentToBasisPoints,
@@ -829,16 +830,39 @@ export async function saveCompanySettings(formData: FormData) {
   const access = await requireCompanyAdmin();
   const goalCount = Math.min(20, Math.max(3, numberValue(formData, "goalCount", 6)));
   const slug = slugify(text(formData, "slug")) || access.company.slug;
+  const themeColor = cleanHexColor(formData.get("themeColor"), "#0F766E") ?? "#0F766E";
+  let uploadedLogoUrl: string | null = null;
   let uploadedCardBackgroundUrl: string | null = null;
   try {
-    uploadedCardBackgroundUrl = await saveCompanyDesignImage(access.companyId, formData.get("cardBackgroundImage"));
+    uploadedLogoUrl = await saveCompanyDesignImage(access.companyId, formData.get("logoImage"), "logo");
+    uploadedCardBackgroundUrl = await saveCompanyDesignImage(access.companyId, formData.get("cardBackgroundImage"), "background");
   } catch (error) {
-    errorRedirect("/company/settings", error instanceof Error ? error.message : "Не удалось загрузить фоновое изображение");
+    errorRedirect("/company/settings", error instanceof Error ? error.message : "Не удалось загрузить изображение");
   }
-  const submittedCardBackgroundUrl = optionalUrl(formData, "cardBackgroundUrl");
-  const currentCardBackgroundUrl = text(formData, "currentCardBackgroundUrl") || null;
-  const cardBackgroundMode = text(formData, "cardBackgroundMode") === "PHOTO" ? "PHOTO" : "SOLID";
-  const cardBackgroundUrl = uploadedCardBackgroundUrl ?? submittedCardBackgroundUrl ?? currentCardBackgroundUrl;
+
+  let submittedCardBackgroundUrl: string | null = null;
+  try {
+    submittedCardBackgroundUrl = normalizeCompanyImageUrl(formData.get("cardBackgroundUrl"));
+  } catch (error) {
+    errorRedirect("/company/settings", error instanceof Error ? error.message : "Неверная ссылка на фоновое изображение");
+  }
+
+  const removeLogo = formData.get("removeLogo") === "on";
+  const removeCardBackground = formData.get("removeCardBackground") === "on";
+  const requestedBackgroundMode = text(formData, "cardBackgroundMode") === "PHOTO" ? "PHOTO" : "SOLID";
+  const cardBackgroundUrl = removeCardBackground
+    ? null
+    : uploadedCardBackgroundUrl ?? submittedCardBackgroundUrl ?? access.company.cardBackgroundUrl;
+  const cardBackgroundMode = removeCardBackground
+    ? "SOLID"
+    : uploadedCardBackgroundUrl
+      ? "PHOTO"
+      : requestedBackgroundMode;
+  const logoUrl = removeLogo ? null : uploadedLogoUrl ?? access.company.logoUrl;
+
+  if (cardBackgroundMode === "PHOTO" && !cardBackgroundUrl) {
+    errorRedirect("/company/settings", "Для фона «Фото или картинка» загрузите файл или укажите ссылку");
+  }
   const programType = text(formData, "programType") as LoyaltyProgramType;
   let cashbackPercentBasisPoints = DEFAULT_CASHBACK_PERCENT_BASIS_POINTS;
   const gifts = text(formData, "giftOptions")
@@ -875,15 +899,16 @@ export async function saveCompanySettings(formData: FormData) {
         slug,
         businessType: text(formData, "businessType"),
         icon: text(formData, "icon") || "🎁",
-        themeColor: text(formData, "themeColor") || "#0f766e",
+        themeColor,
         city: text(formData, "city") || access.company.city,
         address: text(formData, "address"),
         website: optionalUrl(formData, "website"),
-        logoUrl: optionalUrl(formData, "logoUrl"),
+        logoUrl,
         cardBackgroundMode,
-        cardBackgroundUrl: cardBackgroundMode === "PHOTO" ? cardBackgroundUrl : null,
+        cardBackgroundUrl,
         cardSurfaceColor: cleanHexColor(formData.get("cardSurfaceColor"), "#FFFFFF"),
         cardTextColor: cleanHexColor(formData.get("cardTextColor"), "#1F1B18"),
+        cardFontFamily: normalizeCardFontFamily(formData.get("cardFontFamily")),
         latitude: optionalNumber(formData, "latitude"),
         longitude: optionalNumber(formData, "longitude"),
         ownerPhone: text(formData, "phone") || access.company.ownerPhone,
@@ -896,7 +921,7 @@ export async function saveCompanySettings(formData: FormData) {
               rewardTitle: text(formData, "rewardTitle"),
               rewardDescription: text(formData, "rewardDescription"),
               cashbackPercentBasisPoints,
-              themeColor: text(formData, "themeColor") || "#0f766e",
+              themeColor,
               isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
             },
             create: {
@@ -906,7 +931,7 @@ export async function saveCompanySettings(formData: FormData) {
               rewardTitle: text(formData, "rewardTitle"),
               rewardDescription: text(formData, "rewardDescription"),
               cashbackPercentBasisPoints,
-              themeColor: text(formData, "themeColor") || "#0f766e",
+              themeColor,
               isGiftBoxEnabled: programType === LoyaltyProgramType.GIFT_BOX,
             },
           },
