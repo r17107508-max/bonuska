@@ -2,7 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Gift, MapPinned, QrCode, Store } from "lucide-react";
 import { clsx } from "clsx";
-import { cardFontStack } from "@/lib/company-appearance";
+import { CompanyLogo } from "@/components/company-logo";
+import { cardAppearanceStyle, normalizeCardColor } from "@/lib/company-appearance";
 import { formatKopeks } from "@/lib/raffles";
 
 export function ClientShell({
@@ -156,6 +157,13 @@ export function ProgramSummaryCard({
   const progress = rewardAvailable ? 100 : Math.round((current / Math.max(goal, 1)) * 100);
   const safeColor = readableThemeColor(themeColor);
   const hasPhotoBackground = cardBackgroundMode === "PHOTO" && Boolean(cardBackgroundUrl);
+  const surfaceColor = normalizeCardColor(cardSurfaceColor, "#FFFFFF");
+  const appearanceStyle = cardAppearanceStyle({
+    themeColor: safeColor,
+    surfaceColor,
+    textColor: cardTextColor,
+    fontFamily: cardFontFamily,
+  });
 
   return (
     <Link
@@ -165,7 +173,8 @@ export function ProgramSummaryCard({
         hasPhotoBackground ? "bg-cover bg-center p-3" : "p-4",
       )}
       style={{
-        fontFamily: cardFontStack(cardFontFamily),
+        ...appearanceStyle,
+        backgroundColor: hasPhotoBackground ? undefined : surfaceColor,
         backgroundImage: hasPhotoBackground ? `url(${cardBackgroundUrl})` : undefined,
       }}
     >
@@ -174,8 +183,7 @@ export function ProgramSummaryCard({
         style={
           hasPhotoBackground
             ? {
-                backgroundColor: cardSurfaceColor ?? "rgba(255,255,255,0.9)",
-                color: cardTextColor ?? "#1F1B18",
+                backgroundColor: surfaceColor,
               }
             : undefined
         }
@@ -219,22 +227,14 @@ export function LogoBox({
   color?: string;
   className?: string;
 }) {
-  if (logoUrl) {
-    return (
-      // Remote partner logos are user data and are not restricted in next/image config.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={logoUrl} alt={`Логотип ${name}`} className={clsx("size-12 shrink-0 rounded-2xl border border-[var(--border)] bg-white object-contain p-1", className)} />
-    );
-  }
-
   return (
-    <span
-      className={clsx("flex size-12 shrink-0 items-center justify-center rounded-2xl text-xl font-black text-white", className)}
-      style={{ backgroundColor: color ?? "var(--brand-strong)" }}
-      aria-hidden
-    >
-      {fallback}
-    </span>
+    <CompanyLogo
+      logoUrl={logoUrl}
+      fallback={fallback}
+      name={name}
+      color={color}
+      className={className}
+    />
   );
 }
 

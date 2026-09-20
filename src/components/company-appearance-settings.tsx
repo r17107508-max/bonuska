@@ -42,6 +42,7 @@ export function CompanyAppearanceSettings({
   const [textColor, setTextColor] = useState(defaultTextColor ?? "#1F1B18");
   const [fontFamily, setFontFamily] = useState(normalizeCardFontFamily(defaultFontFamily));
   const [removeBackground, setRemoveBackground] = useState(false);
+  const [backgroundFileName, setBackgroundFileName] = useState("");
   const [error, setError] = useState("");
   const objectUrlRef = useRef<string | null>(null);
 
@@ -74,9 +75,12 @@ export function CompanyAppearanceSettings({
             onChange={(event) => setBackgroundMode(event.currentTarget.value)}
             className={fieldClassName}
           >
-            <option value="SOLID">Спокойный цвет</option>
+            <option value="SOLID">Однотонный цвет</option>
             <option value="PHOTO">Фото или картинка</option>
           </select>
+          <span className="mt-1 block text-xs font-semibold leading-5 text-[var(--text-muted)]">
+            В однотонном режиме используется выбранный ниже цвет карточки. При выборе файла режим автоматически переключится на фото.
+          </span>
         </label>
 
         <label className="block">
@@ -91,26 +95,8 @@ export function CompanyAppearanceSettings({
           </select>
         </label>
 
-        <ColorField label="Цвет подложки под текстом" name="cardSurfaceColor" value={surfaceColor} onChange={setSurfaceColor} />
-        <ColorField label="Цвет текста на карточке" name="cardTextColor" value={textColor} onChange={setTextColor} />
-
         <label className="block sm:col-span-2">
-          <span className="text-xs font-semibold uppercase text-slate-600">Ссылка на фоновое изображение — необязательно</span>
-          <input
-            name="cardBackgroundUrl"
-            value={backgroundUrl}
-            onChange={(event) => {
-              const value = event.currentTarget.value;
-              setBackgroundUrl(value);
-              if (!objectUrlRef.current) setBackgroundPreview(value);
-            }}
-            placeholder="https://example.ru/background.jpg"
-            className={fieldClassName}
-          />
-        </label>
-
-        <label className="block sm:col-span-2">
-          <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Загрузить свой фон</span>
+          <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Загрузить фоновое изображение</span>
           <input
             name="cardBackgroundImage"
             type="file"
@@ -120,23 +106,27 @@ export function CompanyAppearanceSettings({
               const selected = event.currentTarget.files?.[0] ?? null;
               setError("");
               if (!selected) {
+                setBackgroundFileName("");
                 if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
                 objectUrlRef.current = null;
                 setBackgroundPreview(backgroundUrl || defaultBackgroundUrl || "");
                 return;
               }
               if (!ACCEPTED_IMAGE_TYPES.includes(selected.type)) {
+                setBackgroundFileName("");
                 setError("Выберите фон JPG, PNG или WebP. HEIC, SVG и GIF не поддерживаются.");
                 event.currentTarget.value = "";
                 return;
               }
               if (selected.size > MAX_IMAGE_BYTES) {
+                setBackgroundFileName("");
                 setError("Размер фонового изображения превышает 2 МБ.");
                 event.currentTarget.value = "";
                 return;
               }
               setRemoveBackground(false);
               setBackgroundMode("PHOTO");
+              setBackgroundFileName(selected.name);
               if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
               objectUrlRef.current = URL.createObjectURL(selected);
               setBackgroundPreview(objectUrlRef.current);
@@ -145,7 +135,29 @@ export function CompanyAppearanceSettings({
           <span className="mt-1 block text-xs font-semibold leading-5 text-[var(--text-muted)]">
             Формат: JPG, PNG или WebP, до 2 МБ. Рекомендуемый размер — 1600×900 px или больше, горизонтальная ориентация. HEIC с iPhone сначала сохраните как JPG.
           </span>
+          {backgroundFileName && <span className="mt-1 block text-xs font-bold text-[var(--success)]">Выбран файл: {backgroundFileName}</span>}
         </label>
+
+        <ColorField label="Цвет карточки / подложки под текстом" name="cardSurfaceColor" value={surfaceColor} onChange={setSurfaceColor} />
+        <ColorField label="Цвет текста внутри карточки" name="cardTextColor" value={textColor} onChange={setTextColor} />
+
+        <details className="rounded-xl border border-[var(--border)] bg-white sm:col-span-2">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-[var(--text)]">Дополнительно: использовать ссылку на фон</summary>
+          <label className="block border-t border-[var(--border)] p-4">
+            <span className="text-xs font-semibold uppercase text-slate-600">Полная HTTPS-ссылка на изображение</span>
+            <input
+              name="cardBackgroundUrl"
+              value={backgroundUrl}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                setBackgroundUrl(value);
+                if (!objectUrlRef.current) setBackgroundPreview(value);
+              }}
+              placeholder="https://example.ru/background.jpg"
+              className={fieldClassName}
+            />
+          </label>
+        </details>
         {error && <p className="rounded-lg bg-red-50 p-2 text-xs font-bold text-[var(--danger)] sm:col-span-2">{error}</p>}
 
         {defaultBackgroundUrl && (
@@ -162,7 +174,7 @@ export function CompanyAppearanceSettings({
         )}
 
         <div className="rounded-xl border border-[var(--border)] bg-blue-50 p-4 text-sm font-semibold leading-6 text-blue-900 sm:col-span-2">
-          Название компании меняется в разделе «Компания». Название подарка и текст акции меняются в разделе «Программа лояльности». Ниже показан предпросмотр сохранённых надписей с выбранными цветами, шрифтом и фоном.
+          Название компании меняется в разделе «Компания». Название подарка и текст акции меняются в разделе «Программа лояльности». Цвета, шрифт и фон применяются к карточкам компании, которые видит клиент. Системное меню приложения остаётся единым для всех компаний.
         </div>
       </div>
 
@@ -171,7 +183,7 @@ export function CompanyAppearanceSettings({
         <div
           className="overflow-hidden rounded-2xl bg-cover bg-center p-4"
           style={{
-            backgroundColor: themeColor,
+            backgroundColor: hasPhoto ? themeColor : surfaceColor,
             backgroundImage: hasPhoto ? `url(${previewImage})` : undefined,
             fontFamily: cardFontStack(fontFamily),
           }}
@@ -179,7 +191,7 @@ export function CompanyAppearanceSettings({
           <div
             className="rounded-2xl p-4"
             style={{
-              backgroundColor: hasPhoto ? surfaceColor : "rgba(255,255,255,0.94)",
+              backgroundColor: hasPhoto ? surfaceColor : "transparent",
               color: textColor,
             }}
           >

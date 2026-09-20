@@ -11,7 +11,7 @@ import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { formatCashbackPercent, isCashbackProgram } from "@/lib/cashback";
-import { cardFontStack } from "@/lib/company-appearance";
+import { cardAppearanceStyle, normalizeCardColor } from "@/lib/company-appearance";
 import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
 import { finalizeDueRafflesForCompany, formatKopeks, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
 
@@ -51,6 +51,13 @@ export default async function ClientCardPage({
   const promoText = program.rewardDescription || program.rewardTitle || `${program.goalCount} покупок - подарок`;
   const fullAddress = [membership.company.city, membership.company.address].filter(Boolean).join(", ");
   const hasPhotoBackground = membership.company.cardBackgroundMode === "PHOTO" && Boolean(membership.company.cardBackgroundUrl);
+  const surfaceColor = normalizeCardColor(membership.company.cardSurfaceColor, "#FFFFFF");
+  const appearanceStyle = cardAppearanceStyle({
+    themeColor: program.themeColor,
+    surfaceColor,
+    textColor: membership.company.cardTextColor,
+    fontFamily: membership.company.cardFontFamily,
+  });
   const isGiftBox = isGiftBoxProgram(program, membership.company.giftOptions);
   const activeRewardClaim = isGiftBox && membership.rewardAvailable
     ? await getDb().rewardClaim.findFirst({
@@ -97,16 +104,16 @@ export default async function ClientCardPage({
       <ClientCard
         className="overflow-hidden bg-cover bg-center p-0"
         style={{
+          ...appearanceStyle,
+          backgroundColor: hasPhotoBackground ? undefined : surfaceColor,
           backgroundImage: hasPhotoBackground ? `url(${membership.company.cardBackgroundUrl})` : undefined,
-          fontFamily: cardFontStack(membership.company.cardFontFamily),
         }}
       >
         <div
           className="p-5"
           style={{
             borderTop: `8px solid ${program.themeColor}`,
-            backgroundColor: hasPhotoBackground ? membership.company.cardSurfaceColor ?? "rgba(255,255,255,0.9)" : undefined,
-            color: hasPhotoBackground ? membership.company.cardTextColor ?? "#1F1B18" : undefined,
+            backgroundColor: hasPhotoBackground ? surfaceColor : undefined,
           }}
         >
           <div className="flex items-start gap-3">

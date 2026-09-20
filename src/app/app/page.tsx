@@ -11,7 +11,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { getActivePartnerCompanies, getClientMemberships, pickNearestGift, rewardGoal, rewardLeft, type ClientMembership } from "@/lib/customer-app";
 import { buildRewardQrPayload, isGiftBoxProgram } from "@/lib/loyalty";
 import { isCashbackProgram } from "@/lib/cashback";
-import { cardFontStack } from "@/lib/company-appearance";
+import { cardAppearanceStyle, normalizeCardColor } from "@/lib/company-appearance";
 import { finalizeDueRafflesForUser, formatKopeks, prizeTitleForPlace, ticketWinningPlace } from "@/lib/raffles";
 
 export default async function ClientDashboardPage({
@@ -215,21 +215,28 @@ function NearestGiftHero({
   const progress = membership.rewardAvailable ? 100 : Math.round((membership.currentCount / Math.max(goal, 1)) * 100);
   const color = program.themeColor || membership.company.themeColor || "#C94726";
   const hasPhotoBackground = membership.company.cardBackgroundMode === "PHOTO" && Boolean(membership.company.cardBackgroundUrl);
+  const surfaceColor = normalizeCardColor(membership.company.cardSurfaceColor, "#FFFFFF");
+  const appearanceStyle = cardAppearanceStyle({
+    themeColor: color,
+    surfaceColor,
+    textColor: membership.company.cardTextColor,
+    fontFamily: membership.company.cardFontFamily,
+  });
 
   return (
     <ClientCard
       className="overflow-hidden bg-cover bg-center p-0"
       style={{
+        ...appearanceStyle,
+        backgroundColor: hasPhotoBackground ? undefined : surfaceColor,
         backgroundImage: hasPhotoBackground ? `url(${membership.company.cardBackgroundUrl})` : undefined,
-        fontFamily: cardFontStack(membership.company.cardFontFamily),
       }}
     >
       <div
         className="p-5"
         style={{
           borderTop: `8px solid ${color}`,
-          backgroundColor: hasPhotoBackground ? membership.company.cardSurfaceColor ?? "rgba(255,255,255,0.9)" : undefined,
-          color: hasPhotoBackground ? membership.company.cardTextColor ?? "#1F1B18" : undefined,
+          backgroundColor: hasPhotoBackground ? surfaceColor : undefined,
         }}
       >
         <div className="flex items-start gap-3">

@@ -44,7 +44,7 @@ export async function saveCompanyDesignImage(
     throw new Error(`Загрузите ${kind === "logo" ? "логотип" : "фон"} в формате JPG, PNG или WebP`);
   }
 
-  const uploadsDir = path.join(process.cwd(), "public", "uploads", "company-design");
+  const uploadsDir = path.join(process.cwd(), "storage", "company-design");
   await mkdir(uploadsDir, { recursive: true });
 
   const fileName = `${companyId}-${kind}-${Date.now()}-${randomBytes(6).toString("hex")}.${detectedType}`;

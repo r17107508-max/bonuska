@@ -12,7 +12,7 @@ import { rewardGoal, rewardLeft } from "@/lib/customer-app";
 import { getDb } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { formatCashbackPercent, isCashbackProgram } from "@/lib/cashback";
-import { cardFontStack } from "@/lib/company-appearance";
+import { cardAppearanceStyle, normalizeCardColor } from "@/lib/company-appearance";
 import { formatKopeks } from "@/lib/raffles";
 
 export default async function ClientCompanyPage({
@@ -64,6 +64,13 @@ export default async function ClientCompanyPage({
   const progress = membership ? (membership.rewardAvailable ? 100 : Math.round((membership.currentCount / Math.max(goal, 1)) * 100)) : 0;
   const isCashback = isCashbackProgram(company.loyaltyProgram);
   const hasPhotoBackground = company.cardBackgroundMode === "PHOTO" && Boolean(company.cardBackgroundUrl);
+  const surfaceColor = normalizeCardColor(company.cardSurfaceColor, "#FFFFFF");
+  const appearanceStyle = cardAppearanceStyle({
+    themeColor: company.loyaltyProgram.themeColor,
+    surfaceColor,
+    textColor: company.cardTextColor,
+    fontFamily: company.cardFontFamily,
+  });
 
   return (
     <ClientShell>
@@ -75,16 +82,16 @@ export default async function ClientCompanyPage({
       <ClientCard
         className="overflow-hidden bg-cover bg-center p-0"
         style={{
+          ...appearanceStyle,
+          backgroundColor: hasPhotoBackground ? undefined : surfaceColor,
           backgroundImage: hasPhotoBackground ? `url(${company.cardBackgroundUrl})` : undefined,
-          fontFamily: cardFontStack(company.cardFontFamily),
         }}
       >
         <div
           className="p-5"
           style={{
             borderTop: `8px solid ${company.loyaltyProgram.themeColor}`,
-            backgroundColor: hasPhotoBackground ? company.cardSurfaceColor ?? "rgba(255,255,255,0.9)" : undefined,
-            color: hasPhotoBackground ? company.cardTextColor ?? "#1F1B18" : undefined,
+            backgroundColor: hasPhotoBackground ? surfaceColor : undefined,
           }}
         >
           <div className="flex items-start gap-3">
