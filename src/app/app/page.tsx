@@ -243,7 +243,7 @@ function NearestGiftHero({
           <LogoBox logoUrl={membership.company.logoUrl} fallback={program.icon || membership.company.icon} name={membership.company.name} color={color} className="size-14" />
           <div className="min-w-0 flex-1">
             <PartnerBadge>Ближайший подарок</PartnerBadge>
-            <h1 className="mt-3 text-3xl font-extrabold leading-tight text-[var(--text)]">
+            <h1 className="mt-3 text-2xl font-extrabold leading-snug text-[var(--text)] sm:text-3xl sm:leading-tight">
               {membership.rewardAvailable ? "Подарок готов" : pluralPurchasesLeft(left)}
             </h1>
             <p className="mt-2 text-base font-bold text-[var(--text)]">{program.rewardTitle || "Подарок"}</p>

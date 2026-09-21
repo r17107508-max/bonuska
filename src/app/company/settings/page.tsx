@@ -9,6 +9,7 @@ import { FormField, SelectField, TextAreaField } from "@/components/form-field";
 import { ProgramTypeSettings } from "@/components/program-type-settings";
 import { CompanyAppearanceSettings } from "@/components/company-appearance-settings";
 import { CompanyLogoUpload } from "@/components/company-logo-upload";
+import { CompanyMapPicker } from "@/components/company-map-picker";
 import { StatusPill, WorkspaceCard } from "@/components/company-ui";
 import { PosIntegrationCard } from "@/components/pos-integration-card";
 import { requireCompanyAdmin } from "@/lib/auth";
@@ -184,27 +185,13 @@ export default async function CompanySettingsPage({
         </WorkspaceCard>
 
         <WorkspaceCard id="map">
-          <SectionHead title="Точка на карте" text="Обычный пользователь работает с адресом. Координаты сохранены скрыто для совместимости." />
-          <input type="hidden" name="latitude" value={access.company.latitude ?? ""} />
-          <input type="hidden" name="longitude" value={access.company.longitude ?? ""} />
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_320px]">
-            <div className="rounded-2xl border border-[var(--border)] bg-white p-4">
-              <p className="font-bold text-[var(--text)]">Адрес точки</p>
-              <p className="mt-2 text-[var(--text-muted)]">{access.company.city}, {access.company.address}</p>
-              <a
-                href={`https://yandex.ru/maps/?text=${encodeURIComponent(`${access.company.city}, ${access.company.address}`)}`}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--border)] bg-white px-4 text-sm font-bold text-[var(--text)]"
-              >
-                Открыть карту
-              </a>
-            </div>
-            <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--background)] p-4 text-sm text-[var(--text-muted)]">
-              <p className="font-bold text-[var(--text)]">Выбор точки на карте</p>
-              <p className="mt-2">Интерактивный выбор координат и автоматическое геокодирование адреса требуют API карт. Сейчас сохраняются существующие координаты.</p>
-            </div>
-          </div>
+          <SectionHead title="Точка на карте" text="Найдите адрес, используйте текущее местоположение или поставьте маркер вручную." />
+          <CompanyMapPicker
+            city={access.company.city}
+            address={access.company.address}
+            initialLatitude={access.company.latitude}
+            initialLongitude={access.company.longitude}
+          />
         </WorkspaceCard>
 
         <WorkspaceCard id="pos">

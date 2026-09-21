@@ -98,12 +98,12 @@ export function PartnersMap({ points }: { points: PartnerMapPoint[] }) {
         const firstPoint = visiblePoints[0];
         mapRef.current = L.map(mapElementRef.current, {
           zoomControl: false,
-          attributionControl: false,
         }).setView(firstPoint ? [firstPoint.latitude!, firstPoint.longitude!] : [55.751244, 37.618423], firstPoint ? 12 : 4);
 
         L.control.zoom({ position: "bottomright" }).addTo(mapRef.current);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(mapRef.current);
         markersRef.current = L.layerGroup().addTo(mapRef.current);
       }
